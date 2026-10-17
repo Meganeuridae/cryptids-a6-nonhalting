@@ -2813,9 +2813,101 @@ theorem is_cryptid_target_tm : IsCryptid target_tm := suspect_153_cryptid
 
 def machine : ConjectureMachines.Machine 6 2 := load_rle_machine% "1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA"
 abbrev target : BusyBeaver.Machine (Fin 2) (Fin 6) := ConjectureMachines.Machine.toBB machine
-theorem is_cryptid : IsCryptid target := by
+def cvt_TapeExpr {Γ} : TapeExpr Γ → BusyBeaver.TapeExpr Γ
+  | .default => .default
+  | .sym a rest => .sym a (cvt_TapeExpr rest)
+  | .rep blk v rest => .rep blk v (cvt_TapeExpr rest)
+
+theorem list_nat_repeat_eq_flatten_replicate {Γ} (l : List Γ) (n : Nat) :
+  list_nat_repeat l n = (List.replicate n l).flatten := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    simp [list_nat_repeat, List.replicate]
+    rw [ih]
+
+theorem cvt_evalTapeExpr {Γ} [Inhabited Γ] (e : TapeExpr Γ) (vars : Nat → Nat) :
+  evalTapeExpr e vars = BusyBeaver.evalTapeExpr (cvt_TapeExpr e) vars := by
+  induction e with
+  | default => rfl
+  | sym a rest ih =>
+    change [a] +> evalTapeExpr rest vars = [a] +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
+    rw [ih]
+  | rep blk v rest ih =>
+    change list_nat_repeat blk (vars v) +> evalTapeExpr rest vars = (List.replicate (vars v) blk).flatten +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
+    rw [ih, list_nat_repeat_eq_flatten_replicate]
+
+def cvt_TapePattern {Γ Λ} : TapePattern Γ Λ → BusyBeaver.TapePattern Γ Λ
+  | ⟨l, h, r⟩ => ⟨cvt_TapeExpr l, h, cvt_TapeExpr r⟩
+
+theorem cvt_evalTapePattern {Γ Λ} [Inhabited Γ] [Inhabited Λ] (pat : TapePattern Γ Λ) (vars : Nat → Nat) :
+  evalTapePattern pat vars = BusyBeaver.evalTapePattern (cvt_TapePattern pat) vars := by
+  rcases pat with ⟨l, h, r⟩
+  simp [evalTapePattern, BusyBeaver.evalTapePattern, cvt_TapePattern]
+  rw [cvt_evalTapeExpr, cvt_evalTapeExpr]
+  exact ⟨rfl, rfl, rfl⟩
+
+def cvt_VarCond : VarCond → BusyBeaver.VarCond
+  | .ge_const idx val => .ge_const idx val
+  | .ge_var idx1 idx2 => .ge_var idx1 idx2
+  | .and c1 c2 => .and (cvt_VarCond c1) (cvt_VarCond c2)
+  | .or c1 c2 => .or (cvt_VarCond c1) (cvt_VarCond c2)
+  | .not c => .not (cvt_VarCond c)
+  | .true => .true
+
+theorem cvt_evalVarCond (c : VarCond) (vars : Nat → Nat) :
+  evalVarCond c vars ↔ BusyBeaver.evalVarCond (cvt_VarCond c) vars := by
+  induction c with
+  | ge_const idx val => rfl
+  | ge_var idx1 idx2 => rfl
+  | and c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
+  | or c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
+  | not c ih => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih]
+  | true => rfl
+
+def cvt_ps {Γ Λ} (ps : TapePatternSet Γ Λ) : BusyBeaver.TapePatternSet Γ Λ :=
+  ps.map (fun pc => ⟨cvt_TapePattern pc.fst, cvt_VarCond pc.snd⟩)
+
+theorem cvt_IsInPatternSet {Γ Λ} [Inhabited Γ] [Inhabited Λ] (ps : TapePatternSet Γ Λ) (cfg : Cfg Γ Λ) :
+  IsInPatternSet ps cfg ↔ BusyBeaver.IsInPatternSet (cvt_ps ps) cfg := by
+  constructor
+  · rintro ⟨⟨p, c⟩, h_in, vars, h_eq, h_cond⟩
+    use ⟨cvt_TapePattern p, cvt_VarCond c⟩
+    refine ⟨?_, ?_⟩
+    · exact List.mem_map_of_mem h_in
+    · use vars
+      rw [← cvt_evalTapePattern]
+      exact ⟨h_eq, (cvt_evalVarCond c vars).mp h_cond⟩
+  · rintro ⟨⟨p_global, c_global⟩, h_in, vars, h_eq, h_cond⟩
+    simp only [cvt_ps, List.mem_map, Prod.exists] at h_in
+    rcases h_in with ⟨p, c, h_in_ps, h_map⟩
+    have h_map' : p_global = cvt_TapePattern p ∧ c_global = cvt_VarCond c := by
+      injection h_map with h1 h2
+      exact ⟨h1.symm, h2.symm⟩
+    rcases h_map' with ⟨rfl, rfl⟩
+    use ⟨p, c⟩
+    refine ⟨h_in_ps, vars, ?_, ?_⟩
+    · rw [h_eq, cvt_evalTapePattern]
+    · change evalVarCond c vars
+      exact (cvt_evalVarCond c vars).mpr h_cond
+
+theorem local_to_global_IsCryptid {Γ Λ} [Inhabited Γ] [Inhabited Λ] {M : Machine Γ Λ} (h : IsCryptid M) : BusyBeaver.IsCryptid M := by
+  rcases h with ⟨ps, ⟨cfg₀, h_reach₀, h_in₀⟩, h_step⟩
+  use cvt_ps ps
+  constructor
+  · use cfg₀
+    exact ⟨h_reach₀, (cvt_IsInPatternSet ps cfg₀).mp h_in₀⟩
+  · intro cfg h_in
+    rcases h_step cfg ((cvt_IsInPatternSet ps cfg).mpr h_in) with ⟨cfg', h_reach, h_cases⟩
+    use cfg'
+    refine ⟨h_reach, ?_⟩
+    cases h_cases with
+    | inl h_in' => exact Or.inl ((cvt_IsInPatternSet ps cfg').mp h_in')
+    | inr h_halt => exact Or.inr h_halt
+
+theorem is_cryptid : BusyBeaver.IsCryptid target := by
   have h : target = target_tm := by funext q s; fin_cases q <;> fin_cases s <;> rfl
   rw [h]
-  exact is_cryptid_target_tm
+  exact local_to_global_IsCryptid is_cryptid_target_tm
 
 end BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA
