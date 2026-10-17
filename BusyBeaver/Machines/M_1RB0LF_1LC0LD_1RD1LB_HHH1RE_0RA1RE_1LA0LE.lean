@@ -1,16 +1,22 @@
 module
 
-import Mathlib.Computability.TuringMachine.PostTuringMachine
-import Mathlib.Computability.TuringMachine.StackTuringMachine
-import Mathlib.Data.ENat.Lattice
-import Mathlib.Data.List.Basic
-import Mathlib.Data.Nat.Basic
-import Mathlib.Logic.Relation
-import Mathlib.Order.Lattice.Nat
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Zify
+public import BusyBeaver.Defs
+public import BusyBeaver.Basic
+public import BusyBeaver.Bridge
+public import Lean.PrettyPrinter.Delaborator.Basic
+public import Mathlib.Computability.TuringMachine.Tape
+public import Mathlib.Util.Notation3
+public import Mathlib.Computability.TuringMachine.PostTuringMachine
+public import Mathlib.Computability.TuringMachine.StackTuringMachine
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.Data.List.Basic
+public import Mathlib.Data.Nat.Basic
+public import Mathlib.Logic.Relation
+public import Mathlib.Order.Lattice.Nat
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Zify
 
 set_option linter.deprecated false
 set_option linter.flexible false
@@ -27,49 +33,15 @@ and defines `target_tm` for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. Do not 
 definitions section or the goal theorem signature.
 -/
 
-open Mathlib Relation Nat Turing
+open Mathlib Relation Nat Turing BusyBeaver
+
+@[expose] public section
 
 namespace BusyBeaver.M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE
 
 -- BEGIN TRUSTED DEFINITIONS (DO NOT MODIFY)
 
 variable {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-
-/-- A Turing machine statement writing a symbol and moving in direction `dir`. -/
-structure Stmt (Γ : Type*) where write ::
-  symbol : Γ
-  dir : Dir
-deriving Inhabited
-
-/-- A Post-Turing machine with symbol type `Γ` and label type `Λ`. -/
-@[nolint unusedArguments]
-def Machine (Γ Λ : Type*) [Inhabited Λ] :=
-  Λ → Γ → Option (Option Λ × Stmt Γ)
-
-instance Machine.inhabited : Inhabited (Machine Γ Λ) := by
-  unfold Machine; infer_instance
-
-/-- The configuration state of a Turing machine during operation. -/
-@[ext]
-structure Cfg (Γ Λ : Type*) [Inhabited Γ] where
-  q : Option Λ
-  tape : Tape Γ
-
-instance Cfg.inhabited : Inhabited (Cfg Γ Λ) := ⟨⟨default, default⟩⟩
-
-/-- Execution semantics of the Turing machine. -/
-def step (M : Machine Γ Λ) : Cfg Γ Λ → Option (Cfg Γ Λ)
-| ⟨none, _⟩ => none
-| ⟨some q, T⟩ => (M q T.1).map
-    fun ⟨q', a⟩ ↦ ⟨q', match a with
-    | Stmt.write a d => (T.write a).move d⟩
-
-/-- The initial configuration on tape prefix `l` (blank tape when `l = []`). -/
-def init (l : List Γ) : Cfg Γ Λ := ⟨some default, Tape.mk₁ l⟩
-
-/-- Multi-step execution semantics (`n` steps). -/
-def multiStep (M : Machine Γ Λ) (config : Cfg Γ Λ) (n : ℕ) : Option (Cfg Γ Λ) :=
-    (Option.bind · (step M))^[n] config
 
 /-- Step and multi-step relations. -/
 notation3 c₁ " [" M "]⊢ " c₂ => step M c₁ = some c₂
@@ -92,7 +64,7 @@ def list_nat_repeat (l : List Γ) (n : Nat) := match n with
   | 0 => []
   | n + 1 => List.append l (list_nat_repeat l n)
 
-instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
+local instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
 
 /-- A configuration is halting for `M` if no next transition is defined. -/
 def IsHaltingConfiguration (M : Machine Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
@@ -1006,7 +978,7 @@ set_option quotPrecheck false
 set_option maxRecDepth 4000000
 set_option maxHeartbeats 8000000
 open Solution in
-theorem is_cryptid : IsCryptid target_tm := by
+theorem is_cryptid_target_tm : IsCryptid target_tm := by
   refine ⟨ps_0082, ⟨F_0082 5 0 2, init_reaches_F_502, in_ps_F 5 0 2⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩
@@ -1014,5 +986,13 @@ theorem is_cryptid : IsCryptid target_tm := by
   subst h_mem
   rw [eval_pat_F]
   exact closes_F_all (vars 0) (vars 1) (vars 2)
+
+
+def machine : ConjectureMachines.Machine 6 2 := load_rle_machine% "1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE"
+abbrev target : BusyBeaver.Machine (Fin 2) (Fin 6) := ConjectureMachines.Machine.toBB machine
+theorem is_cryptid : IsCryptid target := by
+  have h : target = target_tm := by funext q s; fin_cases q <;> fin_cases s <;> rfl
+  rw [h]
+  exact is_cryptid_target_tm
 
 end BusyBeaver.M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE

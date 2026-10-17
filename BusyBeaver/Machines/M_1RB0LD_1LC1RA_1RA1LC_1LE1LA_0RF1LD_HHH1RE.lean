@@ -1,16 +1,22 @@
 module
 
-import Mathlib.Computability.TuringMachine.PostTuringMachine
-import Mathlib.Computability.TuringMachine.StackTuringMachine
-import Mathlib.Data.ENat.Lattice
-import Mathlib.Data.List.Basic
-import Mathlib.Data.Nat.Basic
-import Mathlib.Logic.Relation
-import Mathlib.Order.Lattice.Nat
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Zify
+public import BusyBeaver.Defs
+public import BusyBeaver.Basic
+public import BusyBeaver.Bridge
+public import Lean.PrettyPrinter.Delaborator.Basic
+public import Mathlib.Computability.TuringMachine.Tape
+public import Mathlib.Util.Notation3
+public import Mathlib.Computability.TuringMachine.PostTuringMachine
+public import Mathlib.Computability.TuringMachine.StackTuringMachine
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.Data.List.Basic
+public import Mathlib.Data.Nat.Basic
+public import Mathlib.Logic.Relation
+public import Mathlib.Order.Lattice.Nat
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Zify
 
 set_option linter.deprecated false
 set_option linter.flexible false
@@ -27,49 +33,15 @@ and defines `target_tm` for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE`. Do not 
 definitions section or the goal theorem signature.
 -/
 
-open Mathlib Relation Nat Turing
+open Mathlib Relation Nat Turing BusyBeaver
+
+@[expose] public section
 
 namespace BusyBeaver.M_1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_HHH1RE
 
 -- BEGIN TRUSTED DEFINITIONS (DO NOT MODIFY)
 
 variable {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-
-/-- A Turing machine statement writing a symbol and moving in direction `dir`. -/
-structure Stmt (Γ : Type*) where write ::
-  symbol : Γ
-  dir : Dir
-deriving Inhabited
-
-/-- A Post-Turing machine with symbol type `Γ` and label type `Λ`. -/
-@[nolint unusedArguments]
-def Machine (Γ Λ : Type*) [Inhabited Λ] :=
-  Λ → Γ → Option (Option Λ × Stmt Γ)
-
-instance Machine.inhabited : Inhabited (Machine Γ Λ) := by
-  unfold Machine; infer_instance
-
-/-- The configuration state of a Turing machine during operation. -/
-@[ext]
-structure Cfg (Γ Λ : Type*) [Inhabited Γ] where
-  q : Option Λ
-  tape : Tape Γ
-
-instance Cfg.inhabited : Inhabited (Cfg Γ Λ) := ⟨⟨default, default⟩⟩
-
-/-- Execution semantics of the Turing machine. -/
-def step (M : Machine Γ Λ) : Cfg Γ Λ → Option (Cfg Γ Λ)
-| ⟨none, _⟩ => none
-| ⟨some q, T⟩ => (M q T.1).map
-    fun ⟨q', a⟩ ↦ ⟨q', match a with
-    | Stmt.write a d => (T.write a).move d⟩
-
-/-- The initial configuration on tape prefix `l` (blank tape when `l = []`). -/
-def init (l : List Γ) : Cfg Γ Λ := ⟨some default, Tape.mk₁ l⟩
-
-/-- Multi-step execution semantics (`n` steps). -/
-def multiStep (M : Machine Γ Λ) (config : Cfg Γ Λ) (n : ℕ) : Option (Cfg Γ Λ) :=
-    (Option.bind · (step M))^[n] config
 
 /-- Step and multi-step relations. -/
 notation3 c₁ " [" M "]⊢ " c₂ => step M c₁ = some c₂
@@ -92,7 +64,7 @@ def list_nat_repeat (l : List Γ) (n : Nat) := match n with
   | 0 => []
   | n + 1 => List.append l (list_nat_repeat l n)
 
-instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
+local instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
 
 /-- A configuration is halting for `M` if no next transition is defined. -/
 def IsHaltingConfiguration (M : Machine Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
@@ -901,7 +873,7 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
   have h_D_end_A : cfg_D_end [target_tm]⊢ cfg_A_zero := by
     unfold cfg_D_end cfg_A_zero
     simp [step, target_tm, D, A, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
-    constructor <;> rfl
+    try (constructor <;> rfl)
 
   let cfg_B_start : Cfg (Fin 2) (Fin 6) :=
     ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, ([0, 1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default⟩⟩
@@ -1612,7 +1584,7 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
     have h_step2 : (⟨some D, ⟨1, default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
       [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
       simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D]
-      constructor <;> rfl
+      try (constructor <;> rfl)
     have h_step3 : (⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
       [target_tm]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
       simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
@@ -1683,7 +1655,7 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       have h_step4 : (⟨some D, ⟨1, default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
         [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D]
-        constructor <;> rfl
+        try (constructor <;> rfl)
       have h_step5 : (⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
         [target_tm]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow1]
@@ -1763,12 +1735,12 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         rw [h_calc] at h_apply
         rw [h_unfold] at h_apply
         simp only [ListBlank.head_cons, ListBlank.tail_cons] at h_apply
-        exact h_apply
+        try exact h_apply
 
       have h_step_D_A : (⟨some D, ⟨1, default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ : Cfg (Fin 2) (Fin 6))
         [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ := by
         simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A]
-        exact ⟨rfl, rfl⟩
+        try exact ⟨rfl, rfl⟩
 
       have h_step_A_B : (⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ : Cfg (Fin 2) (Fin 6))
         [target_tm]⊢ ⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := by
@@ -1793,7 +1765,7 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
           rw [h_combine]
         rw [h_left_eq] at h_apply
         simp only [Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons] at h_apply
-        exact h_apply
+        try exact h_apply
 
       have h_step_B_A : (⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^(2 * k + 7) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ : Cfg (Fin 2) (Fin 6))
         [target_tm]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-1) +> default).tail.head, ([1] : List (Fin 2))^(2 * k + 8) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail.tail⟩⟩ := by
@@ -4501,10 +4473,8 @@ lemma Cfg_A_garbage_eq_Config_gen (a g : Nat) :
   (Cfg_A_garbage a g) = Config_gen a g 2 := by
   unfold Cfg_A_garbage Config_gen
   simp [HPow.hPow, list_nat_repeat, ListBlank.append]
-  congr 1
-  have h_zero_default : (0 : Fin 2) = default := rfl
-  rw [h_zero_default]
-  rw [cons_default_eq]
+  try congr 1
+  try { have h_zero_default : (0 : Fin 2) = default := rfl; rw [h_zero_default]; try rw [cons_default_eq] }
 
 lemma step_to_D (a k : Nat) (hk : k ≥ 1) :
     (Config_gen a (2 * k) 1) [target_tm]⊢ (Cfg_D_int a (2 * k - 1)) := by
@@ -4916,6 +4886,15 @@ theorem rules_closed :
 
 -- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
 
-theorem is_cryptid : IsCryptid target_tm := rules_closed
+theorem is_cryptid_target_tm : IsCryptid target_tm := rules_closed
+
+
+def machine : ConjectureMachines.Machine 6 2 := load_rle_machine% "1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE"
+abbrev target : BusyBeaver.Machine (Fin 2) (Fin 6) := ConjectureMachines.Machine.toBB machine
+theorem is_cryptid : IsCryptid target := by
+  have h : target = target_tm := by funext q s; fin_cases q <;> fin_cases s <;> rfl
+  rw [h]
+  exact is_cryptid_target_tm
 
 end BusyBeaver.M_1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_HHH1RE
+def dummy_force_recompile : Nat := 123
