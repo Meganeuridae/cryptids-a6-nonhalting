@@ -1,9 +1,4 @@
-/-
-Copyright (c) 2026 Google LLC. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
--/
 module
-
 public import BusyBeaver.Defs
 public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
@@ -49,10 +44,20 @@ public import BusyBeaver.Machines.M_1RB1RE_1LC0RA_1RD0LB_1LB1RC_1LF0RD_HHH0LE
 public import BusyBeaver.Machines.M_1RB1RE_1LC1LD_HHH1LA_1LB1LE_0RF0RA_1LD1RF
 public import BusyBeaver.Machines.M_1RB1RF_0LC0RF_1RD1LC_HHH0LE_0RC1LF_1RA0LE
 public import BusyBeaver.Machines.M_1RB1RF_1LC1LF_0RE1LD_0LB1LD_HHH1RC_1RA0RD
-
+public import BusyBeaver.Machines.M_1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_HHH1LC
+public import BusyBeaver.Machines.M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE
+public import BusyBeaver.Machines.M_1RBHHH_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE
+public import BusyBeaver.Machines.M_1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_HHH0RD
+public import BusyBeaver.Machines.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA
+public import BusyBeaver.Machines.M_1RB0RE_1LC0RA_1RF0RD_HHH1LE_0LB1LE_1LE1RC
+public import BusyBeaver.Machines.M_1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_HHH1RE
+public import BusyBeaver.Machines.M_1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_HHH1LC
+/-
+Copyright (c) 2026 Google LLC. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 /-!
 # Busy Beaver Holdouts (`BusyBeaver`)
-
 Formal Lean 4 specifications and kernel-verified behavioral proofs (`IsHalt`, `IsNotHalt`,
 `IsClosedPatternSet`, `HasCollatzReduction`, `IsValidAcceleration`, `CollatzHalts`) for Busy Beaver
 holdout Turing machines, connected to `ConjectureMachines.Machine` via `BusyBeaver.Bridge`.

@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 0, Stmt.write 1 Dir.right)
   | 1, 0 => some (some 2, Stmt.write 0 Dir.left)
@@ -318,12 +316,12 @@ macro "step" : tactic =>
 macro "execute" : tactic =>
   `(tactic| repeat (any_goals (first | finish | step)))
 lemma shift_A_11 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{A}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
+    (l {{A}}> (([1, 1] : List (Fin 2))^k +> r)) [target_tm]⊢*
     ((l <+ ([1, 1] : List (Fin 2))^k) {{A}}> r) := by
   induction k generalizing l r with
   | zero => use 0; simp
   | succ k ih =>
-    have h1 : (l {{A}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target]⊢⁺
+    have h1 : (l {{A}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target_tm]⊢⁺
         ((l <+ ([1, 1] : List (Fin 2))) {{A}}> (([1, 1] : List (Fin 2))^k +> r)) := by
       rw [zPsr ([1, 1] : List (Fin 2)) k r]
       simp only [zCal, zLac, zLan]
@@ -335,12 +333,12 @@ lemma shift_A_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa, zLp1]
     rwa [h_pow] at h3
 lemma shift_B_11 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{B}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
+    (l {{B}}> (([1, 1] : List (Fin 2))^k +> r)) [target_tm]⊢*
     ((l <+ ([1, 0] : List (Fin 2))^k) {{B}}> r) := by
   induction k generalizing l r with
   | zero => use 0; simp
   | succ k ih =>
-    have h1 : (l {{B}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target]⊢⁺
+    have h1 : (l {{B}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target_tm]⊢⁺
         ((l <+ ([1, 0] : List (Fin 2))) {{B}}> (([1, 1] : List (Fin 2))^k +> r)) := by
       rw [zPsr ([1, 1] : List (Fin 2)) k r]
       simp only [zCal, zLac, zLan]
@@ -352,12 +350,12 @@ lemma shift_B_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa, zLp1]
     rwa [h_pow] at h3
 lemma shift_E_11 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{E}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
+    (l {{E}}> (([1, 1] : List (Fin 2))^k +> r)) [target_tm]⊢*
     ((l <+ ([0, 1] : List (Fin 2))^k) {{E}}> r) := by
   induction k generalizing l r with
   | zero => use 0; simp
   | succ k ih =>
-    have h1 : (l {{E}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target]⊢⁺
+    have h1 : (l {{E}}> (([1, 1] : List (Fin 2))^(k + 1) +> r)) [target_tm]⊢⁺
         ((l <+ ([0, 1] : List (Fin 2))) {{E}}> (([1, 1] : List (Fin 2))^k +> r)) := by
       rw [zPsr ([1, 1] : List (Fin 2)) k r]
       simp only [zCal, zLac, zLan]
@@ -369,7 +367,7 @@ lemma shift_E_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa, zLp1]
     rwa [h_pow] at h3
 lemma shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((0 : Fin 2) >> r)) [target]⊢*
+    ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((0 : Fin 2) >> r)) [target_tm]⊢*
     (l {{C}}> ((0 : Fin 2) >> (([1, 1] : List (Fin 2))^k +> r))) := by
   induction k generalizing l r with
   | zero => use 0; simp
@@ -379,7 +377,7 @@ lemma shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa]; rfl
     rw [h_pow_l]
     have h1 : (((l <+ ([1, 0] : List (Fin 2))^k) <+ ([1, 0] : List (Fin 2))) {{C}}> ((0 : Fin 2) >> r))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((0 : Fin 2) >> (([1, 1] : List (Fin 2)) +> r))) := by
       simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
       execute
@@ -390,7 +388,7 @@ lemma shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa, zLp1]
     rwa [h_pow_r] at h3
 lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((1 : Fin 2) >> r)) [target]⊢*
+    ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((1 : Fin 2) >> r)) [target_tm]⊢*
     (l {{C}}> (([1, 0] : List (Fin 2))^k +> ((1 : Fin 2) >> r))) := by
   induction k generalizing l r with
   | zero => use 0; simp
@@ -400,12 +398,12 @@ lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa]; rfl
     rw [h_pow_l]
     have h1 : (((l <+ ([1, 0] : List (Fin 2))^k) <+ ([1, 0] : List (Fin 2))) {{C}}> ((1 : Fin 2) >> r))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> (([1, 0] : List (Fin 2)) +> ((1 : Fin 2) >> r))) := by
       simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
       execute
     have h2 : ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> (([1, 0] : List (Fin 2)) +> ((1 : Fin 2) >> r)))
-        [target]⊢*
+        [target_tm]⊢*
         (l {{C}}> (([1, 0] : List (Fin 2))^k +> (([1, 0] : List (Fin 2)) +> ((1 : Fin 2) >> r)))) := by
       simpa [zCal, zLac, zLan] using
         ih l ((0 : Fin 2) >> ((1 : Fin 2) >> r))
@@ -415,7 +413,7 @@ lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [zLaa, zLp1]
     rwa [h_pow_r] at h3
 lemma step_C_11_to_B (d : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ [1, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
+    ((l <+ [1, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target_tm]⊢⁺
     ((l <+ [1, 1]) {{B}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) := by
   cases d with
   | zero =>
@@ -426,7 +424,7 @@ lemma step_C_11_to_B (d : Nat) (l r : ListBlank (Fin 2)) :
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
     execute
 lemma step_C_default_to_E (d : Nat) (r : ListBlank (Fin 2)) :
-    (default {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
+    (default {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target_tm]⊢⁺
     ((default <+ [0, 1]) {{E}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) := by
   cases d with
   | zero =>
@@ -437,9 +435,9 @@ lemma step_C_default_to_E (d : Nat) (r : ListBlank (Fin 2)) :
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
 lemma step_C_01_to_A (d : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
+    ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target_tm]⊢⁺
     (l {{A}}> (([1, 1] : List (Fin 2))^d +> ([1, 1] +> ((1 : Fin 2) >> r)))) := by
-  have h1 : ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
+  have h1 : ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target_tm]⊢⁺
       (l {{A}}> ([1, 1] +> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r)))) := by
     cases d with
     | zero =>
@@ -480,7 +478,7 @@ theorem one_one_pow_comm_one (n : Nat) (R : ListBlank (Fin 2)) :
     simp only [zCal, zLac, zLan]
     rw [ih]
 theorem rule_1 (a k d c : Nat) :
-    (cfg_R a (k + 1) d (c + 1)) [target]⊢⁺ (cfg_R a k (d + 2) c) := by
+    (cfg_R a (k + 1) d (c + 1)) [target_tm]⊢⁺ (cfg_R a k (d + 2) c) := by
   let L := ((([0, 1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^k)
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
   have h_start : cfg_R a (k + 1) d (c + 1) =
@@ -494,7 +492,7 @@ theorem rule_1 (a k d c : Nat) :
   have h2 := shift_B_11 d (L <+ [1, 1]) ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail))
   have h12 := zPsp h1 h2
   have h3 : (((L <+ [1, 1]) <+ ([1, 0] : List (Fin 2))^d) {{B}}> ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((L <+ [1, 1]) <+ ([1, 0] : List (Fin 2))^d) {{C}}> ((0 : Fin 2) >> ((1 : Fin 2) >> R_tail))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
     execute
@@ -502,7 +500,7 @@ theorem rule_1 (a k d c : Nat) :
   have h4 := shift_C_left_01 d (L <+ [1, 1]) ((1 : Fin 2) >> R_tail)
   have h1234 := zPsp h123 h4
   have h5 : ((L <+ [1, 1]) {{C}}> ((0 : Fin 2) >> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> R_tail))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (L {{C}}> ([1, 1, 1] +> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> R_tail)))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
     execute
@@ -516,7 +514,7 @@ theorem rule_1 (a k d c : Nat) :
     rfl
   rwa [h_end] at h12345
 theorem rule_2 (a k d : Nat) :
-    (cfg_R a (k + 1) d 0) [target]⊢⁺ (cfg_R a (k + 1) 0 (d + 1)) := by
+    (cfg_R a (k + 1) d 0) [target_tm]⊢⁺ (cfg_R a (k + 1) 0 (d + 1)) := by
   let L := ((([0, 1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^k)
   have h_start : cfg_R a (k + 1) d 0 =
       ((L <+ [1, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> ([1, 1, 1] +> default)))) := by
@@ -528,7 +526,7 @@ theorem rule_2 (a k d : Nat) :
   have h2 := shift_B_11 d (L <+ [1, 1]) ((1 : Fin 2) >> ([1, 1, 1] +> default))
   have h12 := zPsp h1 h2
   have h3 : (((L <+ [1, 1]) <+ ([1, 0] : List (Fin 2))^d) {{B}}> ((1 : Fin 2) >> ([1, 1, 1] +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((L <+ [1, 1]) <+ ([1, 0] : List (Fin 2))^d) <+ [1, 0]) {{C}}> ((1 : Fin 2) >> ([1, 1, 1] +> default))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
@@ -546,9 +544,9 @@ theorem rule_2 (a k d : Nat) :
     rfl
   rwa [h_end] at h1234
 theorem rule_3 (d : Nat) :
-    ∃ cfg', ((cfg_R 0 0 d 0) [target]⊢⁺ cfg') /\ (step target cfg').isNone := by
+    ∃ cfg', ((cfg_R 0 0 d 0) [target_tm]⊢⁺ cfg') /\ (step target_tm cfg').isNone := by
   refine ⟨(default {{F}}> ((0 : Fin 2) >> ((1 : Fin 2) >> (([1, 1] : List (Fin 2))^(d + 3) +> ([1] +> default))))), ?_,
-    by simp [step, target, F]⟩
+    by simp [step, target_tm, F]⟩
   have h_start : cfg_R 0 0 d 0 =
       (default {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> ([1, 1, 1] +> default)))) := rfl
   rw [h_start]
@@ -556,7 +554,7 @@ theorem rule_3 (d : Nat) :
   have h2 := shift_E_11 d (default <+ [0, 1]) ((1 : Fin 2) >> ([1, 1, 1] +> default))
   have h12 := zPsp h1 h2
   have h3 : (((default <+ [0, 1]) <+ ([0, 1] : List (Fin 2))^d) {{E}}> ((1 : Fin 2) >> ([1, 1, 1] +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((((default <+ [0, 1]) <+ ([0, 1] : List (Fin 2))^d) <+ [0, 1]) <+ [0, 1]) {{E}}> default) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
@@ -574,7 +572,7 @@ theorem rule_3 (d : Nat) :
     rw [h_merge, zero_one_pow_default (d + 3)]
   rw [h_l] at h123
   have h4 : (((0 : Fin 2) >> (default <+ ([1, 0] : List (Fin 2))^(d + 3))) {{E}}> default)
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default <+ ([1, 0] : List (Fin 2))^(d + 3)) {{C}}> ((0 : Fin 2) >> ([1] +> default))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
@@ -582,13 +580,13 @@ theorem rule_3 (d : Nat) :
   have h5 := shift_C_left_01 (d + 3) default ([1] +> default)
   have h12345 := zPsp h1234 h5
   have h6 : (default {{C}}> ((0 : Fin 2) >> (([1, 1] : List (Fin 2))^(d + 3) +> ([1] +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (default {{F}}> ((0 : Fin 2) >> ((1 : Fin 2) >> (([1, 1] : List (Fin 2))^(d + 3) +> ([1] +> default))))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
   exact zPt h12345 h6
 theorem rule_4 (d c : Nat) :
-    (cfg_R 0 0 d (c + 1)) [target]⊢⁺ (cfg_R (d + 1) 0 0 (c + 1)) := by
+    (cfg_R 0 0 d (c + 1)) [target_tm]⊢⁺ (cfg_R (d + 1) 0 0 (c + 1)) := by
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
   have h_start : cfg_R 0 0 d (c + 1) =
       (default {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail)))) := by
@@ -600,7 +598,7 @@ theorem rule_4 (d c : Nat) :
   have h2 := shift_E_11 d (default <+ [0, 1]) ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail))
   have h12 := zPsp h1 h2
   have h3 : (((default <+ [0, 1]) <+ ([0, 1] : List (Fin 2))^d) {{E}}> ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ [0, 1]) <+ ([0, 1] : List (Fin 2))^d) {{C}}> ((1 : Fin 2) >> ((0 : Fin 2) >> R_tail))) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
     execute
@@ -614,7 +612,7 @@ theorem rule_4 (d c : Nat) :
     rfl
   rwa [h_end] at h123
 theorem rule_5 (a d : Nat) :
-    (cfg_R (a + 1) 0 d 0) [target]⊢⁺ (cfg_R a (d + 2) 0 0) := by
+    (cfg_R (a + 1) 0 d 0) [target_tm]⊢⁺ (cfg_R a (d + 2) 0 0) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   have h_start : cfg_R (a + 1) 0 d 0 =
       ((L <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> ([1, 1, 1] +> default)))) := by
@@ -626,7 +624,7 @@ theorem rule_5 (a d : Nat) :
   have h2 := shift_A_11 d L ([1, 1] +> ((1 : Fin 2) >> ([1, 1, 1] +> default)))
   have h12 := zPsp h1 h2
   have h3 : ((L <+ ([1, 1] : List (Fin 2))^d) {{A}}> ([1, 1] +> ((1 : Fin 2) >> ([1, 1, 1] +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((L <+ ([1, 1] : List (Fin 2))^d) <+ [1, 1]) <+ [1, 1]) {{C}}> ([1, 1, 1, 1] +> default)) := by
     simp only [zCal, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
@@ -639,7 +637,7 @@ theorem rule_5 (a d : Nat) :
     rfl
   rwa [h_end] at h123
 theorem rule_6 (a d : Nat) :
-    (cfg_R (a + 1) 0 d 1) [target]⊢⁺ (cfg_R a (d + 2) 0 1) := by
+    (cfg_R (a + 1) 0 d 1) [target_tm]⊢⁺ (cfg_R a (d + 2) 0 1) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   have h_start : cfg_R (a + 1) 0 d 1 =
       ((L <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> ([0, 1, 1, 1, 1] +> default)))) := by
@@ -651,7 +649,7 @@ theorem rule_6 (a d : Nat) :
   have h2 := shift_A_11 d L ([1, 1] +> ((1 : Fin 2) >> ([0, 1, 1, 1, 1] +> default)))
   have h12 := zPsp h1 h2
   have h3 : ((L <+ ([1, 1] : List (Fin 2))^d) {{A}}> ([1, 1] +> ((1 : Fin 2) >> ([0, 1, 1, 1, 1] +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((L <+ ([1, 1] : List (Fin 2))^d) <+ [1, 1]) <+ [1, 1]) {{C}}> (([1, 0] : List (Fin 2))^1 +> ([1, 1, 1, 1] +> default))) := by
     simp only [zPz, zPsl, zCal, List.nil_append, zAnl, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt]
     execute
@@ -664,7 +662,7 @@ theorem rule_6 (a d : Nat) :
     rfl
   rwa [h_end] at h123
 theorem rule_7 (a d c : Nat) :
-    (cfg_R (a + 1) 0 d (c + 2)) [target]⊢⁺ (cfg_R a (d + 1) 2 c) := by
+    (cfg_R (a + 1) 0 d (c + 2)) [target_tm]⊢⁺ (cfg_R a (d + 1) 2 c) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
   have h_start : cfg_R (a + 1) 0 d (c + 2) =
@@ -679,7 +677,7 @@ theorem rule_7 (a d c : Nat) :
   have h2 := shift_A_11 d L ([1, 1] +> ((1 : Fin 2) >> ([0, 1, 0] +> R_tail)))
   have h12 := zPsp h1 h2
   have h3 : ((L <+ ([1, 1] : List (Fin 2))^d) {{A}}> ([1, 1] +> ((1 : Fin 2) >> ([0, 1, 0] +> R_tail))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((L <+ ([1, 1] : List (Fin 2))^d) <+ [1, 1]) {{C}}> (([1, 1] : List (Fin 2))^2 +> R_tail)) := by
     simp only [zPz, zPsl, zCal, List.nil_append, zAnl, zLac, zLan, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
     execute
@@ -690,14 +688,14 @@ theorem rule_7 (a d c : Nat) :
     rw [zPl L ([1, 1] : List (Fin 2)) d 1]
     rfl
   rwa [h_end] at h123
-theorem init_reaches_R : (init []) [target]⊢* (cfg_R 0 0 0 1) := by
+theorem init_reaches_R : (init []) [target_tm]⊢* (cfg_R 0 0 0 1) := by
   refine zPs ?_
   unfold init cfg_R
   simp only [Tape.mk₁, zPz, zPsl, zCal, List.nil_append, zAnl, zLac, zLan, zDh, zDt]
   execute
 theorem step_R_all (a k d c : Nat) :
-    ∃ cfg', ((cfg_R a k d c) [target]⊢⁺ cfg') /\
-            (IsInPatternSet ps_0272 cfg' \/ (step target cfg').isNone) := by
+    ∃ cfg', ((cfg_R a k d c) [target_tm]⊢⁺ cfg') /\
+            (IsInPatternSet ps_0272 cfg' \/ (step target_tm cfg').isNone) := by
   rcases k with _ | k'
   ·
     rcases a with _ | a'
@@ -739,7 +737,7 @@ set_option quotPrecheck false
 set_option maxRecDepth 4000000
 set_option maxHeartbeats 8000000
 open Solution in
-theorem has_collatz_reduction : HasCollatzReduction target := by
+theorem is_cryptid : IsCryptid target_tm := by
   refine ⟨ps_0272, ⟨cfg_R 0 0 0 1, init_reaches_R, in_ps_R 0 0 0 1⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩

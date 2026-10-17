@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 4, Stmt.write 0 Dir.right)
   | 1, 0 => some (some 2, Stmt.write 1 Dir.left)
@@ -1112,14 +1110,14 @@ def mirrorTape : Tape (Fin 2) -> Tape (Fin 2)
 def mirrorCfg (c : Cfg (Fin 2) (Fin 6)) : Cfg (Fin 2) (Fin 6) :=
   ⟨c.q.map π, mirrorTape c.tape⟩
 lemma step_mirror (c : Cfg (Fin 2) (Fin 6)) :
-    step target (mirrorCfg c) = (step holdout_0082_mod c).map mirrorCfg := by
+    step target_tm (mirrorCfg c) = (step holdout_0082_mod c).map mirrorCfg := by
   rcases c with ⟨_ | q, ⟨head, l, r⟩⟩
   · rfl
   · rcases q with ⟨_ | _ | _ | _ | _ | _ | q, hq⟩ <;>
     rcases head with ⟨_ | _ | head, hhead⟩ <;>
     first | rfl | omega
 lemma multiStep_mirror (n : Nat) (c : Cfg (Fin 2) (Fin 6)) :
-    multiStep target (mirrorCfg c) n = (multiStep holdout_0082_mod c n).map mirrorCfg := by
+    multiStep target_tm (mirrorCfg c) n = (multiStep holdout_0082_mod c n).map mirrorCfg := by
   induction n generalizing c with
   | zero => rfl
   | succ n ih =>
@@ -1131,21 +1129,21 @@ lemma multiStep_mirror (n : Nat) (c : Cfg (Fin 2) (Fin 6)) :
       exact step_mirror c'
 lemma stepPlus_mirror {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
     (h : c_1 [holdout_0082_mod]⊢⁺ c_2) :
-    (mirrorCfg c_1) [target]⊢⁺ (mirrorCfg c_2) := by
+    (mirrorCfg c_1) [target_tm]⊢⁺ (mirrorCfg c_2) := by
   rcases h with ⟨n, hn, hstep⟩
   refine ⟨n, hn, ?_⟩
   rw [multiStep_mirror, hstep]
   rfl
 lemma stepStar_mirror {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
     (h : c_1 [holdout_0082_mod]⊢* c_2) :
-    (mirrorCfg c_1) [target]⊢* (mirrorCfg c_2) := by
+    (mirrorCfg c_1) [target_tm]⊢* (mirrorCfg c_2) := by
   rcases h with ⟨n, hstep⟩
   refine ⟨n, ?_⟩
   rw [multiStep_mirror, hstep]
   rfl
 lemma isNone_step_mirror {c : Cfg (Fin 2) (Fin 6)}
     (h : (step holdout_0082_mod c).isNone) :
-    (step target (mirrorCfg c)).isNone := by
+    (step target_tm (mirrorCfg c)).isNone := by
   rw [step_mirror]
   revert h
   cases step holdout_0082_mod c <;> intro h <;> first | rfl | cases h
@@ -1171,7 +1169,7 @@ lemma mirrorCfg_F_403_eq :
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) {{A}}>
       ([0] +> (([1] : List (Fin 2)) ^ 4 +> default)) := rfl
 theorem init_reaches_A_403 :
-    (init []) [target]⊢* mirrorCfg (F_0082 4 0 3) := by
+    (init []) [target_tm]⊢* mirrorCfg (F_0082 4 0 3) := by
   rw [mirrorCfg_F_403_eq]
   refine zPs ?_
   unfold init
@@ -1194,7 +1192,7 @@ theorem audit_init_neq_cfg0 :
 
 -- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
 
-theorem has_collatz_reduction : HasCollatzReduction target := by
+theorem is_cryptid : IsCryptid target_tm := by
   refine ⟨ps_0636, ⟨mirrorCfg (F_0082 4 0 3), init_reaches_A_403, in_ps_A 4 0 3⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩
@@ -1406,137 +1404,137 @@ theorem exp_step_F_example :
   exp_step_F 2 0 1
 
 -- ============================================================================
--- Transported Hub-to-Hub Rules & Accelerations on `target` (`A_0636`)
+-- Transported Hub-to-Hub Rules & Accelerations on `target_tm` (`A_0636`)
 -- ============================================================================
 
 theorem rule_A_ksucc_c0 (b k : Nat) :
-    (A_0636 b (k + 1) 0) [target]⊢⁺ (A_0636 b k 1) :=
+    (A_0636 b (k + 1) 0) [target_tm]⊢⁺ (A_0636 b k 1) :=
   stepPlus_mirror (rule_F_ksucc_c0 b k)
 
 theorem rule_A_b0_k0_c0 :
-    (A_0636 0 0 0) [target]⊢⁺ (A_0636 4 0 3) :=
+    (A_0636 0 0 0) [target_tm]⊢⁺ (A_0636 4 0 3) :=
   stepPlus_mirror rule_F_b0_k0_c0
 
 theorem rule_A_b1_k0_c0 :
-    (A_0636 1 0 0) [target]⊢⁺ (A_0636 6 0 3) :=
+    (A_0636 1 0 0) [target_tm]⊢⁺ (A_0636 6 0 3) :=
   stepPlus_mirror rule_F_b1_k0_c0
 
 theorem rule_A_b2_k0_c0 :
-    (A_0636 2 0 0) [target]⊢⁺ (A_0636 3 0 3) :=
+    (A_0636 2 0 0) [target_tm]⊢⁺ (A_0636 3 0 3) :=
   stepPlus_mirror rule_F_b2_k0_c0
 
 theorem rule_A_b3_k0_c0 :
-    (A_0636 3 0 0) [target]⊢⁺ (A_0636 6 0 3) :=
+    (A_0636 3 0 0) [target_tm]⊢⁺ (A_0636 6 0 3) :=
   stepPlus_mirror rule_F_b3_k0_c0
 
 theorem rule_A_b4_k0_c0_halt :
-    ∃ cfg', ((A_0636 4 0 0) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
+    ∃ cfg', ((A_0636 4 0 0) [target_tm]⊢⁺ cfg') ∧ (step target_tm cfg').isNone := by
   obtain ⟨cfg', h_step, h_halt⟩ := rule_F_b4_k0_c0_halt
   exact ⟨mirrorCfg cfg', stepPlus_mirror h_step, isNone_step_mirror h_halt⟩
 
 theorem rule_A_b5_k0_c0 (b : Nat) :
-    (A_0636 (b + 5) 0 0) [target]⊢⁺ (A_0636 (b + 1) 0 5) :=
+    (A_0636 (b + 5) 0 0) [target_tm]⊢⁺ (A_0636 (b + 1) 0 5) :=
   stepPlus_mirror (rule_F_b5_k0_c0 b)
 
 theorem rule_A_b0_c1 (k : Nat) :
-    (A_0636 0 k 1) [target]⊢⁺ (A_0636 (2 * k + 6) 0 3) :=
+    (A_0636 0 k 1) [target_tm]⊢⁺ (A_0636 (2 * k + 6) 0 3) :=
   stepPlus_mirror (rule_F_b0_c1 k)
 
 theorem rule_A_b1_c1 (k : Nat) :
-    (A_0636 1 k 1) [target]⊢⁺ (A_0636 (2 * k + 8) 0 3) :=
+    (A_0636 1 k 1) [target_tm]⊢⁺ (A_0636 (2 * k + 8) 0 3) :=
   stepPlus_mirror (rule_F_b1_c1 k)
 
 theorem rule_A_b2_k0_c1 (c : Nat) :
-    (A_0636 2 0 (c + 1)) [target]⊢⁺ (A_0636 5 0 c) :=
+    (A_0636 2 0 (c + 1)) [target_tm]⊢⁺ (A_0636 5 0 c) :=
   stepPlus_mirror (rule_F_b2_k0_c1 c)
 
 theorem rule_A_b3_c1 (k : Nat) :
-    (A_0636 3 k 1) [target]⊢⁺ (A_0636 (2 * k + 8) 0 3) :=
+    (A_0636 3 k 1) [target_tm]⊢⁺ (A_0636 (2 * k + 8) 0 3) :=
   stepPlus_mirror (rule_F_b3_c1 k)
 
 theorem rule_A_b4_c1_halt (k : Nat) :
-    ∃ cfg', ((A_0636 4 k 1) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
+    ∃ cfg', ((A_0636 4 k 1) [target_tm]⊢⁺ cfg') ∧ (step target_tm cfg').isNone := by
   obtain ⟨cfg', h_step, h_halt⟩ := rule_F_b4_c1_halt k
   exact ⟨mirrorCfg cfg', stepPlus_mirror h_step, isNone_step_mirror h_halt⟩
 
 theorem rule_A_b5_c1 (b k : Nat) :
-    (A_0636 (b + 5) k 1) [target]⊢⁺ (A_0636 (b + 1) 0 (2 * k + 7)) :=
+    (A_0636 (b + 5) k 1) [target_tm]⊢⁺ (A_0636 (b + 1) 0 (2 * k + 7)) :=
   stepPlus_mirror (rule_F_b5_c1 b k)
 
 theorem rule_A_b5_ksucc_c0 (b k : Nat) :
-    (A_0636 (b + 5) (k + 1) 0) [target]⊢⁺ (A_0636 (b + 1) 0 (2 * k + 7)) :=
+    (A_0636 (b + 5) (k + 1) 0) [target_tm]⊢⁺ (A_0636 (b + 1) 0 (2 * k + 7)) :=
   stepPlus_mirror (rule_F_b5_ksucc_c0 b k)
 
 theorem rule_A_b0_c2 (k c : Nat) :
-    (A_0636 0 k (c + 2)) [target]⊢⁺ (A_0636 1 (k + 1) c) :=
+    (A_0636 0 k (c + 2)) [target_tm]⊢⁺ (A_0636 1 (k + 1) c) :=
   stepPlus_mirror (rule_F_b0_c2 k c)
 
 theorem rule_A_b1_c2 (k c : Nat) :
-    (A_0636 1 k (c + 2)) [target]⊢⁺ (A_0636 1 (k + 2) c) :=
+    (A_0636 1 k (c + 2)) [target_tm]⊢⁺ (A_0636 1 (k + 2) c) :=
   stepPlus_mirror (rule_F_b1_c2 k c)
 
 theorem rule_A_b3_c2 (b k c : Nat) :
-    (A_0636 (b + 3) k (c + 2)) [target]⊢⁺ (A_0636 (b + 1) (k + 2) c) :=
+    (A_0636 (b + 3) k (c + 2)) [target_tm]⊢⁺ (A_0636 (b + 1) (k + 2) c) :=
   stepPlus_mirror (rule_F_b3_c2 b k c)
 
 theorem drain_A_bc (m b k c : Nat) :
-    (A_0636 (b + 2 * m + 1) k (c + 2 * m)) [target]⊢*
+    (A_0636 (b + 2 * m + 1) k (c + 2 * m)) [target_tm]⊢*
     (A_0636 (b + 1) (k + 2 * m) c) :=
   stepStar_mirror (drain_F_bc m b k c)
 
 theorem countdown_A_bc (m b k c : Nat) :
-    (A_0636 (b + 2 * m + 3) k (c + 2 * m + 2)) [target]⊢⁺
+    (A_0636 (b + 2 * m + 3) k (c + 2 * m + 2)) [target_tm]⊢⁺
     (A_0636 (b + 1) (k + 2 * m + 2) c) :=
   stepPlus_mirror (countdown_F_bc m b k c)
 
 theorem drain_A_b1_c (m k c : Nat) :
-    (A_0636 1 k (c + 2 * m)) [target]⊢*
+    (A_0636 1 k (c + 2 * m)) [target_tm]⊢*
     (A_0636 1 (k + 2 * m) c) :=
   stepStar_mirror (drain_F_b1_c m k c)
 
 theorem countdown_A_b1_c (m k c : Nat) :
-    (A_0636 1 k (c + 2 * m + 2)) [target]⊢⁺
+    (A_0636 1 k (c + 2 * m + 2)) [target_tm]⊢⁺
     (A_0636 1 (k + 2 * m + 2) c) :=
   stepPlus_mirror (countdown_F_b1_c m k c)
 
 theorem accel_A_odd_c (b k m : Nat) :
-    (A_0636 (b + 2 * m + 5) k (2 * m + 1)) [target]⊢⁺
+    (A_0636 (b + 2 * m + 5) k (2 * m + 1)) [target_tm]⊢⁺
     (A_0636 (b + 1) 0 (2 * k + 4 * m + 7)) :=
   stepPlus_mirror (accel_F_odd_c b k m)
 
 theorem double_A (b m : Nat) :
-    (A_0636 (b + 2 * m + 5) 0 (2 * m + 1)) [target]⊢⁺
+    (A_0636 (b + 2 * m + 5) 0 (2 * m + 1)) [target_tm]⊢⁺
     (A_0636 (b + 1) 0 (4 * m + 7)) :=
   stepPlus_mirror (double_F b m)
 
 theorem accel_A_even_c (b k m : Nat) :
-    (A_0636 (b + 2 * m + 7) k (2 * m + 2)) [target]⊢⁺
+    (A_0636 (b + 2 * m + 7) k (2 * m + 2)) [target_tm]⊢⁺
     (A_0636 (b + 1) 0 (2 * k + 4 * m + 9)) :=
   stepPlus_mirror (accel_F_even_c b k m)
 
 theorem accel_A_b1_odd_c (k m : Nat) :
-    (A_0636 1 k (2 * m + 1)) [target]⊢⁺
+    (A_0636 1 k (2 * m + 1)) [target_tm]⊢⁺
     (A_0636 (2 * k + 4 * m + 8) 0 3) :=
   stepPlus_mirror (accel_F_b1_odd_c k m)
 
 theorem accel_A_b1_even_c (k m : Nat) :
-    (A_0636 1 k (2 * m + 2)) [target]⊢⁺
+    (A_0636 1 k (2 * m + 2)) [target_tm]⊢⁺
     (A_0636 (2 * k + 4 * m + 10) 0 3) :=
   stepPlus_mirror (accel_F_b1_even_c k m)
 
 theorem exp_step_A (n b m : Nat) :
-    (A_0636 (b + 2 * (m + 3) * 2 ^ n + 1) 0 (2 * m + 1)) [target]⊢*
+    (A_0636 (b + 2 * (m + 3) * 2 ^ n + 1) 0 (2 * m + 1)) [target_tm]⊢*
     (A_0636 (b + 2 * (m + 3) + 2 * n + 1) 0 (2 * (m + 3) * 2 ^ n - 5)) :=
   stepStar_mirror (exp_step_F n b m)
 
 theorem exp_step_A_fuel (n b m : Nat)
     (hb : b ≥ 2 * (m + 3) * 2 ^ n + 1) :
-    (A_0636 b 0 (2 * m + 1)) [target]⊢*
+    (A_0636 b 0 (2 * m + 1)) [target_tm]⊢*
     (A_0636 (b - 2 * (m + 3) * 2 ^ n + 2 * (m + 3) + 2 * n) 0 (2 * (m + 3) * 2 ^ n - 5)) :=
   stepStar_mirror (exp_step_F_fuel n b m hb)
 
 theorem exp_step_A_example :
-    (A_0636 33 0 3) [target]⊢* (A_0636 13 0 27) :=
+    (A_0636 33 0 3) [target_tm]⊢* (A_0636 13 0 27) :=
   stepStar_mirror exp_step_F_example
 
 end BusyBeaver.M_1RB0RE_1LC0RA_1RF0RD_HHH1LE_0LB1LE_1LE1RC

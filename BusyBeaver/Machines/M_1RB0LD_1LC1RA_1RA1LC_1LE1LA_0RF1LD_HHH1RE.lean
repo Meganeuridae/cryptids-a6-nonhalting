@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 3, Stmt.write 0 Dir.left)
   | 1, 0 => some (some 2, Stmt.write 1 Dir.left)
@@ -423,7 +421,7 @@ macro "execute" : tactic =>
 
 --------------------------------------------------------------------------------
 
-abbrev bb_tm : Machine (Fin 2) (Fin 6) := target
+abbrev bb_tm : Machine (Fin 2) (Fin 6) := target_tm
 
 def Config_gen (a g h : Nat) : Cfg (Fin 2) (Fin 6) :=
   let left := (([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^a +> default)
@@ -616,7 +614,7 @@ lemma IsInPatternSet_my_ps (cfg : Cfg (Fin 2) (Fin 6)) :
           exact hk
 
 lemma step_C1_1C (l r : ListBlank (Fin 2)) (n : Nat) :
-    ((l <+ ([1] : List (Fin 2))^n) <{{C}} r) [target]⊢* (l <{{C}} (([1] : List (Fin 2))^n +> r)) := by
+    ((l <+ ([1] : List (Fin 2))^n) <{{C}} r) [target_tm]⊢* (l <{{C}} (([1] : List (Fin 2))^n +> r)) := by
   induction n generalizing l r with
   | zero => finish
   | succ n ih =>
@@ -630,7 +628,7 @@ lemma step_C1_1C (l r : ListBlank (Fin 2)) (n : Nat) :
     refine ih _ _
 
 lemma step_B10_11B (l r : ListBlank (Fin 2)) (n : Nat) :
-    (l {{B}}> (([1,  0] : List (Fin 2))^n +> r)) [target]⊢* ((l <+ ([1, 1] : List (Fin 2))^n) {{B}}> r) := by
+    (l {{B}}> (([1,  0] : List (Fin 2))^n +> r)) [target_tm]⊢* ((l <+ ([1, 1] : List (Fin 2))^n) {{B}}> r) := by
   induction n generalizing l r with
   | zero => finish
   | succ n ih =>
@@ -646,7 +644,7 @@ lemma step_B10_11B (l r : ListBlank (Fin 2)) (n : Nat) :
 
 lemma bounce_loop (n : Nat) (r : ListBlank (Fin 2)) :
     ((([1, 0] : List (Fin 2))^n +> default) {{D}}> ((0 : Fin 2) >> r))
-    [target]⊢*
+    [target_tm]⊢*
     (default {{D}}> ((0 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r)) := by
   induction n generalizing r with
   | zero =>
@@ -659,14 +657,14 @@ lemma bounce_loop (n : Nat) (r : ListBlank (Fin 2)) :
       rfl
     rw [h_unfold]
     have h_step1 : (((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) {{D}}> (0 : Fin 2) >> r)
-      [target]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) {{E}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons]
+      [target_tm]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) {{E}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons]
     have h_step2 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) {{E}}> (1 : Fin 2) >> (1 : Fin 2) >> r)
-      [target]⊢ (([1, 0] : List (Fin 2))^n +> default) {{D}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons]
+      [target_tm]⊢ (([1, 0] : List (Fin 2))^n +> default) {{D}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons]
     
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target _ _ h_step2)
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target_tm _ _ h_step2)
     
     have h_ih := ih ((1 : Fin 2) >> (1 : Fin 2) >> r)
     have h_final := stepStar_trans h_step12_star h_ih
@@ -681,7 +679,7 @@ lemma bounce_loop (n : Nat) (r : ListBlank (Fin 2)) :
 
 lemma loop_E (m n : Nat) (r : ListBlank (Fin 2)) :
     ((([1, 0] : List (Fin 2))^m +> default) {{E}}> (([0, 1] : List (Fin 2))^n +> r))
-    [target]⊢*
+    [target_tm]⊢*
     ((([1, 0] : List (Fin 2))^(m+n) +> default) {{E}}> r) := by
   induction n generalizing m r with
   | zero =>
@@ -694,14 +692,14 @@ lemma loop_E (m n : Nat) (r : ListBlank (Fin 2)) :
       rfl
     rw [h_unfold]
     have h_step1 : ((([1, 0] : List (Fin 2))^m +> default) {{E}}> (0 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r)
-      [target]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) {{F}}> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons]
+      [target_tm]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) {{F}}> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons]
     have h_step2 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) {{F}}> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r)
-      [target]⊢ (((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) {{E}}> ([0, 1] : List (Fin 2))^n +> r) := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons]
+      [target_tm]⊢ (((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) {{E}}> ([0, 1] : List (Fin 2))^n +> r) := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons]
     
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target _ _ h_step2)
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target_tm _ _ h_step2)
     
     have h_eq_lhs : ((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) =
                      (([1, 0] : List (Fin 2))^(m+1) +> default) := by
@@ -719,7 +717,7 @@ lemma loop_E (m n : Nat) (r : ListBlank (Fin 2)) :
 
 lemma sweep_step (l : ListBlank (Fin 2)) (g : Nat) (r : ListBlank (Fin 2)) :
     ((l <+ ([1] : List (Fin 2))^(2 + g)) <{{D}} r)
-    [target]⊢*
+    [target_tm]⊢*
     ((l <+ ([1] : List (Fin 2))^g) <{{D}} (([0, 1] : List (Fin 2))^1 +> r)) := by
   rw [list_pow_add, ← listblank_append_append]
   simp [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -729,7 +727,7 @@ lemma sweep_step (l : ListBlank (Fin 2)) (g : Nat) (r : ListBlank (Fin 2)) :
 
 lemma sweep_loop_gen (l : ListBlank (Fin 2)) (g k : Nat) (r : ListBlank (Fin 2)) :
     ((l <+ ([1] : List (Fin 2))^(2 * k + g)) <{{D}} r)
-    [target]⊢*
+    [target_tm]⊢*
     ((l <+ ([1] : List (Fin 2))^g) <{{D}} ((([0, 1] : List (Fin 2))^k +> r))) := by
   induction k generalizing l g r with
   | zero =>
@@ -826,7 +824,7 @@ lemma helper_EF_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
 
 
 lemma step_D01_11D (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> l) <{{D}} r) [target]⊢*
+    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> l) <{{D}} r) [target_tm]⊢*
     (((0 : Fin 2) >> l) <{{D}} (([1, 1] : List (Fin 2))^n +> r)) := by
   induction n generalizing l r with
   | zero =>
@@ -840,7 +838,7 @@ lemma step_D01_11D (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
       exact (helper_EF_sweep_assoc l n).symm
     rw [h_pow_L]
     have h_ih := ih (([1, 0] : List (Fin 2)) +> l) r
-    have h_step : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1, 1] : List (Fin 2))^n +> r) [target]⊢*
+    have h_step : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1, 1] : List (Fin 2))^n +> r) [target_tm]⊢*
                   (((0 : Fin 2) >> l) <{{D}} ([1, 1] : List (Fin 2))^(n+1) +> r) := by
       have h_pow_R : ((([1, 1] : List (Fin 2))^(n+1) +> r)) =
                      ((1 : Fin 2) >> (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) := by
@@ -848,19 +846,19 @@ lemma step_D01_11D (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
         rw [list_pow_add, Turing.ListBlank.append_assoc]
         rfl
       rw [h_pow_R]
-      have h_s1 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1, 1] : List (Fin 2))^n +> r) [target]⊢
+      have h_s1 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1, 1] : List (Fin 2))^n +> r) [target_tm]⊢
                   (((1 : Fin 2) >> (0 : Fin 2) >> l) <{{E}} (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) := by
-        simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, D, E, Turing.Tape.move, Turing.Tape.write, Option.map]
-      have h_s2 : (((1 : Fin 2) >> (0 : Fin 2) >> l) <{{E}} (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) [target]⊢
+        simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, D, E, Turing.Tape.move, Turing.Tape.write, Option.map]
+      have h_s2 : (((1 : Fin 2) >> (0 : Fin 2) >> l) <{{E}} (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) [target_tm]⊢
                   (((0 : Fin 2) >> l) <{{D}} (1 : Fin 2) >> (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) := by
-        simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, D, E, Turing.Tape.move, Turing.Tape.write, Option.map]
-      have h_s12 := step_stepStar target _ _ h_s1
-      have h_s23 := step_stepStar target _ _ h_s2
+        simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, D, E, Turing.Tape.move, Turing.Tape.write, Option.map]
+      have h_s12 := step_stepStar target_tm _ _ h_s1
+      have h_s23 := step_stepStar target_tm _ _ h_s2
       exact stepStar_trans h_s12 h_s23
     exact stepStar_trans h_ih h_step
 
 lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
-    (Config_1 g h) [target]⊢⁺ (Config_1 (g + 3) (h - 2)) := by
+    (Config_1 g h) [target_tm]⊢⁺ (Config_1 (g + 3) (h - 2)) := by
   have hg_eq : g = 2 * (g / 2) + 1 := by omega
   rw [hg_eq]
   have h_arith : 2 * (g / 2) + 1 + 3 = 2 * (g / 2) + 4 := by omega
@@ -871,7 +869,7 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
 
   let cfg_D_start : Cfg (Fin 2) (Fin 6) :=
     ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*k) +> default, (0 : Fin 2) >> ([1] : List (Fin 2))^(h-1) +> default⟩⟩
-  have h_step : (Config_1 (2 * k + 1) h) [target]⊢ cfg_D_start := by
+  have h_step : (Config_1 (2 * k + 1) h) [target_tm]⊢ cfg_D_start := by
     rw [Config_1_eq]; unfold cfg_D_start
     have h_h : (([1] : List (Fin 2))^h +> default) = (([1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-1) +> default) := by
       rw [show (([1] : List (Fin 2))^h) = (([1] : List (Fin 2))^(1 + (h-1))) by (congr 1; omega)]
@@ -880,7 +878,7 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       rw [show (([1] : List (Fin 2))^(2*k+1)) = (([1] : List (Fin 2))^(1 + 2*k)) by (congr 1; omega)]
       rw [list_pow_add, ← ListBlank.append_assoc]
     rw [h_h, h_g]
-    simp [step, target, A, D, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
+    simp [step, target_tm, A, D, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
 
   have h_D_start_eq : cfg_D_start = ((default <+ ([1] : List (Fin 2))^(2 * k + 1)) <{{D}} ((([0, 1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-2) +> default))) := by
     unfold cfg_D_start
@@ -890,7 +888,7 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
   let cfg_D_end : Cfg (Fin 2) (Fin 6) :=
     ((default <+ ([1] : List (Fin 2))^1) <{{D}} ((([0, 1] : List (Fin 2))^(k + 1) +> ([1] : List (Fin 2))^(h-2) +> default)))
 
-  have h_D_sweep : cfg_D_start [target]⊢* cfg_D_end := by
+  have h_D_sweep : cfg_D_start [target_tm]⊢* cfg_D_end := by
     rw [h_D_start_eq]
     have h_pow : cfg_D_end = ((default <+ ([1] : List (Fin 2))^1) <{{D}} ((([0, 1] : List (Fin 2))^k +> ([0, 1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-2) +> default))) := by
       unfold cfg_D_end
@@ -900,16 +898,16 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
 
   let cfg_A_zero : Cfg (Fin 2) (Fin 6) :=
     ⟨some A, ⟨0, default, (1 : Fin 2) >> ([0, 1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default⟩⟩
-  have h_D_end_A : cfg_D_end [target]⊢ cfg_A_zero := by
+  have h_D_end_A : cfg_D_end [target_tm]⊢ cfg_A_zero := by
     unfold cfg_D_end cfg_A_zero
-    simp [step, target, D, A, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
+    simp [step, target_tm, D, A, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
     constructor <;> rfl
 
   let cfg_B_start : Cfg (Fin 2) (Fin 6) :=
     ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, ([0, 1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default⟩⟩
-  have h_A_B : cfg_A_zero [target]⊢ cfg_B_start := by
+  have h_A_B : cfg_A_zero [target_tm]⊢ cfg_B_start := by
     unfold cfg_A_zero cfg_B_start
-    simp [step, target, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write]
+    simp [step, target_tm, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write]
 
   have h_helper := helper_1_0_1 (k+1) (([1] : List (Fin 2))^(h-2) +> default)
   rw [← h_h_step] at h_helper
@@ -931,32 +929,32 @@ lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
   let cfg_B_end : Cfg (Fin 2) (Fin 6) :=
     (((([1] : List (Fin 2))^1 +> default) <+ ([1, 1] : List (Fin 2))^(k+1)) {{B}}> (([1] : List (Fin 2))^(h-1) +> default))
 
-  have h_B_sweep : cfg_B_start [target]⊢* cfg_B_end := by
+  have h_B_sweep : cfg_B_start [target_tm]⊢* cfg_B_end := by
     rw [h_B_start_eq]
     exact step_B10_11B (([1] : List (Fin 2))^1 +> default) (([1] : List (Fin 2))^(h-1) +> default) (k+1)
 
-  have h_B_end_A : cfg_B_end [target]⊢ Config_1 (2*k+4) (h-2) := by
+  have h_B_end_A : cfg_B_end [target_tm]⊢ Config_1 (2*k+4) (h-2) := by
     have h_cfg_B_end_eq : cfg_B_end = (((([1] : List (Fin 2)) +> default) <+ ([1, 1] : List (Fin 2))^(k+1)) {{B}}> (([1] : List (Fin 2))^(h-1) +> default)) := by rfl
     rw [h_cfg_B_end_eq]
     rw [Config_1_eq]
     rw [h_h_step]
     have h_1_1 : (([1] : List (Fin 2))^1) = [1] := by rfl
     rw [h_1_1]
-    simp [step, target, B, A, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
+    simp [step, target_tm, B, A, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write]
     change ((1 : Fin 2) >> ((([1] : List (Fin 2)) +> default) <+ ([1, 1] : List (Fin 2))^(k+1))) = _
     rw [helper_L_tape]
     rw [show 2*k+4 = 2*k + 4 by omega, list_pow_add]
 
-  have h_step_star := step_stepStar target (Config_1 (2*k+1) h) cfg_D_start h_step
+  have h_step_star := step_stepStar target_tm (Config_1 (2*k+1) h) cfg_D_start h_step
   have h_D_sweep_star := stepStar_trans h_step_star h_D_sweep
-  have h_D_end_A_star := step_stepStar target cfg_D_end cfg_A_zero h_D_end_A
+  have h_D_end_A_star := step_stepStar target_tm cfg_D_end cfg_A_zero h_D_end_A
   have h_D_A_star := stepStar_trans h_D_sweep_star h_D_end_A_star
-  have h_A_B_star := step_stepStar target cfg_A_zero cfg_B_start h_A_B
+  have h_A_B_star := step_stepStar target_tm cfg_A_zero cfg_B_start h_A_B
   have h_D_B_star := stepStar_trans h_D_A_star h_A_B_star
   have h_B_sweep_star := stepStar_trans h_D_B_star h_B_sweep
-  exact stepStar_step_stepPlus target (Config_1 (2*k+1) h) cfg_B_end (Config_1 (2*k+4) (h-2)) h_B_sweep_star h_B_end_A
+  exact stepStar_step_stepPlus target_tm (Config_1 (2*k+1) h) cfg_B_end (Config_1 (2*k+4) (h-2)) h_B_sweep_star h_B_end_A
 lemma sweep_D_10_step (n : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(n+1) +> default) <{{D}} r) [target]⊢*
+    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(n+1) +> default) <{{D}} r) [target_tm]⊢*
     (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) <{{D}} (1 : Fin 2) >> (1 : Fin 2) >> r) := by
   rw [s_succ]
   simp only [Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
@@ -965,7 +963,7 @@ lemma sweep_D_10_step (n : Nat) (r : ListBlank (Fin 2)) :
   finish
 
 lemma sweep_D_10_gen (n : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) <{{D}} r) [target]⊢*
+    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) <{{D}} r) [target_tm]⊢*
     (((0 : Fin 2) >> default) <{{D}} ([1, 1] : List (Fin 2))^n +> r) := by
   induction n generalizing r with
   | zero =>
@@ -986,7 +984,7 @@ lemma sweep_D_10_gen (n : Nat) (r : ListBlank (Fin 2)) :
     exact h_ih
 
 lemma step_bounce_A_gen (s : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^(m+2) +> r) [target]⊢*
+    (((0 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^(m+2) +> r) [target_tm]⊢*
     (((1 : Fin 2) >> s) <{{A}} ([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^m +> r) := by
   let cfg_start : Cfg (Fin 2) (Fin 6) := (((0 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^(m+2) +> r)
   let cfg_1 : Cfg (Fin 2) (Fin 6) := (((1 : Fin 2) >> s) {{B}}> ([1] : List (Fin 2))^(m+2) +> r)
@@ -994,45 +992,45 @@ lemma step_bounce_A_gen (s : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)
   let cfg_3 : Cfg (Fin 2) (Fin 6) := (((1 : Fin 2) >> (1 : Fin 2) >> s) <{{D}} (0 : Fin 2) >> ([1] : List (Fin 2))^m +> r)
   let cfg_end : Cfg (Fin 2) (Fin 6) := (((1 : Fin 2) >> s) <{{A}} ([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^m +> r)
 
-  have h_step1 : cfg_start [target]⊢ cfg_1 := by
+  have h_step1 : cfg_start [target_tm]⊢ cfg_1 := by
     unfold cfg_start cfg_1
     have h_pow1 : (([1] : List (Fin 2))^(m+2) +> r) = ((1 : Fin 2) >> ([1] : List (Fin 2))^(m+1) +> r) := by
       rw [show m+2 = 1 + (m+1) by omega]
       rw [list_pow_add, Turing.ListBlank.append_assoc]
       rfl
     rw [h_pow1]
-    simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, B, Turing.Tape.move, Turing.Tape.write, Option.map]
+    simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, B, Turing.Tape.move, Turing.Tape.write, Option.map]
 
-  have h_step2 : cfg_1 [target]⊢ cfg_2 := by
+  have h_step2 : cfg_1 [target_tm]⊢ cfg_2 := by
     unfold cfg_1 cfg_2
     have h_pow12 : (([1] : List (Fin 2))^(m+2) +> r) = ((1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^m +> r) := by
       rw [show m+2 = 2 + m by omega]
       rw [list_pow_add, Turing.ListBlank.append_assoc]
       rfl
     rw [h_pow12]
-    simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, B, Turing.Tape.move, Turing.Tape.write, Option.map]
+    simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, B, Turing.Tape.move, Turing.Tape.write, Option.map]
 
-  have h_step3 : cfg_2 [target]⊢ cfg_3 := by
+  have h_step3 : cfg_2 [target_tm]⊢ cfg_3 := by
     unfold cfg_2 cfg_3
-    simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
+    simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
 
-  have h_step4 : cfg_3 [target]⊢ cfg_end := by
+  have h_step4 : cfg_3 [target_tm]⊢ cfg_end := by
     unfold cfg_3 cfg_end
-    simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
+    simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
     have h_r : ((1 : Fin 2) >> (0 : Fin 2) >> ([1] : List (Fin 2))^m +> r) = (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^m +> r) := by rfl
     rw [h_r]
 
-  have h_s1 := step_stepStar target _ _ h_step1
-  have h_s2 := step_stepStar target _ _ h_step2
-  have h_s3 := step_stepStar target _ _ h_step3
-  have h_s4 := step_stepStar target _ _ h_step4
+  have h_s1 := step_stepStar target_tm _ _ h_step1
+  have h_s2 := step_stepStar target_tm _ _ h_step2
+  have h_s3 := step_stepStar target_tm _ _ h_step3
+  have h_s4 := step_stepStar target_tm _ _ h_step4
   have h_13 := stepStar_trans h_s1 h_s2
   have h_14 := stepStar_trans h_13 h_s3
   exact stepStar_trans h_14 h_s4
 
 lemma sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
 
-    (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target]⊢*
+    (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target_tm]⊢*
     ((([0, 1] : List (Fin 2))^n +> l) {{F}}> r) := by
   induction n generalizing l with
   | zero =>
@@ -1053,20 +1051,20 @@ lemma sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
       rw [h_pow_left]
       simp [Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
 
-    have h_step1 : cfg_start [target]⊢ cfg_middle := by
+    have h_step1 : cfg_start [target_tm]⊢ cfg_middle := by
       rw [h_start_eq]
       unfold cfg_middle
-      simp [step, target, F, E, Turing.Tape.move, Turing.Tape.write, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
+      simp [step, target_tm, F, E, Turing.Tape.move, Turing.Tape.write, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
 
-    have h_step2 : cfg_middle [target]⊢ cfg_end := by
+    have h_step2 : cfg_middle [target_tm]⊢ cfg_end := by
       unfold cfg_middle cfg_end
-      simp [step, target, E, F, Turing.Tape.move, Turing.Tape.write]
+      simp [step, target_tm, E, F, Turing.Tape.move, Turing.Tape.write]
       have h_left : ((0 : Fin 2) >> (1 : Fin 2) >> l) = (([0, 1] : List (Fin 2))^1 +> l) := by rfl
       rw [h_left]
 
-    have h_s1 := step_stepStar target cfg_start cfg_middle h_step1
-    have h_s2 := step_stepStar target cfg_middle cfg_end h_step2
-    have h_2steps : cfg_start [target]⊢* cfg_end := stepStar_trans h_s1 h_s2
+    have h_s1 := step_stepStar target_tm cfg_start cfg_middle h_step1
+    have h_s2 := step_stepStar target_tm cfg_middle cfg_end h_step2
+    have h_2steps : cfg_start [target_tm]⊢* cfg_end := stepStar_trans h_s1 h_s2
 
     have h_ih := ih (([0, 1] : List (Fin 2))^1 +> l)
     have h_pow_ih : ((([0, 1] : List (Fin 2))^(n+1) +> l) {{F}}> r) = ((([0, 1] : List (Fin 2))^n +> ([0, 1] : List (Fin 2))^1 +> l) {{F}}> r) := by
@@ -1078,7 +1076,7 @@ lemma sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
 
 
 lemma rule_g1_h2 :
-    (Config_gen 0 1 2) [target]⊢⁺ (Config_gen 0 1 6) := by execute
+    (Config_gen 0 1 2) [target_tm]⊢⁺ (Config_gen 0 1 6) := by execute
 
 lemma helper_sweep_even_R (k : Nat) (X : ListBlank (Fin 2)) :
     (1 : Fin 2) >> (([0, 1] : List (Fin 2))^k +> X) = (([1, 0] : List (Fin 2))^k +> (1 : Fin 2) >> X) := by
@@ -1098,7 +1096,7 @@ lemma helper_sweep_even_R (k : Nat) (X : ListBlank (Fin 2)) :
     rw [← ih]
 
 lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) :
-    (Config_gen 0 g h) [target]⊢⁺ (Config_gen (g / 2 + 1) 2 (h - 2)) := by
+    (Config_gen 0 g h) [target_tm]⊢⁺ (Config_gen (g / 2 + 1) 2 (h - 2)) := by
   set k := g / 2
   have hk : g = 2 * k := by omega
   have hk_ge : k ≥ 1 := by omega
@@ -1116,13 +1114,13 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
     rw [list_pow_add, ListBlank.append_assoc]
     rfl
 
-  have h_step1 : (Config_gen 0 (2 * k) h) [target]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*(k-1)+1) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ := by
+  have h_step1 : (Config_gen 0 (2 * k) h) [target_tm]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*(k-1)+1) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ := by
     rw [h_start_eq]
     rw [h_pow_g]
-    simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D]
+    simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D]
 
   have h_sweep1 : ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*(k-1)+1) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some D, ⟨1, (1 : Fin 2) >> (default : ListBlank (Fin 2)), ([0, 1] : List (Fin 2))^(k-1) +> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ := by
     have h_LHS : ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*(k-1)+1) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ =
       ((default <+ ([1] : List (Fin 2))^(2*(k-1)+2)) <{{D}} ( (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2))) )) := by
@@ -1137,7 +1135,7 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
     exact sweep_loop_gen default 2 (k-1) ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2))))
 
   have h_steps2_6 : ⟨some D, ⟨1, (1 : Fin 2) >> (default : ListBlank (Fin 2)), ([0, 1] : List (Fin 2))^(k-1) +> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some F, ⟨1, (0 : Fin 2) >> (default : ListBlank (Fin 2)), (0 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^(k-1) +> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ := by
     step
     step
@@ -1146,7 +1144,7 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
     finish
 
   have h_sweep2 : ⟨some F, ⟨1, (0 : Fin 2) >> (default : ListBlank (Fin 2)), (0 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^(k-1) +> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some F, ⟨1, ([0, 1] : List (Fin 2))^(k+1) +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-2) +> (default : ListBlank (Fin 2))⟩⟩ := by
     have h_s6_eq : ⟨some F, ⟨1, (0 : Fin 2) >> (default : ListBlank (Fin 2)), (0 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^(k-1) +> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩ =
       (((0 : Fin 2) >> (default : ListBlank (Fin 2))) {{F}}> ([1, 0] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2))) := by
@@ -1173,7 +1171,7 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
     exact sweep_EF (k+1) ((0 : Fin 2) >> (default : ListBlank (Fin 2))) (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))
 
   have h_steps7_end : ⟨some F, ⟨1, ([0, 1] : List (Fin 2))^(k+1) +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-2) +> (default : ListBlank (Fin 2))⟩⟩
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^k +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-3) +> (default : ListBlank (Fin 2))⟩⟩ := by
     have h_h2_eq : (([1] : List (Fin 2))^(h-2) +> (default : ListBlank (Fin 2))) = (1 : Fin 2) >> (([1] : List (Fin 2))^(h-3) +> (default : ListBlank (Fin 2))) := by
       have hh_ge1 : h - 2 ≥ 1 := by omega
@@ -1206,13 +1204,13 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
     simp [Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
 
   have h_sweep_all : ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*(k-1)+1) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> (default : ListBlank (Fin 2)))⟩⟩
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^k +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-3) +> (default : ListBlank (Fin 2))⟩⟩ := by
     have h1 := stepStar_trans h_sweep1 h_steps2_6
     have h2 := stepStar_trans h1 h_sweep2
     exact stepStar_trans h2 h_steps7_end
 
-  have h_plus : (Config_gen 0 (2 * k) h) [target]⊢⁺ ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^k +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-3) +> (default : ListBlank (Fin 2))⟩⟩ :=
+  have h_plus : (Config_gen 0 (2 * k) h) [target_tm]⊢⁺ ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^k +> (0 : Fin 2) >> (default : ListBlank (Fin 2)), ([1] : List (Fin 2))^(h-3) +> (default : ListBlank (Fin 2))⟩⟩ :=
     step_stepStar_stepPlus h_step1 h_sweep_all
 
   rw [← h_end_eq] at h_plus
@@ -1226,7 +1224,7 @@ lemma helper_F_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
   simp [HPow.hPow, list_nat_repeat]
 
 lemma step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> l, r⟩⟩) [target]⊢*
+    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> l, r⟩⟩) [target_tm]⊢*
     (⟨some A, ⟨1, l, ([1, 0] : List (Fin 2))^k +> r⟩⟩) := by
   induction k generalizing l r with
   | zero =>
@@ -1242,16 +1240,16 @@ lemma step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) 
                    (([1, 0] : List (Fin 2))^k +> ([1, 0] : List (Fin 2)) +> r) := by
       exact (helper_EF_sweep_assoc r k).symm
     rw [h_pow_L, h_pow_R]
-    have h_step : (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), r⟩⟩) [target]⊢*
+    have h_step : (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), r⟩⟩) [target_tm]⊢*
                   (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> l, ([1, 0] : List (Fin 2)) +> r⟩⟩) := by
-      have h_s1 : (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), r⟩⟩) [target]⊢
+      have h_s1 : (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), r⟩⟩) [target_tm]⊢
                   (⟨some D, ⟨1, (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), (0 : Fin 2) >> r⟩⟩) := by
-        simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
-      have h_s2 : (⟨some D, ⟨1, (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), (0 : Fin 2) >> r⟩⟩) [target]⊢
+        simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
+      have h_s2 : (⟨some D, ⟨1, (1 : Fin 2) >> (([1] : List (Fin 2))^(2*k) +> l), (0 : Fin 2) >> r⟩⟩) [target_tm]⊢
                   (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> l, (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩) := by
-        simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
-      have h_s12 := step_stepStar target _ _ h_s1
-      have h_s23 := step_stepStar target _ _ h_s2
+        simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, A, D, Turing.Tape.move, Turing.Tape.write, Option.map]
+      have h_s12 := step_stepStar target_tm _ _ h_s1
+      have h_s23 := step_stepStar target_tm _ _ h_s2
       have h_trans := stepStar_trans h_s12 h_s23
       have h_r_eq : ((1 : Fin 2) >> (0 : Fin 2) >> r) = (([1, 0] : List (Fin 2)) +> r) := by rfl
       rw [h_r_eq] at h_trans
@@ -1260,7 +1258,7 @@ lemma step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) 
     exact stepStar_trans h_step h_ih
 
 lemma step_F_sweep_halt (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
-    (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target]⊢*
+    (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target_tm]⊢*
     ⟨some F, ⟨r.head, ([0, 1] : List (Fin 2))^n +> l, r.tail⟩⟩ := by
   induction n generalizing l r with
   | zero =>
@@ -1276,16 +1274,16 @@ lemma step_F_sweep_halt (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat
     let cfg_1 : Cfg (Fin 2) (Fin 6) := ⟨some E, ⟨0, (1 : Fin 2) >> l, ([1, 0] : List (Fin 2))^n +> r⟩⟩
     let cfg_2 := (([0, 1] : List (Fin 2)) +> l) {{F}}> ([1, 0] : List (Fin 2))^n +> r
 
-    have h_step1 : cfg_0 [target]⊢ cfg_1 := by
+    have h_step1 : cfg_0 [target_tm]⊢ cfg_1 := by
       unfold cfg_0 cfg_1
       rw [h_pow]
-      simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, E, F, Turing.Tape.move, Turing.Tape.write, Option.map]
-    have h_step2 : cfg_1 [target]⊢ cfg_2 := by
+      simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, E, F, Turing.Tape.move, Turing.Tape.write, Option.map]
+    have h_step2 : cfg_1 [target_tm]⊢ cfg_2 := by
       unfold cfg_1 cfg_2
-      simp only [step, target, ListBlank.append, E, F, Turing.Tape.move, Turing.Tape.write, Option.map]
+      simp only [step, target_tm, ListBlank.append, E, F, Turing.Tape.move, Turing.Tape.write, Option.map]
 
-    have h_s1 := step_stepStar target _ _ h_step1
-    have h_s2 := step_stepStar target _ _ h_step2
+    have h_s1 := step_stepStar target_tm _ _ h_step1
+    have h_s2 := step_stepStar target_tm _ _ h_step2
     have h_s12 := stepStar_trans h_s1 h_s2
 
     have h_ih := ih (([0, 1] : List (Fin 2)) +> l) r
@@ -1320,12 +1318,12 @@ lemma tape_eq_F_halt (k : Nat) :
 lemma default_tail_eq : (default : ListBlank (Fin 2)).tail = default := by rfl
 
 lemma rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
-    (Config_gen 0 (2 * k) 2) [target]⊢⁺ ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> (default : ListBlank (Fin 2)), (default : ListBlank (Fin 2))⟩⟩ := by
+    (Config_gen 0 (2 * k) 2) [target_tm]⊢⁺ ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> (default : ListBlank (Fin 2)), (default : ListBlank (Fin 2))⟩⟩ := by
   have h_start : Config_gen 0 (2 * k) 2 = ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> (default : ListBlank (Fin 2)), (1 : Fin 2) >> (default : ListBlank (Fin 2))⟩⟩ := by
     simp [Config_gen, HPow.hPow, list_nat_repeat, ListBlank.append]
   rw [h_start]
   have h_sweep := step_A_sweep_h2 k (default : ListBlank (Fin 2)) ((1 : Fin 2) >> (default : ListBlank (Fin 2)))
-  refine stepStar_stepPlus_stepPlus target _ _ _ h_sweep ?_
+  refine stepStar_stepPlus_stepPlus target_tm _ _ _ h_sweep ?_
 
   have h_k_eq : k = 1 + (k-1) := by omega
   have h_pow_eq : (([1, 0] : List (Fin 2))^k) = (([1, 0] : List (Fin 2))^(1 + (k-1))) := congrArg (fun x => ([1, 0] : List (Fin 2))^x) h_k_eq
@@ -1365,7 +1363,7 @@ lemma rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
     rw [h_pow_k]
     simp only [ListBlank.head_cons, ListBlank.tail_cons]
   simp only [default_tail_eq]
-  change ⟨some F, ⟨1, ([0, 1] : List (Fin 2)) +> ((0 : Fin 2) >> (default : ListBlank (Fin 2))), (0 : Fin 2) >> (([1, 0] : List (Fin 2))^(k-1) +> (1 : Fin 2) >> (default : ListBlank (Fin 2)))⟩⟩ [target]⊢* _
+  change ⟨some F, ⟨1, ([0, 1] : List (Fin 2)) +> ((0 : Fin 2) >> (default : ListBlank (Fin 2))), (0 : Fin 2) >> (([1, 0] : List (Fin 2))^(k-1) +> (1 : Fin 2) >> (default : ListBlank (Fin 2)))⟩⟩ [target_tm]⊢* _
   rw [h_LHS_eq]
   refine stepStar_trans h_sweep_F ?_
 
@@ -1396,7 +1394,7 @@ lemma rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
   rfl
 
 lemma rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> xs, ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢* ⟨some A, ⟨1, xs, ([1, 0] : List (Fin 2))^k +> ys⟩⟩ := by
+    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> xs, ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢* ⟨some A, ⟨1, xs, ([1, 0] : List (Fin 2))^k +> ys⟩⟩ := by
   induction k generalizing ys with
   | zero =>
     simp only [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -1410,21 +1408,21 @@ lemma rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
       rw [unfold_pow_1_gen (2*k+1) (by omega) xs]
       rw [show 2*k+1-1 = 2*k by omega]
     
-    have h_step1 : (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(k+1)) +> xs, ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step1 : (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(k+1)) +> xs, ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*k+1) +> xs, (0 : Fin 2) >> ys⟩⟩ := by
       rw [h_pow_succ]
       rw [unfold_pow_1_gen (2*k+1) (by omega) xs]
       rw [show 2*k+1-1 = 2*k by omega]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step2 : (⟨some D, ⟨1, ([1] : List (Fin 2))^(2*k+1) +> xs, (0 : Fin 2) >> ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step2 : (⟨some D, ⟨1, ([1] : List (Fin 2))^(2*k+1) +> xs, (0 : Fin 2) >> ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> xs, (1 : Fin 2) >> (0 : Fin 2) >> ys⟩⟩ := by
       rw [unfold_pow_1_gen (2*k+1) (by omega) xs]
       rw [show 2*k+1-1 = 2*k by omega]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target _ _ h_step2)
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target_tm _ _ h_step2)
     have h_ih_star := ih ((1 : Fin 2) >> (0 : Fin 2) >> ys)
     have h_append_cons : (1 : Fin 2) >> (0 : Fin 2) >> ys = ([1, 0] : List (Fin 2)) +> ys := by rfl
     rw [h_append_cons] at h_ih_star
@@ -1436,28 +1434,28 @@ lemma rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
     exact h_final
 
 lemma rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 1) :
-    (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢*
+    (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢*
     ⟨some A, ⟨(([1] : List (Fin 2))^(n-1) +> default).head, ([1] : List (Fin 2))^(2*m + 2) +> xs, (([1] : List (Fin 2))^(n-1) +> default).tail⟩⟩ := by
   induction m generalizing xs with
   | zero =>
-    have h_step1 : (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step1 : (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some B, ⟨1, (1 : Fin 2) >> xs, ([1] : List (Fin 2))^(n-1) +> default⟩⟩ := by
       rw [unfold_pow_1 n (by omega)]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step2 : (⟨some B, ⟨1, (1 : Fin 2) >> xs, ([1] : List (Fin 2))^(n-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step2 : (⟨some B, ⟨1, (1 : Fin 2) >> xs, ([1] : List (Fin 2))^(n-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some A, ⟨(([1] : List (Fin 2))^(n-1) +> default).head, (1 : Fin 2) >> (1 : Fin 2) >> xs, ((([1] : List (Fin 2))^(n-1) +> default).tail)⟩⟩ := by
       by_cases hn1 : n = 1
       · subst hn1
         simp only [HPow.hPow, list_nat_repeat, ListBlank.append]
-        simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, Option.map]
+        simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, Option.map]
       · have hn2 : n - 1 ≥ 1 := by omega
         rw [unfold_pow_1 (n-1) hn2]
         rw [show n-1-1 = n-2 by omega]
-        simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+        simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target _ _ h_step2)
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target_tm _ _ h_step2)
     have h_pow2 : ([1] : List (Fin 2))^2 +> xs = (1 : Fin 2) >> (1 : Fin 2) >> xs := by rfl
     rw [h_pow2]
     exact h_step12_star
@@ -1472,17 +1470,17 @@ lemma rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 
       rw [h_pow1]
       rfl
     
-    have h_step1 : (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^(m+1) +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step1 : (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^(m+1) +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some B, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ := by
       rw [h_pow_succ]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step2 : (⟨some B, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢
+    have h_step2 : (⟨some B, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢
         ⟨some A, ⟨0, (1 : Fin 2) >> (1 : Fin 2) >> xs, ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n +> default⟩⟩ := by
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target _ _ h_step2)
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12_star := stepStar_trans h_step1_star (step_stepStar target_tm _ _ h_step2)
     
     have h_ih_star := ih ((1 : Fin 2) >> (1 : Fin 2) >> xs)
     have h_pow2 : ([1] : List (Fin 2))^2 +> xs = (1 : Fin 2) >> (1 : Fin 2) >> xs := by rfl
@@ -1496,7 +1494,7 @@ lemma rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 
     exact h_final
 
 lemma rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
-    (Config_gen a (2 * k) h) [target]⊢⁺ (Config_gen (a - 1) (2 * k + 4) (h - 2)) := by
+    (Config_gen a (2 * k) h) [target_tm]⊢⁺ (Config_gen (a - 1) (2 * k + 4) (h - 2)) := by
   have h_LHS : Config_gen a (2 * k) h = ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
     unfold Config_gen
     dsimp -failIfUnchanged
@@ -1523,10 +1521,10 @@ lemma rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
     dsimp -failIfUnchanged [c1]
     rw [h_pow_a]
   
-  have h_step1 : c1 [target]⊢ c2 := by
+  have h_step1 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c2]
     rw [h_c1_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
   
   have h_pow_kp1 : ([1, 0] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-1) +> default =
       (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^k +> ([1] : List (Fin 2))^(h-1) +> default := by
@@ -1541,17 +1539,17 @@ lemma rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
     dsimp -failIfUnchanged [c3]
     rw [h_pow_kp1]
 
-  have h_step2 : c2 [target]⊢ c3 := by
+  have h_step2 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2]
     rw [h_c3_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
   have hn : h - 1 ≥ 1 := by omega
   have h_p2 := rule_even_phase2 (([1, 0] : List (Fin 2))^(a-1) +> default) (k+1) (h-1) hn
   
   have h_c2_target_plus := step_stepStar_stepPlus h_step2 h_p2
-  have h_c1_target_plus := step_stepPlus_stepPlus target _ _ _ h_step1 h_c2_target_plus
-  have h_LHS_target_plus := stepStar_stepPlus_stepPlus target _ _ _ h_p1 h_c1_target_plus
+  have h_c1_target_plus := step_stepPlus_stepPlus target_tm _ _ _ h_step1 h_c2_target_plus
+  have h_LHS_target_plus := stepStar_stepPlus_stepPlus target_tm _ _ _ h_p1 h_c1_target_plus
   
   have h_target_eq : ((([1] : List (Fin 2))^(2*(k+1) + 2) +> ([1, 0] : List (Fin 2))^(a - 1) +> default) {{A}}> (([1] : List (Fin 2))^(h - 1 - 1) +> default)) =
       Config_gen (a - 1) (2 * k + 4) (h - 2) := by
@@ -1593,7 +1591,7 @@ lemma tape_eq_lemma (n : Nat) (r : ListBlank (Fin 2)) :
     rw [ih]
 
 lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
-    (Config_gen 0 g h) [target]⊢⁺ Config_gen 0 (g + 3) (h - 2) := by
+    (Config_gen 0 g h) [target_tm]⊢⁺ Config_gen 0 (g + 3) (h - 2) := by
   set k := g / 2
   have hk : g = 2 * k + 1 := by omega
   rw [hk]
@@ -1609,28 +1607,28 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       rfl
     rw [h_start_eq, h_end_eq]
     have h_step1 : (⟨some A, ⟨1, ([1] : List (Fin 2))^1 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some D, ⟨1, default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D, HPow.hPow, list_nat_repeat, ListBlank.append, List.append, ListBlank.head_cons, ListBlank.tail_cons]
+      [target_tm]⊢ ⟨some D, ⟨1, default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, HPow.hPow, list_nat_repeat, ListBlank.append, List.append, ListBlank.head_cons, ListBlank.tail_cons]
     have h_step2 : (⟨some D, ⟨1, default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D]
+      [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D]
       constructor <;> rfl
     have h_step3 : (⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
+      [target_tm]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
     have h_step4 : (⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
+      [target_tm]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
       have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
       rw [h_pow2]
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, HPow.hPow, list_nat_repeat]
     have h_step5 : (⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^3 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
+      [target_tm]⊢ ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^3 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
       have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
       have h_pow3 : ([1] : List (Fin 2))^3 = [1, 1, 1] := by rfl
       rw [h_pow2, h_pow3]
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B]
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B]
     have h_step6 : (⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^3 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-2) +> default).head, ([1] : List (Fin 2))^4 +> default, (([1] : List (Fin 2))^(h-2) +> default).tail⟩⟩ := by
+      [target_tm]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-2) +> default).head, ([1] : List (Fin 2))^4 +> default, (([1] : List (Fin 2))^(h-2) +> default).tail⟩⟩ := by
       have h_pow3 : ([1] : List (Fin 2))^3 = [1, 1, 1] := by rfl
       have h_pow4 : ([1] : List (Fin 2))^4 = [1, 1, 1, 1] := by rfl
       rw [h_pow3, h_pow4]
@@ -1643,14 +1641,14 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         simp [ListBlank.tail_cons]
         rw [show h-1-1 = h-2 by omega]
       rw [h_head_eq, h_tail_eq]
-      simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B]
+      simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B]
     
-    have h_trans5 := step_stepPlus target _ _ h_step6
-    have h_trans4 := step_stepPlus_stepPlus target _ _ _ h_step5 h_trans5
-    have h_trans3 := step_stepPlus_stepPlus target _ _ _ h_step4 h_trans4
-    have h_trans2 := step_stepPlus_stepPlus target _ _ _ h_step3 h_trans3
-    have h_trans1 := step_stepPlus_stepPlus target _ _ _ h_step2 h_trans2
-    have h_trans0 := step_stepPlus_stepPlus target _ _ _ h_step1 h_trans1
+    have h_trans5 := step_stepPlus target_tm _ _ h_step6
+    have h_trans4 := step_stepPlus_stepPlus target_tm _ _ _ h_step5 h_trans5
+    have h_trans3 := step_stepPlus_stepPlus target_tm _ _ _ h_step4 h_trans4
+    have h_trans2 := step_stepPlus_stepPlus target_tm _ _ _ h_step3 h_trans3
+    have h_trans1 := step_stepPlus_stepPlus target_tm _ _ _ h_step2 h_trans2
+    have h_trans0 := step_stepPlus_stepPlus target_tm _ _ _ h_step1 h_trans1
     exact h_trans0
   · rcases k with _ | k
     · -- k = 0 (g = 3)
@@ -1671,37 +1669,37 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       have h_pow6 : ([1] : List (Fin 2))^6 = [1, 1, 1, 1, 1, 1] := by rfl
 
       have h_step1 : (⟨some A, ⟨1, ([1] : List (Fin 2))^3 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^2 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^2 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow3, h_pow2]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step2 : (⟨some D, ⟨1, ([1] : List (Fin 2))^2 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨1, ([1] : List (Fin 2))^1 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some A, ⟨1, ([1] : List (Fin 2))^1 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow2, h_pow1]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step3 : (⟨some A, ⟨1, ([1] : List (Fin 2))^1 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some D, ⟨1, default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some D, ⟨1, default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow1]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step4 : (⟨some D, ⟨1, default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D]
+        [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D]
         constructor <;> rfl
       have h_step5 : (⟨some A, ⟨0, default, (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow1]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step6 : (⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow1, h_pow2]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step7 : (⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> default, (1 : Fin 2) >> (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^3 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some B, ⟨1, ([1] : List (Fin 2))^3 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [h_pow2, h_pow3]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
       have h_step8 : (⟨some B, ⟨1, ([1] : List (Fin 2))^3 +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^4 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
+        [target_tm]⊢ ⟨some A, ⟨0, ([1] : List (Fin 2))^4 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
         rw [h_pow3, h_pow4]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
       have h_h1_pos : h - 1 ≥ 1 := by omega
       have h_head_eq : (([1] : List (Fin 2))^(h-1) +> default).head = 1 := by
         rw [unfold_pow_1 (h-1) h_h1_pos]
@@ -1712,25 +1710,25 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         rw [show h-1-1 = h-2 by omega]
 
       have h_step9 : (⟨some A, ⟨0, ([1] : List (Fin 2))^4 +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^5 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
+        [target_tm]⊢ ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^5 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
         rw [h_pow4, h_pow5]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B]
       have h_step10 : (⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^5 +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-2) +> default).head, ([1] : List (Fin 2))^6 +> default, (([1] : List (Fin 2))^(h-2) +> default).tail⟩⟩ := by
+        [target_tm]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-2) +> default).head, ([1] : List (Fin 2))^6 +> default, (([1] : List (Fin 2))^(h-2) +> default).tail⟩⟩ := by
         rw [h_pow5, h_pow6]
         rw [h_head_eq, h_tail_eq]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B]
 
-      have h_trans9 := step_stepPlus target _ _ h_step10
-      have h_trans8 := step_stepPlus_stepPlus target _ _ _ h_step9 h_trans9
-      have h_trans7 := step_stepPlus_stepPlus target _ _ _ h_step8 h_trans8
-      have h_trans6 := step_stepPlus_stepPlus target _ _ _ h_step7 h_trans7
-      have h_trans5 := step_stepPlus_stepPlus target _ _ _ h_step6 h_trans6
-      have h_trans4 := step_stepPlus_stepPlus target _ _ _ h_step5 h_trans5
-      have h_trans3 := step_stepPlus_stepPlus target _ _ _ h_step4 h_trans4
-      have h_trans2 := step_stepPlus_stepPlus target _ _ _ h_step3 h_trans3
-      have h_trans1 := step_stepPlus_stepPlus target _ _ _ h_step2 h_trans2
-      have h_trans0 := step_stepPlus_stepPlus target _ _ _ h_step1 h_trans1
+      have h_trans9 := step_stepPlus target_tm _ _ h_step10
+      have h_trans8 := step_stepPlus_stepPlus target_tm _ _ _ h_step9 h_trans9
+      have h_trans7 := step_stepPlus_stepPlus target_tm _ _ _ h_step8 h_trans8
+      have h_trans6 := step_stepPlus_stepPlus target_tm _ _ _ h_step7 h_trans7
+      have h_trans5 := step_stepPlus_stepPlus target_tm _ _ _ h_step6 h_trans6
+      have h_trans4 := step_stepPlus_stepPlus target_tm _ _ _ h_step5 h_trans5
+      have h_trans3 := step_stepPlus_stepPlus target_tm _ _ _ h_step4 h_trans4
+      have h_trans2 := step_stepPlus_stepPlus target_tm _ _ _ h_step3 h_trans3
+      have h_trans1 := step_stepPlus_stepPlus target_tm _ _ _ h_step2 h_trans2
+      have h_trans0 := step_stepPlus_stepPlus target_tm _ _ _ h_step1 h_trans1
       exact h_trans0
     · -- k = k_new + 1 (g = 2*k_new + 5)
       have h_g_eq1 : 2 * (k + 1 + 1) + 1 = 2 * k + 5 := by omega
@@ -1747,14 +1745,14 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       rw [h_start_eq, h_end_eq]
 
       have h_step1 : (⟨some A, ⟨1, ([1] : List (Fin 2))^(2 * k + 5) +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^(2 * k + 4) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
+        [target_tm]⊢ ⟨some D, ⟨1, ([1] : List (Fin 2))^(2 * k + 4) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ := by
         rw [unfold_pow_1 (2*k+5) (by omega)]
         have : 2*k+5-1 = 2*k+4 := by omega
         rw [this]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons]
 
       have h_sweep : (⟨some D, ⟨1, ([1] : List (Fin 2))^(2 * k + 4) +> default, (0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢* ⟨some D, ⟨1, default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := by
+        [target_tm]⊢* ⟨some D, ⟨1, default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := by
         have h_unfold : (default <+ ([1] : List (Fin 2))^(2 * k + 5)) = (1 : Fin 2) >> (([1] : List (Fin 2))^(2 * k + 4) +> default) := by
           rw [show (default <+ ([1] : List (Fin 2))^(2 * k + 5)) = (([1] : List (Fin 2))^(2 * k + 5) +> default) by rfl]
           rw [unfold_pow_1 (2*k+5) (by omega)]
@@ -1768,16 +1766,16 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         exact h_apply
 
       have h_step_D_A : (⟨some D, ⟨1, default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ := by
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, D, A]
+        [target_tm]⊢ ⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ := by
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A]
         exact ⟨rfl, rfl⟩
 
       have h_step_A_B : (⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := by
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+        [target_tm]⊢ ⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := by
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
 
       have h_sweep_B : (⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢* ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^(2 * k + 7) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
+        [target_tm]⊢* ⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^(2 * k + 7) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ := by
         have h_apply := step_B10_11B ([1] +> default) (([1] : List (Fin 2))^(h-1) +> default) (k+3)
         have h_tape_eq : (([1, 0] : List (Fin 2))^(k+3) +> (([1] : List (Fin 2))^(h-1) +> default)) = (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k+2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))) := by
           exact tape_eq_lemma (k+2) (([1] : List (Fin 2))^(h-1) +> default)
@@ -1798,10 +1796,10 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         exact h_apply
 
       have h_step_B_A : (⟨some B, ⟨(([1] : List (Fin 2))^(h-1) +> default).head, ([1] : List (Fin 2))^(2 * k + 7) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-1) +> default).tail.head, ([1] : List (Fin 2))^(2 * k + 8) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail.tail⟩⟩ := by
+        [target_tm]⊢ ⟨some A, ⟨(([1] : List (Fin 2))^(h-1) +> default).tail.head, ([1] : List (Fin 2))^(2 * k + 8) +> default, (([1] : List (Fin 2))^(h-1) +> default).tail.tail⟩⟩ := by
         have h_h1_pos : h - 1 ≥ 1 := by omega
         rw [unfold_pow_1 (h-1) h_h1_pos]
-        simp [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons]
+        simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons]
         rw [show ([1] : List (Fin 2))^(2*k) ++ ([1] : List (Fin 2))^7 = ([1] : List (Fin 2))^(2*k+7) by rw [← list_pow_add]]
         rw [show ([1] : List (Fin 2))^(2*k) ++ ([1] : List (Fin 2))^8 = ([1] : List (Fin 2))^(2*k+8) by rw [← list_pow_add]]
         have h_unfold := unfold_pow_1 (2*k+8) (by omega)
@@ -1810,10 +1808,10 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
         rw [← h_unfold]
 
       have h_step_D_A_star : (⟨some D, ⟨1, default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢* ⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ := step_stepStar target _ _ h_step_D_A
+        [target_tm]⊢* ⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ := step_stepStar target_tm _ _ h_step_D_A
 
       have h_step_A_B_star : (⟨some A, ⟨0, default, (1 : Fin 2) >> (([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default)))⟩⟩ : Cfg (Fin 2) (Fin 6))
-        [target]⊢* ⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := step_stepStar target _ _ h_step_A_B
+        [target_tm]⊢* ⟨some B, ⟨1, [1] +> default, ([0, 1] : List (Fin 2))^(k + 2) +> ((0 : Fin 2) >> (([1] : List (Fin 2))^(h-1) +> default))⟩⟩ := step_stepStar target_tm _ _ h_step_A_B
 
       have h_trans_2_4 := stepStar_trans h_step_D_A_star h_step_A_B_star
       have h_trans_2_5 := stepStar_trans h_trans_2_4 h_sweep_B
@@ -1827,13 +1825,13 @@ lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
       rw [h_tail_eq] at h_step_B_A
       rw [h_tail_eq] at h_trans_2_5
 
-      have h_trans_5_6 := step_stepPlus target _ _ h_step_B_A
-      have h_trans_2_6 := stepStar_stepPlus_stepPlus target _ _ _ h_trans_2_5 h_trans_5_6
+      have h_trans_5_6 := step_stepPlus target_tm _ _ h_step_B_A
+      have h_trans_2_6 := stepStar_stepPlus_stepPlus target_tm _ _ _ h_trans_2_5 h_trans_5_6
 
       have h_trans_0_2 := step_stepStar_stepPlus h_step1 h_sweep
       have h_trans_0_2_star := stepPlus_stepStar h_trans_0_2
 
-      exact stepStar_stepPlus_stepPlus target _ _ _ h_trans_0_2_star h_trans_2_6
+      exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_trans_0_2_star h_trans_2_6
 
 def S (k : Nat) : Nat :=
   2^(k+1) - k - 1
@@ -1970,31 +1968,31 @@ def target_odd (a g h : Nat) : Cfg (Fin 2) (Fin 6) :=
 
 lemma bounce_step (N : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     ((([1, 0] : List (Fin 2))^(N+1) +> zs) {{E}}> ((1 : Fin 2) >> r))
-    [target]⊢*
+    [target_tm]⊢*
     ((([1] : List (Fin 2))^2 +> ([1, 0] : List (Fin 2))^N +> zs) {{A}}> (1 : Fin 2) >> r) := by
   have h_unfold : (([1, 0] : List (Fin 2))^(N+1) +> zs) = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs := by
     rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
     rfl
   rw [h_unfold]
   have h_step1 : (((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{E}}> (1 : Fin 2) >> r)
-    [target]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{D}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-    simp [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons]
+    [target_tm]⊢ ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{D}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
+    simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons]
   have h_step2 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{D}}> (1 : Fin 2) >> (1 : Fin 2) >> r)
-    [target]⊢ ((([1, 0] : List (Fin 2))^N +> zs) {{A}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r) := by
-    simp [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons]
+    [target_tm]⊢ ((([1, 0] : List (Fin 2))^N +> zs) {{A}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r) := by
+    simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons]
   have h_step3 : ((([1, 0] : List (Fin 2))^N +> zs) {{A}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r)
-    [target]⊢ ((1 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{B}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-    simp [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
+    [target_tm]⊢ ((1 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{B}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
+    simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons]
   have h_step4 : (((1 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs) {{B}}> (1 : Fin 2) >> (1 : Fin 2) >> r)
-    [target]⊢ ((([1] : List (Fin 2))^2 +> ([1, 0] : List (Fin 2))^N +> zs) {{A}}> (1 : Fin 2) >> r) := by
+    [target_tm]⊢ ((([1] : List (Fin 2))^2 +> ([1, 0] : List (Fin 2))^N +> zs) {{A}}> (1 : Fin 2) >> r) := by
     have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
     rw [h_pow2]
-    simp [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons]
+    simp [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
-  have h_step3_star := step_stepStar target _ _ h_step3
-  have h_step4_star := step_stepStar target _ _ h_step4
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
+  have h_step4_star := step_stepStar target_tm _ _ h_step4
 
   have h_12 := stepStar_trans h_step1_star h_step2_star
   have h_34 := stepStar_trans h_step3_star h_step4_star
@@ -2003,7 +2001,7 @@ lemma bounce_step (N : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
 
 lemma bounce_step_correct (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(N+1) +> zs, ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     ⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs, (1 : Fin 2) >> (1 : Fin 2) >> ys⟩⟩ := by
   have h_unfold1 : (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(N+1) +> zs =
                     (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs := by
@@ -2020,21 +2018,21 @@ lemma bounce_step_correct (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fi
     dsimp -failIfUnchanged [c1]
     rw [h_unfold1]
 
-  have h_step1 : c1 [target]⊢ c2 := by
+  have h_step1 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c2]
     rw [h_c1_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c2 [target]⊢ c3 := by
+  have h_step2 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  exact stepStar_step_stepPlus target _ _ _ h_step1_star h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  exact stepStar_step_stepPlus target_tm _ _ _ h_step1_star h_step2
 
 lemma bounce_induction (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs, ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨1, (0 : Fin 2) >> zs, ([1] : List (Fin 2))^(2 * N) +> ys⟩⟩ := by
   induction N generalizing zs ys with
   | zero =>
@@ -2056,7 +2054,7 @@ lemma bounce_induction (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
 
 lemma sweep_E_right (i : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, xs, ([1, 0] : List (Fin 2))^i +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^i +> xs, ys⟩⟩ := by
   induction i generalizing xs ys with
   | zero =>
@@ -2077,17 +2075,17 @@ lemma sweep_E_right (i : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) 
       dsimp -failIfUnchanged [c1]
       rw [h_pow_succ]
 
-    have h_step1 : c1 [target]⊢ c2 := by
+    have h_step1 : c1 [target_tm]⊢ c2 := by
       dsimp -failIfUnchanged [c2]
       rw [h_c1_unfold]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step2 : c2 [target]⊢ c3 := by
+    have h_step2 : c2 [target_tm]⊢ c3 := by
       dsimp -failIfUnchanged [c2, c3]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step12 := stepStar_step_stepPlus target _ _ _ h_step1_star h_step2
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step12 := stepStar_step_stepPlus target_tm _ _ _ h_step1_star h_step2
     have h_step12_star := stepPlus_stepStar h_step12
 
     have h_ih := ih ((1 : Fin 2) >> (0 : Fin 2) >> xs) ys
@@ -2106,7 +2104,7 @@ lemma sweep_E_right (i : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) 
 
 lemma rule_odd_phase1 (k : Nat) (a : Nat) (ha : a ≥ 1) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k+1) +> ([1, 0] : List (Fin 2))^a +> default, ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(a-1) +> default, ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
   have h_pow_split : ([1] : List (Fin 2))^(2*k+1) +> ([1, 0] : List (Fin 2))^a +> default =
                      ([1] : List (Fin 2))^(2*k) +> (1 : Fin 2) >> ([1, 0] : List (Fin 2))^a +> default := by
@@ -2139,30 +2137,30 @@ lemma rule_odd_phase1 (k : Nat) (a : Nat) (ha : a ≥ 1) (ys : ListBlank (Fin 2)
     dsimp -failIfUnchanged [c2]
     rw [h_pow_a]
 
-  have h_step1 : c1 [target]⊢ c2 := by
+  have h_step1 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c2]
     rw [h_c1_unfold]
     rw [h_pow_a]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c2 [target]⊢ c3 := by
+  have h_step2 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c3]
     rw [h_c2_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     have h_pow_kp1 : ([1, 0] : List (Fin 2))^(k+1) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^k +> ys := by
       rw [show k+1 = 1 + k by omega, list_pow_add, Turing.ListBlank.append_assoc]
       rfl
     rw [← h_pow_kp1]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step12 := stepStar_step_stepPlus target _ _ _ h_step1_star h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step12 := stepStar_step_stepPlus target_tm _ _ _ h_step1_star h_step2
   have h_step12_star := stepPlus_stepStar h_step12
 
   exact stepStar_trans h_even_sweep h_step12_star
 
 lemma step_A0_to_E0 (len : Nat) (zs : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     ⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*len+1) +> 0 >> zs⟩⟩ := by
   have h_unfold : ([1] : List (Fin 2))^(2*len+3) +> 0 >> zs =
                   (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len) +> 0 >> zs := by
@@ -2187,31 +2185,31 @@ lemma step_A0_to_E0 (len : Nat) (zs : ListBlank (Fin 2)) :
   have h_head_default : ListBlank.head (default : ListBlank (Fin 2)) = 0 := by rfl
   have h_tail_default : ListBlank.tail (default : ListBlank (Fin 2)) = default := by rfl
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step3 : c2 [target]⊢ c3 := by
+  have h_step3 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step4 : c3 [target]⊢ c4 := by
+  have h_step4 : c3 [target_tm]⊢ c4 := by
     dsimp -failIfUnchanged [c3, c4]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step5 : c4 [target]⊢ c5 := by
+  have h_step5 : c4 [target_tm]⊢ c5 := by
     dsimp -failIfUnchanged [c4, c5]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, Option.map]
     rw [h_head_default, h_tail_default]
 
-  have h_step6 : c5 [target]⊢ c6 := by
+  have h_step6 : c5 [target_tm]⊢ c6 := by
     dsimp -failIfUnchanged [c5, c6]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
     rw [h_head_default, h_tail_default]
     have h_pow_kp1 : ([1] : List (Fin 2))^(2*len+1) = (1 : Fin 2) :: ([1] : List (Fin 2))^(2*len) := by
       rw [show 2*len+1 = 1 + 2*len by omega, list_pow_add]
@@ -2220,23 +2218,23 @@ lemma step_A0_to_E0 (len : Nat) (zs : ListBlank (Fin 2)) :
     rw [h_pow_kp1, h_pow2]
     rfl
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step12 := stepStar_step_stepPlus target _ _ _ h_step1_star h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step12 := stepStar_step_stepPlus target_tm _ _ _ h_step1_star h_step2
   have h_step12_star := stepPlus_stepStar h_step12
-  have h_step3_star := step_stepStar target _ _ h_step3
-  have h_step13 := stepStar_step_stepPlus target _ _ _ h_step12_star h_step3
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
+  have h_step13 := stepStar_step_stepPlus target_tm _ _ _ h_step12_star h_step3
   have h_step13_star := stepPlus_stepStar h_step13
-  have h_step4_star := step_stepStar target _ _ h_step4
-  have h_step14 := stepStar_step_stepPlus target _ _ _ h_step13_star h_step4
+  have h_step4_star := step_stepStar target_tm _ _ h_step4
+  have h_step14 := stepStar_step_stepPlus target_tm _ _ _ h_step13_star h_step4
   have h_step14_star := stepPlus_stepStar h_step14
-  have h_step5_star := step_stepStar target _ _ h_step5
-  have h_step15 := stepStar_step_stepPlus target _ _ _ h_step14_star h_step5
+  have h_step5_star := step_stepStar target_tm _ _ h_step5
+  have h_step15 := stepStar_step_stepPlus target_tm _ _ _ h_step14_star h_step5
   have h_step15_star := stepPlus_stepStar h_step15
-  exact stepStar_step_stepPlus target _ _ _ h_step15_star h_step6
+  exact stepStar_step_stepPlus target_tm _ _ _ h_step15_star h_step6
 
 lemma step_E0_to_A0 (len : Nat) (zs : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ := by
   have h_unfold : ([1] : List (Fin 2))^(2*len+3) +> zs =
                   (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len+1) +> zs := by
@@ -2259,37 +2257,37 @@ lemma step_E0_to_A0 (len : Nat) (zs : ListBlank (Fin 2)) :
   have h_head_default : ListBlank.head (default : ListBlank (Fin 2)) = 0 := by rfl
   have h_tail_default : ListBlank.tail (default : ListBlank (Fin 2)) = default := by rfl
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step3 : c2 [target]⊢ c3 := by
+  have h_step3 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step4 : c3 [target]⊢ c4 := by
+  have h_step4 : c3 [target_tm]⊢ c4 := by
     dsimp -failIfUnchanged [c3, c4]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, Option.map]
     rw [ListBlank.head_cons, ListBlank.tail_cons]
     rw [← h_unfold]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step12 := stepStar_step_stepPlus target _ _ _ h_step1_star h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step12 := stepStar_step_stepPlus target_tm _ _ _ h_step1_star h_step2
   have h_step12_star := stepPlus_stepStar h_step12
-  have h_step3_star := step_stepStar target _ _ h_step3
-  have h_step13 := stepStar_step_stepPlus target _ _ _ h_step12_star h_step3
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
+  have h_step13 := stepStar_step_stepPlus target_tm _ _ _ h_step12_star h_step3
   have h_step13_star := stepPlus_stepStar h_step13
-  have h_step4_star := step_stepStar target _ _ h_step4
+  have h_step4_star := step_stepStar target_tm _ _ h_step4
   exact stepStar_trans h_step13_star h_step4_star
 
 lemma slide_A_right_10 (N : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*N) +> xs, ys⟩⟩ := by
   induction N generalizing xs ys with
   | zero =>
@@ -2311,17 +2309,17 @@ lemma slide_A_right_10 (N : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
       dsimp -failIfUnchanged [c0]
       rw [h_unfold]
 
-    have h_step1 : c0 [target]⊢ c1 := by
+    have h_step1 : c0 [target_tm]⊢ c1 := by
       rw [h_c0_unfold]
       dsimp -failIfUnchanged [c1]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step2 : c1 [target]⊢ c2 := by
+    have h_step2 : c1 [target_tm]⊢ c2 := by
       dsimp -failIfUnchanged [c1, c2]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step2_star := step_stepStar target _ _ h_step2
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step2_star := step_stepStar target_tm _ _ h_step2
     have h_step12 := stepStar_trans h_step1_star h_step2_star
 
     have h_ih := ih ((1 : Fin 2) >> (1 : Fin 2) >> xs) ys
@@ -2336,7 +2334,7 @@ lemma slide_A_right_10 (N : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
 
 lemma step_A0_bounce (len : Nat) (N : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(len+1) +> default, ([1] : List (Fin 2))^3 +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^len +> default, ([1, 0] : List (Fin 2))^(N+3) +> ys⟩⟩ := by
   have h_l_unfold : ([1, 0] : List (Fin 2))^(len+1) +> default =
                     (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^len +> default := by
@@ -2381,50 +2379,50 @@ lemma step_A0_bounce (len : Nat) (N : Nat) (ys : ListBlank (Fin 2)) :
     dsimp -failIfUnchanged [c0]
     rw [h_r_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step3 : c2 [target]⊢ c3 := by
+  have h_step3 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step4 : c3 [target]⊢ c4 := by
+  have h_step4 : c3 [target_tm]⊢ c4 := by
     dsimp -failIfUnchanged [c3, c4]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     rw [h_pow_kp2, h_pow_kp1_LB]
 
-  have h_step5 : c4 [target]⊢ c5 := by
+  have h_step5 : c4 [target_tm]⊢ c5 := by
     dsimp -failIfUnchanged [c4, c5]
     rw [h_pow_kp2]
     rw [h_l_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step6 : c5 [target]⊢ c6 := by
+  have h_step6 : c5 [target_tm]⊢ c6 := by
     dsimp -failIfUnchanged [c5, c6]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     rw [h_pow_kp3, h_pow_kp2]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   have h_step12 := stepStar_trans h_step1_star h_step2_star
-  have h_step3_star := step_stepStar target _ _ h_step3
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
   have h_step13 := stepStar_trans h_step12 h_step3_star
-  have h_step4_star := step_stepStar target _ _ h_step4
+  have h_step4_star := step_stepStar target_tm _ _ h_step4
   have h_step14 := stepStar_trans h_step13 h_step4_star
-  have h_step5_star := step_stepStar target _ _ h_step5
+  have h_step5_star := step_stepStar target_tm _ _ h_step5
   have h_step15 := stepStar_trans h_step14 h_step5_star
-  have h_step6_star := step_stepStar target _ _ h_step6
+  have h_step6_star := step_stepStar target_tm _ _ h_step6
   exact stepStar_trans h_step15 h_step6_star
 
 lemma bounce_E_A (M : Nat) (hm : M ≥ 2) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ := by
   have h_M_unfold : ([1] : List (Fin 2))^M +> ys = (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(M-2) +> ys := by
     nth_rw 1 [show M = 2 + (M-2) by omega]
@@ -2443,55 +2441,55 @@ lemma bounce_E_A (M : Nat) (hm : M ≥ 2) (xs : ListBlank (Fin 2)) (ys : ListBla
     dsimp -failIfUnchanged [c0]
     rw [h_M_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step3 : c2 [target]⊢ c3 := by
+  have h_step3 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step4 : c3 [target]⊢ c4 := by
+  have h_step4 : c3 [target_tm]⊢ c4 := by
     dsimp -failIfUnchanged [c3, c4]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     rw [h_M_unfold]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   have h_step12 := stepStar_trans h_step1_star h_step2_star
-  have h_step3_star := step_stepStar target _ _ h_step3
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
   have h_step13 := stepStar_trans h_step12 h_step3_star
-  have h_step4_star := step_stepStar target _ _ h_step4
+  have h_step4_star := step_stepStar target_tm _ _ h_step4
   exact stepStar_trans h_step13 h_step4_star
 
 lemma step_E0_E1 (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, xs, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> xs, r⟩⟩ := by
   let c0 := (⟨some E, ⟨0, xs, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c1 := (⟨some F, ⟨1, (0 : Fin 2) >> xs, (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c2 := (⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     dsimp -failIfUnchanged [c0, c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma step_E1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
     (⟨some E, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ := by
   have h_L_unfold : ([1, 0] : List (Fin 2))^(N+1) +> default = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> default := by
     rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -2507,42 +2505,42 @@ lemma step_E1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
     dsimp -failIfUnchanged [c0]
     rw [h_L_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma reduce_left_1 (r : ListBlank (Fin 2)) (xs : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, xs, (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩ := by
   let c0 := (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c1 := (⟨some D, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c2 := (⟨some A, ⟨1, xs, (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     dsimp -failIfUnchanged [c0, c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma step_A0_A1 (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> xs, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ := by
   have h_M_unfold : ([1] : List (Fin 2))^M +> ys = (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(M-2) +> ys := by
     conv_lhs => rw [show M = 2 + (M-2) by omega]
@@ -2559,25 +2557,25 @@ lemma step_A0_A1 (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBla
     dsimp -failIfUnchanged [c0]
     rw [h_M_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
     rw [h_pow2]
     rfl
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma step_A0_A1_plus (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> xs, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ := by
   have h_M_unfold : ([1] : List (Fin 2))^M +> ys = (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(M-2) +> ys := by
     conv_lhs => rw [show M = 2 + (M-2) by omega]
@@ -2594,39 +2592,39 @@ lemma step_A0_A1_plus (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : Li
     dsimp -failIfUnchanged [c0]
     rw [h_M_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
     rw [h_pow2]
     rfl
 
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact step_stepStar_stepPlus h_step1 h_step2_star
 
 lemma step_A1_E0 (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ := by
   let c0 := (⟨some A, ⟨1, default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c1 := (⟨some D, ⟨0, default, (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c2 := (⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step1 : c0 [target]⊢ c1 := by rfl
-  have h_step2 : c1 [target]⊢ c2 := by rfl
+  have h_step1 : c0 [target_tm]⊢ c1 := by rfl
+  have h_step2 : c1 [target_tm]⊢ c2 := by rfl
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma step_A1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ := by
   have h_L_unfold : ([1, 0] : List (Fin 2))^(N+1) +> default = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> default := by
     rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -2642,25 +2640,25 @@ lemma step_A1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
     dsimp -failIfUnchanged [c0]
     rw [h_L_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
     rw [h_pow1]
     rfl
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma step_A0_A0 (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^(K+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> xs, ([1, 0] : List (Fin 2))^K +> ys⟩⟩ := by
   have h_R_unfold : ([1, 0] : List (Fin 2))^(K+1) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^K +> ys := by
     rw [show K+1 = 1 + K by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -2676,25 +2674,25 @@ lemma step_A0_A0 (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
     dsimp -failIfUnchanged [c0]
     rw [h_R_unfold]
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     rw [h_c0_unfold]
     dsimp -failIfUnchanged [c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, B, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, B, A, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
     have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
     rw [h_pow2]
     rfl
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma reduce_left_many (j : Nat) (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, xs, ([1, 0] : List (Fin 2))^j +> r⟩⟩ := by
   induction j generalizing r with
   | zero =>
@@ -2717,12 +2715,12 @@ lemma reduce_left_many (j : Nat) (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)
       dsimp -failIfUnchanged [c0]
       rw [h_L_unfold]
       
-    have h_trans1 : c0 [target]⊢* c1 := by
+    have h_trans1 : c0 [target_tm]⊢* c1 := by
       rw [h_c0_eq]
       have h_step := reduce_left_1 r (([1] : List (Fin 2))^(2*j) +> xs)
       exact h_step
       
-    have h_trans2 : c1 [target]⊢* c2 := by
+    have h_trans2 : c1 [target_tm]⊢* c2 := by
       have h_ih := ih ((1 : Fin 2) >> (0 : Fin 2) >> r)
       have h_R_eq : ([1, 0] : List (Fin 2))^j +> (1 : Fin 2) >> (0 : Fin 2) >> r = ([1, 0] : List (Fin 2))^(j+1) +> r := by
         have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
@@ -2739,7 +2737,7 @@ lemma reduce_left_many (j : Nat) (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)
 
 lemma step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^K +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*K) +> xs, ys⟩⟩ := by
   induction K generalizing xs with
   | zero =>
@@ -2762,12 +2760,12 @@ lemma step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)
       dsimp -failIfUnchanged [c0]
       rw [h_R_unfold]
       
-    have h_trans1 : c0 [target]⊢* c1 := by
+    have h_trans1 : c0 [target_tm]⊢* c1 := by
       rw [h_c0_eq]
       have h_step := step_A0_A0 xs K ys
       exact h_step
       
-    have h_trans2 : c1 [target]⊢* c2 := by
+    have h_trans2 : c1 [target_tm]⊢* c2 := by
       have h_ih := ih (([1] : List (Fin 2))^2 +> xs)
       have h_L_eq : ([1] : List (Fin 2))^(2*K) +> ([1] : List (Fin 2))^2 +> xs = ([1] : List (Fin 2))^(2*(K+1)) +> xs := by
         rw [← Turing.ListBlank.append_assoc]
@@ -2781,7 +2779,7 @@ lemma step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)
 
 lemma inner_loop (j N M : Nat) (hm : M ≥ 2*N) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> ([1, 0] : List (Fin 2))^N +> default, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j + 4*N) +> default, ([1] : List (Fin 2))^(M - 2*N) +> ys⟩⟩ := by
   induction N generalizing j M with
   | zero =>
@@ -2799,15 +2797,15 @@ lemma inner_loop (j N M : Nat) (hm : M ≥ 2*N) (ys : ListBlank (Fin 2)) :
     let c_step_r := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(j+2)) +> ([1, 0] : List (Fin 2))^N +> default, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     let c_target := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j + 4*(N+1)) +> default, ([1] : List (Fin 2))^(M - 2*(N+1)) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-    have h_trans_red : c_start [target]⊢* c_red := by
+    have h_trans_red : c_start [target_tm]⊢* c_red := by
       have h_step := reduce_left_many j (([1, 0] : List (Fin 2))^(N+1) +> default) (([1] : List (Fin 2))^M +> ys)
       exact h_step
       
-    have h_trans_a1_a0 : c_red [target]⊢* c_a1_a0 := by
+    have h_trans_a1_a0 : c_red [target_tm]⊢* c_a1_a0 := by
       have h_step := step_A1_A0 N (([1, 0] : List (Fin 2))^j +> (([1] : List (Fin 2))^M +> ys))
       exact h_step
       
-    have h_trans_a0_a0 : c_a1_a0 [target]⊢* c_a0_a0 := by
+    have h_trans_a0_a0 : c_a1_a0 [target_tm]⊢* c_a0_a0 := by
       have h_R_eq : ([1, 0] : List (Fin 2))^1 +> ([1, 0] : List (Fin 2))^j +> ([1] : List (Fin 2))^M +> ys = ([1, 0] : List (Fin 2))^(j+1) +> ([1] : List (Fin 2))^M +> ys := by
         rw [← Turing.ListBlank.append_assoc]
         rw [← list_pow_add]
@@ -2820,7 +2818,7 @@ lemma inner_loop (j N M : Nat) (hm : M ≥ 2*N) (ys : ListBlank (Fin 2)) :
       have h_step := step_A0_A0_many (([1, 0] : List (Fin 2))^N +> default) (j+1) (([1] : List (Fin 2))^M +> ys)
       exact h_step
       
-    have h_trans_step_r : c_a0_a0 [target]⊢* c_step_r := by
+    have h_trans_step_r : c_a0_a0 [target_tm]⊢* c_step_r := by
       have h_step := step_A0_A1 (([1] : List (Fin 2))^(2*(j+1)) +> ([1, 0] : List (Fin 2))^N +> default) M h_M_ge ys
       have h_L_eq : ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*(j+1)) +> ([1, 0] : List (Fin 2))^N +> default = ([1] : List (Fin 2))^(2*(j+2)) +> ([1, 0] : List (Fin 2))^N +> default := by
         rw [← Turing.ListBlank.append_assoc]
@@ -2830,7 +2828,7 @@ lemma inner_loop (j N M : Nat) (hm : M ≥ 2*N) (ys : ListBlank (Fin 2)) :
       rw [h_L_eq] at h_step
       exact h_step
       
-    have h_trans_ih : c_step_r [target]⊢* c_target := by
+    have h_trans_ih : c_step_r [target_tm]⊢* c_target := by
       have h_ih := ih (j+2) (M-2) h_M2_ge
       have h_L_eq : 2*(j+2) + 4*N = 2*j + 4*(N+1) := by omega
       have h_R_eq : M-2 - 2*N = M - 2*(N+1) := by omega
@@ -2844,7 +2842,7 @@ lemma inner_loop (j N M : Nat) (hm : M ≥ 2*N) (ys : ListBlank (Fin 2)) :
 
 lemma odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
     (⟨some D, ⟨0, ([1, 0] : List (Fin 2))^a +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some D, ⟨0, ([1, 0] : List (Fin 2))^(a-n) +> default, ([1] : List (Fin 2))^(2*n) +> r⟩⟩ := by
   induction n generalizing a r with
   | zero =>
@@ -2870,17 +2868,17 @@ lemma odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
       dsimp -failIfUnchanged [c0]
       rw [h_a_unfold]
 
-    have h_step1 : c0 [target]⊢ c1 := by
+    have h_step1 : c0 [target_tm]⊢ c1 := by
       rw [h_c0_unfold]
       dsimp -failIfUnchanged [c1]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step2 : c1 [target]⊢ c2 := by
+    have h_step2 : c1 [target_tm]⊢ c2 := by
       dsimp -failIfUnchanged [c1, c2]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-    have h_step1_star := step_stepStar target _ _ h_step1
-    have h_step2_star := step_stepStar target _ _ h_step2
+    have h_step1_star := step_stepStar target_tm _ _ h_step1
+    have h_step2_star := step_stepStar target_tm _ _ h_step2
     have h_step12 := stepStar_trans h_step1_star h_step2_star
 
     have h_ih := ih (a-1) (by omega) ((1 : Fin 2) >> (1 : Fin 2) >> r)
@@ -2895,7 +2893,7 @@ lemma odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
     exact stepStar_trans h_step12 h_ih_rw
 lemma reduction_step_A0 (n : Nat) (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, default, ([1] : List (Fin 2))^(6*n+9) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, default, ([1, 0] : List (Fin 2))^4 +> ([1] : List (Fin 2))^(6*n+3) +> r⟩⟩ := by
   let M := 6*n+9
   have h_M_ge9 : M ≥ 9 := by dsimp -failIfUnchanged [M]; omega
@@ -2918,26 +2916,26 @@ lemma reduction_step_A0 (n : Nat) (r : ListBlank (Fin 2)) :
   let c11 := (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^1 +> default, ([1, 0] : List (Fin 2))^3 +> ([1] : List (Fin 2))^(M-6) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c12 := (⟨some A, ⟨0, default, ([1, 0] : List (Fin 2))^4 +> ([1] : List (Fin 2))^(M-6) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_c0_c1 : c0 [target]⊢* c1 := step_A0_A1 default M h_M_ge2 r
-  have h_c1_c2 : c1 [target]⊢* c2 := reduce_left_many 1 default (([1] : List (Fin 2))^(M-2) +> r)
+  have h_c0_c1 : c0 [target_tm]⊢* c1 := step_A0_A1 default M h_M_ge2 r
+  have h_c1_c2 : c1 [target_tm]⊢* c2 := reduce_left_many 1 default (([1] : List (Fin 2))^(M-2) +> r)
 
-  have h_c2_c3 : c2 [target]⊢* c3 := step_A1_E0 (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-2) +> r)
+  have h_c2_c3 : c2 [target_tm]⊢* c3 := step_A1_E0 (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-2) +> r)
 
-  have h_c3_c4 : c3 [target]⊢* c4 := sweep_E_right 2 default (([1] : List (Fin 2))^(M-2) +> r)
+  have h_c3_c4 : c3 [target_tm]⊢* c4 := sweep_E_right 2 default (([1] : List (Fin 2))^(M-2) +> r)
 
-  have h_c4_c5 : c4 [target]⊢* c5 := bounce_E_A (M-2) h_M2_ge2 ([1, 0]^2 +> default) r
+  have h_c4_c5 : c4 [target_tm]⊢* c5 := bounce_E_A (M-2) h_M2_ge2 ([1, 0]^2 +> default) r
 
-  have h_c5_c6 : c5 [target]⊢* c6 := step_A0_A1 ([1, 0]^2 +> default) (M-2) h_M2_ge2 r
+  have h_c5_c6 : c5 [target_tm]⊢* c6 := step_A0_A1 ([1, 0]^2 +> default) (M-2) h_M2_ge2 r
 
-  have h_c6_c7 : c6 [target]⊢* c7 := reduce_left_many 1 ([1, 0]^2 +> default) (([1] : List (Fin 2))^(M-4) +> r)
+  have h_c6_c7 : c6 [target_tm]⊢* c7 := reduce_left_many 1 ([1, 0]^2 +> default) (([1] : List (Fin 2))^(M-4) +> r)
 
-  have h_c7_c8 : c7 [target]⊢* c8 := step_A1_A0 1 (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-4) +> r)
+  have h_c7_c8 : c7 [target_tm]⊢* c8 := step_A1_A0 1 (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-4) +> r)
 
-  have h_c8_c9 : c8 [target]⊢* c9 := step_A0_A0_many (([1, 0] : List (Fin 2))^1 +> default) 2 (([1] : List (Fin 2))^(M-4) +> r)
+  have h_c8_c9 : c8 [target_tm]⊢* c9 := step_A0_A0_many (([1, 0] : List (Fin 2))^1 +> default) 2 (([1] : List (Fin 2))^(M-4) +> r)
 
-  have h_c9_c10 : c9 [target]⊢* c10 := step_A0_A1 (([1] : List (Fin 2))^4 +> ([1, 0] : List (Fin 2))^1 +> default) (M-4) h_M4_ge2 r
+  have h_c9_c10 : c9 [target_tm]⊢* c10 := step_A0_A1 (([1] : List (Fin 2))^4 +> ([1, 0] : List (Fin 2))^1 +> default) (M-4) h_M4_ge2 r
 
-  have h_c10_c11 : c10 [target]⊢* c11 := by
+  have h_c10_c11 : c10 [target_tm]⊢* c11 := by
     have h_left_eq : ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^4 +> ([1, 0] : List (Fin 2))^1 +> default = ([1] : List (Fin 2))^6 +> ([1, 0] : List (Fin 2))^1 +> default := by
       rw [← Turing.ListBlank.append_assoc]
       rw [← list_pow_add]
@@ -2945,7 +2943,7 @@ lemma reduction_step_A0 (n : Nat) (r : ListBlank (Fin 2)) :
     rw [← h_left_eq] at h_step
     exact h_step
 
-  have h_c11_c12 : c11 [target]⊢* c12 := step_A1_A0 0 (([1, 0] : List (Fin 2))^3 +> ([1] : List (Fin 2))^(M-6) +> r)
+  have h_c11_c12 : c11 [target_tm]⊢* c12 := step_A1_A0 0 (([1, 0] : List (Fin 2))^3 +> ([1] : List (Fin 2))^(M-6) +> r)
 
   exact stepStar_trans h_c0_c1 (stepStar_trans h_c1_c2 (stepStar_trans h_c2_c3 (stepStar_trans h_c3_c4 (stepStar_trans h_c4_c5 (stepStar_trans h_c5_c6 (stepStar_trans h_c6_c7 (stepStar_trans h_c7_c8 (stepStar_trans h_c8_c9 (stepStar_trans h_c9_c10 (stepStar_trans h_c10_c11 h_c11_c12))))))))))
 
@@ -2954,16 +2952,16 @@ lemma reduction_step_A0 (n : Nat) (r : ListBlank (Fin 2)) :
 
 lemma rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(a-1) +> default, ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2*a-1) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
   let c0 := (⟨some A, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(a-1) +> default, ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c1 := (⟨some D, ⟨0, ([1, 0] : List (Fin 2))^(a-1) +> default, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     dsimp -failIfUnchanged [c0, c1]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, ListBlank.head_cons, ListBlank.tail_cons, Option.map]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
 
   have h_loop := odd_left_loop (a-1) (a-1) (by omega) ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys)
   simp only [Nat.sub_self, HPow.hPow, list_nat_repeat, ListBlank.append] at h_loop
@@ -2972,9 +2970,9 @@ lemma rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)
 
   let c3 := (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2*a-1) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step3 : c2 [target]⊢ c3 := by
+  have h_step3 : c2 [target_tm]⊢ c3 := by
     dsimp -failIfUnchanged [c2, c3]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
     have h_pow : ([1] : List (Fin 2))^(2*a-1) = (1 : Fin 2) :: ([1] : List (Fin 2))^(2*(a-1)) := by
       rw [show 2*a-1 = 1 + 2*(a-1) by omega, list_pow_add]
       rfl
@@ -2985,43 +2983,43 @@ lemma rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)
     rw [h_pow_LB]
     rfl
 
-  have h_step3_star := step_stepStar target _ _ h_step3
+  have h_step3_star := step_stepStar target_tm _ _ h_step3
   have h_loop_step3 := stepStar_trans h_loop h_step3_star
   exact stepStar_trans h_step1_star h_loop_step3
 
 
 lemma rule_odd_h2_loop_gen (j m : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1, 0] : List (Fin 2))^(m+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(j+1) +> default, ([1, 0] : List (Fin 2))^m +> ys⟩⟩ := by
   let c0 := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1, 0] : List (Fin 2))^(m+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c1 := (⟨some F, ⟨1, ListBlank.cons (0:Fin 2) (([1, 0] : List (Fin 2))^j +> default), ListBlank.cons (0:Fin 2) (([1, 0] : List (Fin 2))^m +> ys)⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c2 := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(j+1) +> default, ([1, 0] : List (Fin 2))^m +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-  have h_step1 : c0 [target]⊢ c1 := by
+  have h_step1 : c0 [target_tm]⊢ c1 := by
     dsimp -failIfUnchanged [c0, c1]
     have h_pow_unfold : ([1, 0] : List (Fin 2))^(m+1) +> ys = (1:Fin 2) >> (0:Fin 2) >> ([1, 0] : List (Fin 2))^m +> ys := by
       change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^m +> ys = (1:Fin 2) >> (0:Fin 2) >> ([1, 0] : List (Fin 2))^m +> ys
       rfl
     rw [h_pow_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 
-  have h_step2 : c1 [target]⊢ c2 := by
+  have h_step2 : c1 [target_tm]⊢ c2 := by
     dsimp -failIfUnchanged [c1, c2]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
     have h_pow_eq : ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^j +> default)) = ([1, 0] : List (Fin 2))^(j+1) +> default := by
       change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^j +> default = ([1, 0] : List (Fin 2))^(j+1) +> default
       rw [← Turing.ListBlank.append_assoc]
       rfl
     rw [h_pow_eq]
 
-  have h_step1_star := step_stepStar target _ _ h_step1
-  have h_step2_star := step_stepStar target _ _ h_step2
+  have h_step1_star := step_stepStar target_tm _ _ h_step1
+  have h_step2_star := step_stepStar target_tm _ _ h_step2
   exact stepStar_trans h_step1_star h_step2_star
 
 lemma rule_odd_h2_loop_many_gen (m : Nat) (j : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1, 0] : List (Fin 2))^m +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(j+m) +> default, ys⟩⟩ := by
   induction m generalizing j with
   | zero =>
@@ -3036,7 +3034,7 @@ lemma rule_odd_h2_loop_many_gen (m : Nat) (j : Nat) (ys : ListBlank (Fin 2)) :
 
 lemma rule_odd_h2_loop2_helper (j : Nat) : ∀ (m r : Nat) (ys : ListBlank (Fin 2)), r ≥ 2*j →
     (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^j +> default, ([1, 0] : List (Fin 2))^m +> ([1] : List (Fin 2))^r +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, default, ([1, 0] : List (Fin 2))^(2*j+m) +> ([1] : List (Fin 2))^(r-2*j) +> ys⟩⟩ := by
   induction j with
   | zero =>
@@ -3091,7 +3089,7 @@ lemma rule_odd_h2_loop2_helper (j : Nat) : ∀ (m r : Nat) (ys : ListBlank (Fin 
 
 lemma rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2*j) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1] : List (Fin 2))^(r+2) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2*j+2) +> default, ([1] : List (Fin 2))^(r-2*j) +> ys⟩⟩ := by
   have h_bounce := bounce_E_A 2 (by omega) (([1, 0] : List (Fin 2))^j +> default) (([1] : List (Fin 2))^r +> ys)
   have h_unfold_r : ([1] : List (Fin 2))^(r+2) +> ys = ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^r +> ys := by
@@ -3112,18 +3110,18 @@ lemma rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2*j) :
   let c_D0 := (⟨some D, ⟨0, default, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2*j+1) +> ([1] : List (Fin 2))^(r-2*j) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
   let c_E0 := (⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^(2*j+2) +> ([1] : List (Fin 2))^(r-2*j) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
   
-  have h_step1 : c_A1 [target]⊢ c_D0 := by
+  have h_step1 : c_A1 [target_tm]⊢ c_D0 := by
     dsimp -failIfUnchanged [c_A1, c_D0]
     have h_unfold : ([1, 0] : List (Fin 2))^(2*j+1) +> ([1] : List (Fin 2))^(r-2*j) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2*j) +> ([1] : List (Fin 2))^(r-2*j) +> ys := by
       rw [show 2*j+1 = 1 + 2*j by omega, list_pow_add, Turing.ListBlank.append_assoc]
       rfl
     rw [h_unfold]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, A, D, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, A, D, Option.map]
     rfl
     
-  have h_step2 : c_D0 [target]⊢ c_E0 := by
+  have h_step2 : c_D0 [target_tm]⊢ c_E0 := by
     dsimp -failIfUnchanged [c_D0, c_E0]
-    simp only [step, target, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
+    simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, D, E, Option.map]
     have h_pow2 : ([1, 0] : List (Fin 2))^(2*j+2) +> ([1] : List (Fin 2))^(r-2*j) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2*j+1) +> ([1] : List (Fin 2))^(r-2*j) +> ys := by
       rw [show 2*j+2 = 1 + (2*j+1) by omega, list_pow_add, Turing.ListBlank.append_assoc]
       have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
@@ -3132,7 +3130,7 @@ lemma rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2*j) :
     rw [h_pow2]
     rfl
     
-  have h_local := stepStar_trans (step_stepStar target _ _ h_step1) (step_stepStar target _ _ h_step2)
+  have h_local := stepStar_trans (step_stepStar target_tm _ _ h_step1) (step_stepStar target_tm _ _ h_step2)
   have h_to_E0 := stepStar_trans h_to_A1 h_local
   
   have h_loop_many := rule_odd_h2_loop_many_gen (2*j+2) 0 (([1] : List (Fin 2))^(r-2*j) +> ys)
@@ -3191,7 +3189,7 @@ lemma rule_odd_h2_loop_chain_helper (j : Nat) (m : Nat) (hm : m < j) :
 
 lemma rule_odd_h2_loop_chain (j : Nat) (n : Nat) (hn : n ≤ j) (k : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2 * S j - 1) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(n+1) - 2) +> default, ([1] : List (Fin 2))^(2 * S j + 2*n + 3 - 2^(n+2)) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
   induction n with
   | zero =>
@@ -3287,7 +3285,7 @@ lemma rule_odd_loop_chain_helper (a : Nat) (j : Nat) (hj : S j ≤ a) (m : Nat) 
 
 lemma rule_odd_loop_chain (a : Nat) (j : Nat) (hj : S j ≤ a) (n : Nat) (hn : n ≤ j) (k : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2 * a - 1) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(n+1) - 2) +> default, ([1] : List (Fin 2))^(2 * a + 2*n + 3 - 2^(n+2)) +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
   induction n with
   | zero =>
@@ -3389,7 +3387,7 @@ lemma listBlank_pow_comm {Γ : Type _} [Inhabited Γ] (xs : List Γ) (a b : Nat)
   rw [list_pow_comm xs b a]
 
 lemma bb_step_11A_A10 (l r : ListBlank (Fin 2)) (n : Nat) :
-    ((l <+ (([1, 1] : List (Fin 2))^n)) <{{A}} r) [target]⊢* (l <{{A}} ((([1, 0] : List (Fin 2))^n) +> r)) := by
+    ((l <+ (([1, 1] : List (Fin 2))^n)) <{{A}} r) [target_tm]⊢* (l <{{A}} ((([1, 0] : List (Fin 2))^n) +> r)) := by
   induction n generalizing l r with
   | zero =>
     simp only [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -3406,7 +3404,7 @@ lemma bb_step_11A_A10 (l r : ListBlank (Fin 2)) (n : Nat) :
 
 lemma bb_step_A0_11A (l r : ListBlank (Fin 2)) (n : Nat) :
     (l {{A}}> ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> r))
-    [target]⊢*
+    [target_tm]⊢*
     ((l <+ ([1, 1] : List (Fin 2))^n) {{A}}> ((0 : Fin 2) >> r)) := by
   induction n generalizing l r with
   | zero =>
@@ -3425,7 +3423,7 @@ lemma bb_step_A0_11A (l r : ListBlank (Fin 2)) (n : Nat) :
 
 lemma bb_lmove_2steps_L (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     (((1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> l) <{{A}} r)
-    [target]⊢*
+    [target_tm]⊢*
     (l {{A}}> ((0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> r)) := by
   step
   step
@@ -3445,7 +3443,7 @@ lemma listBlank_pow_11_comm (n : Nat) (l : ListBlank (Fin 2)) :
 
 lemma bb_step_A0_10_cleanup (k : Nat) (m : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (h : m ≥ 2*k) :
     ((l <+ ([1, 0] : List (Fin 2))^k) {{A}}> ((0 : Fin 2) >> ([1] : List (Fin 2))^m +> r))
-    [target]⊢*
+    [target_tm]⊢*
     (l {{A}}> ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2*k) +> ([1] : List (Fin 2))^(m - 2*k) +> r)) := by
   induction k generalizing l m r with
   | zero =>
@@ -3469,7 +3467,7 @@ lemma bb_step_A0_10_cleanup (k : Nat) (m : Nat) (l : ListBlank (Fin 2)) (r : Lis
     rw [h_right_split]
     have h_2steps_R :
       (((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k)) {{A}}> ((0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(m - 2*k - 2) +> r))
-      [target]⊢*
+      [target_tm]⊢*
       (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k + 1))) <{{A}} ([1] : List (Fin 2))^(m - 2*k - 2) +> r) := by
         step
         step
@@ -3477,7 +3475,7 @@ lemma bb_step_A0_10_cleanup (k : Nat) (m : Nat) (l : ListBlank (Fin 2)) (r : Lis
     refine stepStar_trans h_2steps_R ?_
     have h_2steps_L :
       (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k + 1))) <{{A}} ([1] : List (Fin 2))^(m - 2*k - 2) +> r)
-      [target]⊢*
+      [target_tm]⊢*
       (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k))) <{{A}} (([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r)) := by
         have h_rw : ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k + 1)) =
                     (1 : Fin 2) >> (1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k)) := by
@@ -3511,7 +3509,7 @@ lemma bb_step_A0_10_cleanup (k : Nat) (m : Nat) (l : ListBlank (Fin 2)) (r : Lis
     exact ⟨0, rfl⟩
 
 lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
-    (Config_gen a (2 * k + 1) 2) [target]⊢⁺
+    (Config_gen a (2 * k + 1) 2) [target_tm]⊢⁺
     ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2^(find_k a + 1) + k + 1) +> default, default⟩⟩ := by
   have ha_cases : a = 1 ∨ a = 2 ∨ a ≥ 3 := by omega
   rcases ha_cases with rfl | rfl | ha_ge3
@@ -3519,7 +3517,7 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     have h_phase1 := rule_odd_phase1 k 1 (by omega) (([1] : List (Fin 2))^1 +> default)
     have h_phase2 := rule_odd_phase2 1 (by omega) k (([1] : List (Fin 2))^1 +> default)
     have h_phases := stepStar_trans h_phase1 h_phase2
-    change (Config_gen 1 (2 * k + 1) 2) [target]⊢* ⟨some E, ⟨0, default, (1:Fin 2) >> (0:Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default⟩⟩ at h_phases
+    change (Config_gen 1 (2 * k + 1) 2) [target_tm]⊢* ⟨some E, ⟨0, default, (1:Fin 2) >> (0:Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default⟩⟩ at h_phases
     
     have h_eq : (1:Fin 2) >> (0:Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default =
                 ([1, 0] : List (Fin 2))^(k+2) +> (1 : Fin 2) >> default := by
@@ -3541,24 +3539,24 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     let c_e0_halt := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+3) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
     let c_f0_halt := (⟨some F, ⟨0, ListBlank.cons (0:Fin 2) (([1, 0] : List (Fin 2))^(k+3) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
     
-    have h_step5 : c_loop_end [target]⊢ c_f1_final := by rfl
-    have h_step6 : c_f1_final [target]⊢ c_e0_halt := by
+    have h_step5 : c_loop_end [target_tm]⊢ c_f1_final := by rfl
+    have h_step6 : c_f1_final [target_tm]⊢ c_e0_halt := by
       dsimp -failIfUnchanged [c_f1_final, c_e0_halt]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
       have h_pow_eq : ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+2) +> default)) = ([1, 0] : List (Fin 2))^(k+3) +> default := by
         change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^(k+2) +> default = ([1, 0] : List (Fin 2))^(k+3) +> default
         rw [← Turing.ListBlank.append_assoc]
         rfl
       rw [h_pow_eq]
       rfl
-    have h_step7 : c_e0_halt [target]⊢ c_f0_halt := by rfl
+    have h_step7 : c_e0_halt [target_tm]⊢ c_f0_halt := by rfl
     
-    have h_step5_star := step_stepStar target _ _ h_step5
-    have h_step6_star := step_stepStar target _ _ h_step6
-    have h_step7_plus := step_stepPlus target _ _ h_step7
+    have h_step5_star := step_stepStar target_tm _ _ h_step5
+    have h_step6_star := step_stepStar target_tm _ _ h_step6
+    have h_step7_plus := step_stepPlus target_tm _ _ h_step7
     
     have h_56 := stepStar_trans h_step5_star h_step6_star
-    have h_final := stepStar_stepPlus_stepPlus target _ _ _ h_56 h_step7_plus
+    have h_final := stepStar_stepPlus_stepPlus target_tm _ _ _ h_56 h_step7_plus
     
     have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2^(find_k 1 + 1) + k + 1) +> default, default⟩⟩ = c_f0_halt := by
       dsimp -failIfUnchanged [c_f0_halt]
@@ -3569,7 +3567,7 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
       rw [h_arith]
       
     rw [h_target_eq]
-    exact stepStar_stepPlus_stepPlus target _ _ _ h_phases2 h_final
+    exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_phases2 h_final
   · -- a = 2
     have h_phase1 := rule_odd_phase1 k 2 (by omega) (([1] : List (Fin 2))^1 +> default)
     have h_phase2 := rule_odd_phase2 2 (by omega) k (([1] : List (Fin 2))^1 +> default)
@@ -3577,7 +3575,7 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     
     have h_loop2 := rule_odd_h2_loop2 0 1 (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default)) (by omega)
     have h_phases2 := stepStar_trans h_phases h_loop2
-    change (Config_gen 2 (2 * k + 1) 2) [target]⊢* ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^2 +> default, ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default))⟩⟩ at h_phases2
+    change (Config_gen 2 (2 * k + 1) 2) [target_tm]⊢* ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^2 +> default, ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default))⟩⟩ at h_phases2
     
     have h_pow_unfold : ([1, 0] : List (Fin 2))^(k+2) +> ListBlank.cons (1 : Fin 2) default = ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default)) := by
       rw [show k+2 = 1 + (k+1) by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -3592,24 +3590,24 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     let c_e0_halt := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+5) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
     let c_f0_halt := (⟨some F, ⟨0, ListBlank.cons (0:Fin 2) (([1, 0] : List (Fin 2))^(k+5) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
     
-    have h_step5 : c_loop_end [target]⊢ c_f1_final := by rfl
-    have h_step6 : c_f1_final [target]⊢ c_e0_halt := by
+    have h_step5 : c_loop_end [target_tm]⊢ c_f1_final := by rfl
+    have h_step6 : c_f1_final [target_tm]⊢ c_e0_halt := by
       dsimp -failIfUnchanged [c_f1_final, c_e0_halt]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
       have h_pow_eq : ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+4) +> default)) = ([1, 0] : List (Fin 2))^(k+5) +> default := by
         change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^(k+4) +> default = ([1, 0] : List (Fin 2))^(k+5) +> default
         rw [← Turing.ListBlank.append_assoc]
         rfl
       rw [h_pow_eq]
       rfl
-    have h_step7 : c_e0_halt [target]⊢ c_f0_halt := by rfl
+    have h_step7 : c_e0_halt [target_tm]⊢ c_f0_halt := by rfl
     
-    have h_step5_star := step_stepStar target _ _ h_step5
-    have h_step6_star := step_stepStar target _ _ h_step6
-    have h_step7_plus := step_stepPlus target _ _ h_step7
+    have h_step5_star := step_stepStar target_tm _ _ h_step5
+    have h_step6_star := step_stepStar target_tm _ _ h_step6
+    have h_step7_plus := step_stepPlus target_tm _ _ h_step7
     
     have h_56 := stepStar_trans h_step5_star h_step6_star
-    have h_final := stepStar_stepPlus_stepPlus target _ _ _ h_56 h_step7_plus
+    have h_final := stepStar_stepPlus_stepPlus target_tm _ _ _ h_56 h_step7_plus
     
     have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2^(find_k 2 + 1) + k + 1) +> default, default⟩⟩ = c_f0_halt := by
       dsimp -failIfUnchanged [c_f0_halt]
@@ -3628,7 +3626,7 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     rw [h_cast] at h_phases3
     
     rw [h_target_eq]
-    exact stepStar_stepPlus_stepPlus target _ _ _ h_phases3 h_final
+    exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_phases3 h_final
   · -- a >= 3
     rcases h_halt with ⟨j, rfl⟩
     have hj_ge2 : j ≥ 2 := by
@@ -3693,24 +3691,24 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
     let c_e0 := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(N+1) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
     let c_halt := (⟨some F, ⟨0, ListBlank.cons 0 (([1, 0] : List (Fin 2))^(N+1) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
     
-    have h_step_pre_f1 : c_pre [target]⊢ c_f1 := by rfl
-    have h_step_f1_e0 : c_f1 [target]⊢ c_e0 := by
+    have h_step_pre_f1 : c_pre [target_tm]⊢ c_f1 := by rfl
+    have h_step_f1_e0 : c_f1 [target_tm]⊢ c_e0 := by
       dsimp -failIfUnchanged [c_f1, c_e0]
-      simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
+      simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, Option.map]
       have h_pow_eq : ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^N +> default)) = ([1, 0] : List (Fin 2))^(N+1) +> default := by
         change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^N +> default = ([1, 0] : List (Fin 2))^(N+1) +> default
         rw [← Turing.ListBlank.append_assoc]
         rfl
       rw [h_pow_eq]
       rfl
-    have h_step_e0_halt : c_e0 [target]⊢ c_halt := by rfl
+    have h_step_e0_halt : c_e0 [target_tm]⊢ c_halt := by rfl
     
-    have h_step_pre_f1_star := step_stepStar target _ _ h_step_pre_f1
-    have h_step_f1_e0_star := step_stepStar target _ _ h_step_f1_e0
-    have h_step_e0_halt_plus := step_stepPlus target _ _ h_step_e0_halt
+    have h_step_pre_f1_star := step_stepStar target_tm _ _ h_step_pre_f1
+    have h_step_f1_e0_star := step_stepStar target_tm _ _ h_step_f1_e0
+    have h_step_e0_halt_plus := step_stepPlus target_tm _ _ h_step_e0_halt
     
     have h_pre_e0 := stepStar_trans h_step_pre_f1_star h_step_f1_e0_star
-    have h_final_plus := stepStar_stepPlus_stepPlus target _ _ _ h_pre_e0 h_step_e0_halt_plus
+    have h_final_plus := stepStar_stepPlus_stepPlus target_tm _ _ _ h_pre_e0 h_step_e0_halt_plus
     
     have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2^(find_k (S j) + 1) + k + 1) +> default, default⟩⟩ = c_halt := by
       dsimp -failIfUnchanged [c_halt, N]
@@ -3721,18 +3719,18 @@ lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
       rw [h_find_k_eq]
       
     rw [h_target_eq]
-    exact stepStar_stepPlus_stepPlus target _ _ _ h_phases3 h_final_plus
+    exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_phases3 h_final_plus
 
 lemma step_E0_consume_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2)) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2)) +> left, right⟩⟩ := by
   use 2
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append]
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append]
 
 lemma step_E0_consume_10_many (n : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2))^n +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^n +> left, right⟩⟩ := by
   induction n generalizing left with
   | zero =>
@@ -3759,20 +3757,20 @@ lemma step_E0_consume_10_many (n : Nat) (left : ListBlank (Fin 2)) (right : List
 
 lemma step_E0_to_A0_gen (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ := by
   use 4
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, E, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, E, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 
 lemma step_E0_sweep_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢^{2}
+    [target_tm]⊢^{2}
     ⟨some E, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> left, right⟩⟩ := by
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 
 lemma rule_E0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^N +> left, right⟩⟩ := by
   induction N generalizing left with
   | zero =>
@@ -3786,7 +3784,7 @@ lemma rule_E0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (
     rw [h_unfold_right]
     have h_step := step_E0_sweep_10 left (([1, 0] : List (Fin 2))^N +> right)
     have h_step_plus : (⟨some E, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ⟨some E, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ := ⟨2, by omega, h_step⟩
     have h_step_star := stepPlus_stepStar h_step_plus
     have h_ih := ih ((1 : Fin 2) >> (0 : Fin 2) >> left)
@@ -3803,7 +3801,7 @@ lemma step_A0_bounce_gen (N : Nat) (m : Nat) (zs : ListBlank (Fin 2)) (r : ListB
 
     (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(N+1) +> zs, ([1] : List (Fin 2))^(2*m+3) +> (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> zs, ([1, 0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*m+1) +> (0 : Fin 2) >> r⟩⟩ := by
   have h_left : (([1, 0] : List (Fin 2))^(N+1) +> zs) = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs := by
     rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -3822,27 +3820,27 @@ lemma step_A0_bounce_gen (N : Nat) (m : Nat) (zs : ListBlank (Fin 2)) (r : ListB
     rfl
   rw [h_left, h_right, h_target_right]
   use 6
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 
 lemma step_E0_to_A (left : ListBlank (Fin 2)) :
 
     (⟨some E, ⟨0, left, ([1] : List (Fin 2))^2 +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
 
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> left, default⟩⟩ := by
   use 6
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, E, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, HPow.hPow, list_nat_repeat, List.append]
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, E, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, HPow.hPow, list_nat_repeat, List.append]
 
 
 lemma step_A0_to_A1 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢^{2} ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+    (⟨some A, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢^{2} ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 lemma step_A0_to_A0_step_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢^{2} ⟨some A, ⟨0, (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+    (⟨some A, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢^{2} ⟨some A, ⟨0, (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
 lemma rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*N) +> left, right⟩⟩ := by
   induction N generalizing left with
   | zero =>
@@ -3858,7 +3856,7 @@ lemma rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (
     rw [h_pow_succ]
     have h_step := step_A0_to_A0_step_10 left (([1, 0] : List (Fin 2))^N +> right)
     have h_step_star : (⟨some A, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢*
+      [target_tm]⊢*
       ⟨some A, ⟨0, (1 : Fin 2) >> (1 : Fin 2) >> left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ := ⟨2, h_step⟩
     have ih_inst := ih ((1 : Fin 2) >> (1 : Fin 2) >> left)
     have h_final := stepStar_trans h_step_star ih_inst
@@ -3873,20 +3871,20 @@ lemma rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (
 
 
 lemma step_A1_to_A0 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> left, right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢^{2} ⟨some A, ⟨0, left, ([1, 0] : List (Fin 2)) +> right⟩⟩ := by
-  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append]
+    (⟨some A, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> left, right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target_tm]⊢^{2} ⟨some A, ⟨0, left, ([1, 0] : List (Fin 2)) +> right⟩⟩ := by
+  simp only [multiStep_succ, multiStep_zero, Option.bind, step, target_tm, Turing.Tape.write, Turing.Tape.move, A, Option.map, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append]
 lemma rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(J+1) +> left, ([1, 0] : List (Fin 2))^K +> ([1] : List (Fin 2))^(2*m+1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^J +> left, ([1, 0] : List (Fin 2))^(K+2) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := by
   have h_sweep : (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(J+1) +> left, ([1, 0] : List (Fin 2))^K +> ([1] : List (Fin 2))^(2*m+1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*K) +> ([1, 0] : List (Fin 2))^(J+1) +> left, ([1] : List (Fin 2))^(2*m+1) +> right⟩⟩ := by
     have h_inst := rule_A0_sweep_10 K (([1, 0] : List (Fin 2))^(J+1) +> left) (([1] : List (Fin 2))^(2*m+1) +> right)
     exact h_inst
 
   have h_step_A0_A1 : (⟨some A, ⟨0, ([1] : List (Fin 2))^(2*K) +> ([1, 0] : List (Fin 2))^(J+1) +> left, ([1] : List (Fin 2))^(2*m+1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*K+2) +> ([1, 0] : List (Fin 2))^(J+1) +> left, ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := by
     have h_pow_unfold : ([1] : List (Fin 2))^(2*m+1) +> right = (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*m-1) +> right := by
       rw [show 2*m+1 = 2 + (2*m-1) by omega]
@@ -3903,21 +3901,21 @@ lemma rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat)
       rfl
     have h_step := step_A0_to_A1 (([1] : List (Fin 2))^(2*K) +> ([1, 0] : List (Fin 2))^(J+1) +> left) (([1] : List (Fin 2))^(2*m-1) +> right)
     have h_step_star : (⟨some A, ⟨0, ([1] : List (Fin 2))^(2*K) +> ([1, 0] : List (Fin 2))^(J+1) +> left, (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢*
+      [target_tm]⊢*
       ⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*K) +> ([1, 0] : List (Fin 2))^(J+1) +> left, ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := ⟨2, h_step⟩
     rw [←h_pow_unfold] at h_step_star
     rw [h_left_arith] at h_step_star
     exact h_step_star
 
   have h_even_sweep : (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*K+2) +> ([1, 0] : List (Fin 2))^(J+1) +> left, ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(J+1) +> left, ([1, 0] : List (Fin 2))^(K+1) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := by
     have h_inst := rule_even_phase1 (K+1) (([1, 0] : List (Fin 2))^(J+1) +> left) (([1] : List (Fin 2))^(2*m-1) +> right)
     rw [show 2*(K+1) = 2*K+2 by omega] at h_inst
     exact h_inst
 
   have h_step_A1_A0 : (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(J+1) +> left, ([1, 0] : List (Fin 2))^(K+1) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^J +> left, ([1, 0] : List (Fin 2))^(K+2) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := by
     have h_pow_unfold : ([1, 0] : List (Fin 2))^(J+1) +> left = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^J +> left := by
       rw [show J+1 = 1 + J by omega, list_pow_add, Turing.ListBlank.append_assoc]
@@ -3933,7 +3931,7 @@ lemma rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat)
 
     have h_step := step_A1_to_A0 (([1, 0] : List (Fin 2))^J +> left) (([1, 0] : List (Fin 2))^(K+1) +> ([1] : List (Fin 2))^(2*m-1) +> right)
     have h_step_star : (⟨some A, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^J +> left, ([1, 0] : List (Fin 2))^(K+1) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢*
+      [target_tm]⊢*
       ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^J +> left, ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^(K+1) +> ([1] : List (Fin 2))^(2*m-1) +> right⟩⟩ := ⟨2, h_step⟩
     rw [←h_pow_unfold] at h_step_star
     rw [h_right_arith] at h_step_star
@@ -3945,7 +3943,7 @@ lemma rule_odd_remainder_loop (j : Nat) (m : Nat) (K : Nat) (k : Nat) (ys : List
     let J := 2^(j+1) - 2
     let right_tail := (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys
     (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(J - K/2) +> default, ([1, 0] : List (Fin 2))^K +> ([1] : List (Fin 2))^(2*m+1) +> right_tail⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(J - (K/2 + m)) +> default, ([1, 0] : List (Fin 2))^(K + 2*m) +> ([1] : List (Fin 2))^1 +> right_tail⟩⟩ := by
   induction m generalizing K with
   | zero =>
@@ -3982,7 +3980,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
     let R_exp := 2*a + 2*j + 3 - 2^(j+2)
     let ys := (([1] : List (Fin 2))^(h-1) +> default)
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^J +> default, ([1] : List (Fin 2))^R_exp +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     target_odd a (2*k+1) h := by
   intro j J R_exp ys
 
@@ -4065,7 +4063,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
 
     have h_sweep2 := step_E0_sweep_10 (([1, 0] : List (Fin 2))^(J+k+1) +> default) ys
     have h_sweep2_plus : (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(J+k+1) +> default, (1 : Fin 2) >> (0 : Fin 2) >> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ⟨some E, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(J+k+1) +> default, ys⟩⟩ := ⟨2, by omega, h_sweep2⟩
     have h_sweep2_star := stepPlus_stepStar h_sweep2_plus
 
@@ -4091,7 +4089,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
     have h_bounce := step_E0_to_A0_gen (([1, 0] : List (Fin 2))^(J+k+2) +> default) (([1] : List (Fin 2))^(h-3) +> default)
     rw [←h_ys_unfold] at h_bounce
     
-    have h_sweep_all_plus := stepStar_stepPlus_stepPlus target _ _ _ h_sweep1 h_sweep2_plus
+    have h_sweep_all_plus := stepStar_stepPlus_stepPlus target_tm _ _ _ h_sweep1 h_sweep2_plus
     have h_bounce_star := h_bounce
     have h_total_plus := stepPlus_stepStar_stepPlus h_sweep_all_plus h_bounce_star
     have h_total_star := stepPlus_stepStar h_total_plus
@@ -4116,7 +4114,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
       have h_h2 : h - 1 - 2 = h - 3 := by omega
       rw [h_h2]
     rw [h_walk_target] at h_walk
-    exact stepStar_stepPlus_stepPlus target _ _ _ h_total_star h_walk
+    exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_total_star h_walk
 
   · have h_R_ge3 : R_exp ≥ 3 := by
       omega
@@ -4201,7 +4199,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
     rw [h_ys_eq] at h_walk
     have h_arith : 2 * (2 * m' + k + 2) = 4 * m' + 2 * k + 4 := by omega
     rw [h_arith] at h_after_sweep
-    have h_total_plus := stepStar_stepPlus_stepPlus target _ _ _ h_after_sweep h_walk
+    have h_total_plus := stepStar_stepPlus_stepPlus target_tm _ _ _ h_after_sweep h_walk
 
     have ha_neq : a ≠ S j := by
       intro h_eq
@@ -4236,7 +4234,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
     exact h_total_plus
 
 lemma rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) :
-    (Config_gen a g h) [target]⊢⁺ target_odd a g h := by
+    (Config_gen a g h) [target_tm]⊢⁺ target_odd a g h := by
   rcases hg_odd : (show ∃ k, g = 2*k + 1 by use g/2; omega) with ⟨k, rfl⟩
   rcases a with _ | a
   · omega
@@ -4315,24 +4313,24 @@ lemma rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) 
       let c1 := (⟨some F, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+2) +> default, (1 : Fin 2) >> ([1] : List (Fin 2))^(h-3) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
       let c2 := (⟨some E, ⟨1, ([1, 0] : List (Fin 2))^(k+3) +> default, ([1] : List (Fin 2))^(h-3) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
       
-      have h_step1 : c0 [target]⊢ c1 := by
+      have h_step1 : c0 [target_tm]⊢ c1 := by
         dsimp -failIfUnchanged [c0, c1]
-        simp only [step, target, Turing.Tape.write, Turing.Tape.move, E, F, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+        simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, E, F, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
         
-      have h_step2 : c1 [target]⊢ c2 := by
+      have h_step2 : c1 [target_tm]⊢ c2 := by
         dsimp -failIfUnchanged [c1, c2]
-        simp only [step, target, Turing.Tape.write, Turing.Tape.move, F, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
+        simp only [step, target_tm, Turing.Tape.write, Turing.Tape.move, F, E, Option.map, ListBlank.head_cons, ListBlank.tail_cons]
         have h_pow_eq : ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1, 0] : List (Fin 2))^(k+2) +> default)) = ([1, 0] : List (Fin 2))^(k+3) +> default := by
           change ([1, 0] : List (Fin 2)) +> ([1, 0] : List (Fin 2))^(k+2) +> default = ([1, 0] : List (Fin 2))^(k+3) +> default
           rw [← Turing.ListBlank.append_assoc]
           rfl
         rw [h_pow_eq]
         
-      have h_step1_star := step_stepStar target _ _ h_step1
-      have h_step2_star := step_stepStar target _ _ h_step2
+      have h_step1_star := step_stepStar target_tm _ _ h_step1
+      have h_step2_star := step_stepStar target_tm _ _ h_step2
       have h_steps12_plus := step_stepStar_stepPlus h_step1 h_step2_star
       
-      have h_phases3_plus := stepStar_stepPlus_stepPlus target _ _ _ h_phases2 h_steps12_plus
+      have h_phases3_plus := stepStar_stepPlus_stepPlus target_tm _ _ _ h_phases2 h_steps12_plus
       
       have h_bounce := bounce_step (k+2) default (([1] : List (Fin 2))^(h-3) +> default)
       
@@ -4407,13 +4405,13 @@ lemma rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) 
       
       have h_rem := rule_odd_remainder (a + 1 + 1) ha_ge2 k h hh
       
-      exact stepStar_stepPlus_stepPlus target _ _ _ h_after_chain h_rem
+      exact stepStar_stepPlus_stepPlus target_tm _ _ _ h_after_chain h_rem
 
 
 
 lemma sweep_C_left (g : Nat) (k : Nat) :
     (⟨some C, ⟨1, ([1] : List (Fin 2))^g +> default, ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some C, ⟨0, default, ([1] : List (Fin 2))^(g + k + 1) +> default⟩⟩ := by
   induction g generalizing k with
   | zero =>
@@ -4422,10 +4420,10 @@ lemma sweep_C_left (g : Nat) (k : Nat) :
     rfl
   | succ g ih =>
     have h_step : (⟨some C, ⟨1, ([1] : List (Fin 2))^(g+1) +> default, ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-                  [target]⊢
+                  [target_tm]⊢
                   ⟨some C, ⟨1, ([1] : List (Fin 2))^g +> default, ([1] : List (Fin 2))^(k+1) +> default⟩⟩ := by
-      simp only [step, target, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
-    have h_step_star := step_stepStar target _ _ h_step
+      simp only [step, target_tm, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    have h_step_star := step_stepStar target_tm _ _ h_step
     have h_ih := ih (k+1)
     have h_eq : g + (k + 1) + 1 = g + 1 + k + 1 := by omega
     rw [h_eq] at h_ih
@@ -4433,38 +4431,38 @@ lemma sweep_C_left (g : Nat) (k : Nat) :
 
 lemma sweep_C_left_gen (g k : Nat) (xs : ListBlank (Fin 2)) :
     (⟨some C, ⟨1, ([1] : List (Fin 2))^g +> xs, ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
+    [target_tm]⊢*
     ⟨some C, ⟨xs.head, xs.tail, ([1] : List (Fin 2))^(g + k + 1) +> default⟩⟩ := by
   induction g generalizing k with
   | zero =>
     use 1
     dsimp -failIfUnchanged
-    simp only [step, target, C, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append, zero_add]
+    simp only [step, target_tm, C, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append, zero_add]
   | succ g ih =>
     have h_step : (⟨some C, ⟨1, ([1] : List (Fin 2))^(g+1) +> xs, ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-                  [target]⊢
+                  [target_tm]⊢
                   ⟨some C, ⟨1, ([1] : List (Fin 2))^g +> xs, ([1] : List (Fin 2))^(k+1) +> default⟩⟩ := by
       dsimp -failIfUnchanged
-      simp only [step, target, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
-    have h_step_star := step_stepStar target _ _ h_step
+      simp only [step, target_tm, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    have h_step_star := step_stepStar target_tm _ _ h_step
     have h_ih := ih (k+1)
     have h_eq : g + (k + 1) + 1 = g + 1 + k + 1 := by omega
     rw [h_eq] at h_ih
     exact stepStar_trans h_step_star h_ih
 
 lemma rule_E0 (g : Nat) :
-    (Config_1 g 0) [target]⊢⁺ (Config_1 1 (g + 2)) := by
+    (Config_1 g 0) [target_tm]⊢⁺ (Config_1 1 (g + 2)) := by
   unfold Config_1 Config_gen
   simp only [HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, List.append]
   have h1 : (⟨some A, ⟨0, ([1] : List (Fin 2))^g +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some B, ⟨0, ([1] : List (Fin 2))^(g+1) +> default, default⟩⟩ := by
-    simp only [step, target, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
     rfl
   have h2 : (⟨some B, ⟨0, ([1] : List (Fin 2))^(g+1) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some C, ⟨1, ([1] : List (Fin 2))^g +> default, ([1] : List (Fin 2)) +> default⟩⟩ := by
-    simp only [step, target, B, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, B, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
   have h3_prep := sweep_C_left g 1
   have h3_eq1 : (([1] : List (Fin 2))^1 +> default) = ([1] : List (Fin 2)) +> default := by
     simp only [HPow.hPow, list_nat_repeat, List.append]
@@ -4472,14 +4470,14 @@ lemma rule_E0 (g : Nat) :
   rw [h3_eq1, h3_eq2] at h3_prep
   have h3 := h3_prep
   have h4 : (⟨some C, ⟨0, default, ([1] : List (Fin 2))^(g+2) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some A, ⟨1, ([1] : List (Fin 2)) +> default, ([1] : List (Fin 2))^(g+1) +> default⟩⟩ := by
-    simp only [step, target, C, A, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, C, A, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
 
-  have h1_star := step_stepStar target _ _ h1
-  have h12 := stepStar_trans h1_star (step_stepStar target _ _ h2)
+  have h1_star := step_stepStar target_tm _ _ h1
+  have h12 := stepStar_trans h1_star (step_stepStar target_tm _ _ h2)
   have h123 := stepStar_trans h12 h3
-  exact stepStar_step_stepPlus target _ _ _ h123 h4
+  exact stepStar_step_stepPlus target_tm _ _ _ h123 h4
 
 lemma append_one {Γ} [Inhabited Γ] (c : Γ) (xs : ListBlank Γ) : [c] +> xs = c >> xs := rfl
 
@@ -4509,30 +4507,30 @@ lemma Cfg_A_garbage_eq_Config_gen (a g : Nat) :
   rw [cons_default_eq]
 
 lemma step_to_D (a k : Nat) (hk : k ≥ 1) :
-    (Config_gen a (2 * k) 1) [target]⊢ (Cfg_D_int a (2 * k - 1)) := by
+    (Config_gen a (2 * k) 1) [target_tm]⊢ (Cfg_D_int a (2 * k - 1)) := by
   unfold Config_gen Cfg_D_int
   rw [unfold_pow_1_gen (2*k) (by omega)]
-  simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, A, D,
+  simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, A, D,
     Turing.Tape.move, Turing.Tape.write, Option.map, HPow.hPow, list_nat_repeat, List.append]
 
 lemma step_D_to_A_garbage (a k : Nat) (hk : k ≥ 1) :
-    (Cfg_D_int a (2 * k - 1)) [target]⊢ (Cfg_A_garbage a (2 * k - 2)) := by
+    (Cfg_D_int a (2 * k - 1)) [target_tm]⊢ (Cfg_A_garbage a (2 * k - 2)) := by
   unfold Cfg_D_int Cfg_A_garbage
   rw [unfold_pow_1_gen (2*k - 1) (by omega)]
   have heq : 2 * k - 1 - 1 = 2 * k - 2 := by omega
   rw [heq]
-  simp only [step, target, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, A, D,
+  simp only [step, target_tm, ListBlank.head_cons, ListBlank.tail_cons, ListBlank.append, A, D,
     Turing.Tape.move, Turing.Tape.write, Option.map, HPow.hPow]
 
 lemma rule_h1_even_correct (a k : Nat) (hk : k ≥ 1) :
-    (Config_gen a (2 * k) 1) [target]⊢⁺ (Cfg_A_garbage a (2 * k - 2)) := by
+    (Config_gen a (2 * k) 1) [target_tm]⊢⁺ (Cfg_A_garbage a (2 * k - 2)) := by
   have h1 := step_to_D a k hk
   have h2 := step_D_to_A_garbage a k hk
-  have h2_star := step_stepStar target _ _ h2
+  have h2_star := step_stepStar target_tm _ _ h2
   exact step_stepStar_stepPlus h1 h2_star
 
 lemma rule_h1_even_gen (a k : Nat) (hk : k ≥ 1) :
-    (Config_gen a (2 * k) 1) [target]⊢⁺ Config_gen a (2 * k - 2) 2 := by
+    (Config_gen a (2 * k) 1) [target_tm]⊢⁺ Config_gen a (2 * k - 2) 2 := by
   have h1 := rule_h1_even_correct a k hk
   rw [← Cfg_A_garbage_eq_Config_gen]
   exact h1
@@ -4541,7 +4539,7 @@ def cfg_halt_0_0_2 : Cfg (Fin 2) (Fin 6) :=
   ⟨some F, ⟨0, (0:Fin 2) >> (1:Fin 2) >> (0:Fin 2) >> (1:Fin 2) >> (0:Fin 2) >> default, default⟩⟩
 
 lemma rule_even_0_0_2 :
-    ∃ cfg', ((Config_gen 0 0 2) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
+    ∃ cfg', ((Config_gen 0 0 2) [target_tm]⊢⁺ cfg') ∧ (step target_tm cfg').isNone := by
   use cfg_halt_0_0_2
   constructor
   · use 7
@@ -4551,18 +4549,18 @@ lemma rule_even_0_0_2 :
   · rfl
 
 lemma rule_h0_gen (a g : Nat) :
-    (Config_gen (a+1) g 0) [target]⊢⁺ (Config_gen a 1 (g+3)) := by
+    (Config_gen (a+1) g 0) [target_tm]⊢⁺ (Config_gen a 1 (g+3)) := by
   have h_LHS : Config_gen (a+1) g 0 = ⟨some A, ⟨0, ([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^(a+1) +> default, default⟩⟩ := by rfl
   rw [h_LHS]
   have h1 : (⟨some A, ⟨0, ([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^(a+1) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some B, ⟨0, ([1] : List (Fin 2))^(g+1) +> ([1, 0] : List (Fin 2))^(a+1) +> default, default⟩⟩ := by
-    simp only [step, target, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, A, B, HPow.hPow, list_nat_repeat, ListBlank.append, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
     rfl
   have h2 : (⟨some B, ⟨0, ([1] : List (Fin 2))^(g+1) +> ([1, 0] : List (Fin 2))^(a+1) +> default, default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some C, ⟨1, ([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^(a+1) +> default, ([1] : List (Fin 2)) +> default⟩⟩ := by
-    simp only [step, target, B, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, B, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
   have h3_prep := sweep_C_left_gen g 1 (([1, 0] : List (Fin 2))^(a+1) +> default)
   have h3_eq1 : (([1] : List (Fin 2))^1 +> default) = ([1] : List (Fin 2)) +> default := by
     simp only [HPow.hPow, list_nat_repeat, List.append]
@@ -4570,7 +4568,7 @@ lemma rule_h0_gen (a g : Nat) :
   rw [h3_eq1, h3_eq2] at h3_prep
   have h3 := h3_prep
   have h4 : (⟨some C, ⟨(([1, 0] : List (Fin 2))^(a+1) +> default).head, (([1, 0] : List (Fin 2))^(a+1) +> default).tail, ([1] : List (Fin 2))^(g+2) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some C, ⟨0, ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(g+3) +> default⟩⟩ := by
     have h_head : (([1, 0] : List (Fin 2))^(a+1) +> default).head = 1 := by
       have h_pow : ([1, 0] : List (Fin 2))^(a+1) +> default = (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^a +> default := by
@@ -4583,10 +4581,10 @@ lemma rule_h0_gen (a g : Nat) :
         rw [ListBlank.append_assoc, append_two]
       rw [h_pow, Turing.ListBlank.tail_cons]
     rw [h_head, h_tail]
-    simp only [step, target, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, C, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
     
   have h5 : (⟨some C, ⟨0, ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(g+3) +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-            [target]⊢
+            [target_tm]⊢
             ⟨some A, ⟨1, (1 : Fin 2) >> ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(g+2) +> default⟩⟩ := by
     rw [show (⟨some C, ⟨0, ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(g+3) +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) = ⟨some C, ⟨0, ([1, 0] : List (Fin 2))^a +> default, (1 : Fin 2) >> ([1] : List (Fin 2))^(g+2) +> default⟩⟩ by
       have h_pow : ([1] : List (Fin 2))^(g+3) +> default = (1 : Fin 2) >> ([1] : List (Fin 2))^(g+2) +> default := by
@@ -4595,13 +4593,13 @@ lemma rule_h0_gen (a g : Nat) :
         rfl
       rw [h_pow]
     ]
-    simp only [step, target, C, A, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
+    simp only [step, target_tm, C, A, HPow.hPow, list_nat_repeat, ListBlank.append, ListBlank.head_cons, ListBlank.tail_cons, Turing.Tape.move, Turing.Tape.write, Option.map, List.append]
 
-  have h1_star := step_stepStar target _ _ h1
-  have h12 := stepStar_trans h1_star (step_stepStar target _ _ h2)
+  have h1_star := step_stepStar target_tm _ _ h1
+  have h12 := stepStar_trans h1_star (step_stepStar target_tm _ _ h2)
   have h123 := stepStar_trans h12 h3
-  have h1234 := stepStar_trans h123 (step_stepStar target _ _ h4)
-  have h12345 := stepStar_step_stepPlus target _ _ _ h1234 h5
+  have h1234 := stepStar_trans h123 (step_stepStar target_tm _ _ h4)
+  have h12345 := stepStar_step_stepPlus target_tm _ _ _ h1234 h5
   
   have h_RHS : Config_gen a 1 (g+3) = ⟨some A, ⟨1, (1 : Fin 2) >> ([1, 0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(g+2) +> default⟩⟩ := by
     unfold Config_gen
@@ -4615,17 +4613,17 @@ lemma rule_h0_gen (a g : Nat) :
   exact h12345
 
 
-lemma init_reach_Config_1_1_2 : (init []) [target]⊢* (Config_1 1 2) := by
+lemma init_reach_Config_1_1_2 : (init []) [target_tm]⊢* (Config_1 1 2) := by
   use 4
   rfl
 
 
 theorem rules_closed :
   ∃ (ps : TapePatternSet (Fin 2) (Fin 6)),
-    (∃ cfg₀, ((init []) [target]⊢* cfg₀) ∧ IsInPatternSet ps cfg₀) ∧
+    (∃ cfg₀, ((init []) [target_tm]⊢* cfg₀) ∧ IsInPatternSet ps cfg₀) ∧
     (∀ cfg, IsInPatternSet ps cfg →
-      ∃ cfg', (cfg [target]⊢⁺ cfg') ∧
-               (IsInPatternSet ps cfg' ∨ (step target cfg').isNone)) := by
+      ∃ cfg', (cfg [target_tm]⊢⁺ cfg') ∧
+               (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone)) := by
   use my_ps
   constructor
   · use Config_gen 0 1 2
@@ -4885,7 +4883,7 @@ theorem rules_closed :
         have h_a_cases : a = 0 ∨ a ≥ 1 := by omega
         rcases h_a_cases with rfl | ha_ge
         · -- a = 0
-          have h_trans1 : (Config_gen 0 2 1) [target]⊢⁺ Config_gen 0 0 2 := rule_h1_even_gen 0 1 (by omega)
+          have h_trans1 : (Config_gen 0 2 1) [target_tm]⊢⁺ Config_gen 0 0 2 := rule_h1_even_gen 0 1 (by omega)
           have h_halt := rule_even_0_0_2
           rcases h_halt with ⟨cfg_halt, h_trans2, h_none⟩
           use cfg_halt
@@ -4893,8 +4891,8 @@ theorem rules_closed :
           · exact stepPlus_stepStar_stepPlus h_trans1 (stepPlus_stepStar h_trans2)
           · right; exact h_none
         · -- a ≥ 1
-          have h_trans1 : (Config_gen a 2 1) [target]⊢⁺ Config_gen a 0 2 := rule_h1_even_gen a 1 (by omega)
-          have h_trans2 : (Config_gen a 0 2) [target]⊢⁺ Config_gen (a-1) 4 0 := rule_even_gen a 0 2 ha_ge (by omega)
+          have h_trans1 : (Config_gen a 2 1) [target_tm]⊢⁺ Config_gen a 0 2 := rule_h1_even_gen a 1 (by omega)
+          have h_trans2 : (Config_gen a 0 2) [target_tm]⊢⁺ Config_gen (a-1) 4 0 := rule_even_gen a 0 2 ha_ge (by omega)
           use Config_gen (a-1) 4 0
           constructor
           · exact stepPlus_stepStar_stepPlus h_trans1 (stepPlus_stepStar h_trans2)
@@ -4903,7 +4901,7 @@ theorem rules_closed :
             left
             refine ⟨a-1, 4, rfl, by omega⟩
       · -- k > 1
-        have h_trans : (Config_gen a (2*k) 1) [target]⊢⁺ Config_gen a (2*k-2) 2 := rule_h1_even_gen a k (by omega)
+        have h_trans : (Config_gen a (2*k) 1) [target_tm]⊢⁺ Config_gen a (2*k-2) 2 := rule_h1_even_gen a k (by omega)
         use Config_gen a (2*k-2) 2
         constructor
         · exact h_trans
@@ -4918,6 +4916,6 @@ theorem rules_closed :
 
 -- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
 
-theorem has_collatz_reduction : HasCollatzReduction target := rules_closed
+theorem is_cryptid : IsCryptid target_tm := rules_closed
 
 end BusyBeaver.M_1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_HHH1RE

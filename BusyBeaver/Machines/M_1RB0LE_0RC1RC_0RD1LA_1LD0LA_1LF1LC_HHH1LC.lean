@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 4, Stmt.write 0 Dir.left)
   | 1, 0 => some (some 2, Stmt.write 0 Dir.right)
@@ -336,7 +334,7 @@ macro "execute" : tactic =>
 macro "simptape" : tactic =>
   `(tactic| simp only [zPsl, zPz, zCal, List.nil_append, zAnl, zLac, zLan, zZcd, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zDh, zDt])
 lemma shift_A_left_111 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 1, 1] : List (Fin 2))^k) <{{A}} r) [target]⊢*
+    ((l <+ ([1, 1, 1] : List (Fin 2))^k) <{{A}} r) [target_tm]⊢*
     (l <{{A}} (([1, 1, 0] : List (Fin 2))^k +> r)) := by
   induction k generalizing l r with
   | zero =>
@@ -345,14 +343,14 @@ lemma shift_A_left_111 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([1, 1, 1] : List (Fin 2))^k) <+ [1, 1, 1]) <{{A}} r)
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((l <+ ([1, 1, 1] : List (Fin 2))^k) <{{A}} ([1, 1, 0] +> r)) := by
       simptape; execute
     have h2 := ih l (([1, 1, 0] : List (Fin 2)) +> r)
     rw [zPa1 ([1, 1, 0] : List (Fin 2)) k r] at h2
     exact zPs (zPsp h1 h2)
 lemma shift_D_right_10 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ [0]) {{D}}> (([1, 0] : List (Fin 2))^k +> r)) [target]⊢*
+    ((l <+ [0]) {{D}}> (([1, 0] : List (Fin 2))^k +> r)) [target_tm]⊢*
     (((l <+ ([0, 1] : List (Fin 2))^k) <+ [0]) {{D}}> r) := by
   induction k generalizing l r with
   | zero =>
@@ -361,14 +359,14 @@ lemma shift_D_right_10 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsr]
     have h1 : ((l <+ [0]) {{D}}> ([1, 0] +> (([1, 0] : List (Fin 2))^k +> r)))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         (((l <+ [0, 1]) <+ [0]) {{D}}> (([1, 0] : List (Fin 2))^k +> r)) := by
       simptape; execute
     have h2 := ih (l <+ [0, 1]) r
     rw [zPal l ([0, 1] : List (Fin 2)) k] at h2
     exact zPs (zPsp h1 h2)
 lemma shift_D_right_110 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^k +> r)) [target]⊢*
+    ((l <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^k +> r)) [target_tm]⊢*
     (((l <+ ([1, 1, 1] : List (Fin 2))^k) <+ [0]) {{D}}> r) := by
   induction k generalizing l r with
   | zero =>
@@ -377,14 +375,14 @@ lemma shift_D_right_110 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsr]
     have h1 : ((l <+ [0]) {{D}}> ([1, 1, 0] +> (([1, 1, 0] : List (Fin 2))^k +> r)))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         (((l <+ [1, 1, 1]) <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^k +> r)) := by
       simptape; execute
     have h2 := ih (l <+ [1, 1, 1]) r
     rw [zPal l ([1, 1, 1] : List (Fin 2)) k] at h2
     exact zPs (zPsp h1 h2)
 lemma shift_A_left_01_with_110 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([0, 1] : List (Fin 2))^k) <{{A}} ([1, 1, 0] +> r)) [target]⊢*
+    ((l <+ ([0, 1] : List (Fin 2))^k) <{{A}} ([1, 1, 0] +> r)) [target_tm]⊢*
     (l <{{A}} ([1, 1, 0] +> (([1, 0] : List (Fin 2))^k +> r))) := by
   induction k generalizing l r with
   | zero =>
@@ -393,18 +391,18 @@ lemma shift_A_left_01_with_110 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([0, 1] : List (Fin 2))^k) <+ [0, 1]) <{{A}} ([1, 1, 0] +> r))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((l <+ ([0, 1] : List (Fin 2))^k) <{{A}} ([1, 1, 0] +> ([1, 0] +> r))) := by
       simptape; execute
     have h2 := ih l ([1, 0] +> r)
     rw [zPa1 ([1, 0] : List (Fin 2)) k r] at h2
     exact zPs (zPsp h1 h2)
 lemma bounce_A_left_with_110 (r : ListBlank (Fin 2)) :
-    (default <{{A}} ([1, 1, 0] +> r)) [target]⊢⁺
+    (default <{{A}} ([1, 1, 0] +> r)) [target_tm]⊢⁺
     (default {{D}}> (([1, 0] : List (Fin 2))^2 +> r)) := by
   simptape; execute
 lemma drain_A_left_01_with_110 (a : Nat) (r : ListBlank (Fin 2)) :
-    ((default <+ ([0, 1] : List (Fin 2))^a) <{{A}} ([1, 1, 0] +> r)) [target]⊢⁺
+    ((default <+ ([0, 1] : List (Fin 2))^a) <{{A}} ([1, 1, 0] +> r)) [target_tm]⊢⁺
     (default {{D}}> (([1, 0] : List (Fin 2))^(a + 2) +> r)) := by
   have h1 := shift_A_left_01_with_110 a default r
   have h2 := bounce_A_left_with_110 (([1, 0] : List (Fin 2))^a +> r)
@@ -415,7 +413,7 @@ lemma drain_A_left_01_with_110 (a : Nat) (r : ListBlank (Fin 2)) :
   exact zSpp h1 h2
 lemma drain_A_left_111_01_with_110 (a b : Nat) (r : ListBlank (Fin 2)) :
     (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^b) <{{A}} ([1, 1, 0] +> r))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     (default {{D}}> (([1, 0] : List (Fin 2))^(a + 2) +> (([1, 1, 0] : List (Fin 2))^b +> r))) := by
   have h1 := shift_A_left_111 b (default <+ ([0, 1] : List (Fin 2))^a) ([1, 1, 0] +> r)
   have h_eq : (([1, 1, 0] : List (Fin 2))^b +> ([1, 1, 0] +> r)) =
@@ -428,13 +426,13 @@ lemma drain_A_left_111_01_with_110 (a b : Nat) (r : ListBlank (Fin 2)) :
   exact zSpp h1 (drain_A_left_01_with_110 a (([1, 1, 0] : List (Fin 2))^b +> r))
 lemma roundtrip_D_110_cap0 (b d : Nat) (l_0 : ListBlank (Fin 2)) :
     ((l_0 <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^(b + 1) +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-    [target]⊢⁺
+    [target_tm]⊢⁺
     ((l_0 <+ [1, 1]) <{{A}} (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^(d + 2) +> default)))) := by
   have h1 := shift_D_right_110 (b + 1) l_0 (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))
   rw [split_111_succ b l_0] at h1
   have h2 : (((((l_0 <+ [1, 1]) <+ ([1, 1, 1] : List (Fin 2))^b) <+ [1]) <+ [0]) {{D}}>
       (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l_0 <+ [1, 1]) <+ ([1, 1, 1] : List (Fin 2))^b) <{{A}}
         (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^(d + 2) +> default))) := by
     have hd : (([1] : List (Fin 2))^(d + 2) +> default) =
@@ -466,21 +464,21 @@ lemma in_ps_D (a b c d : Nat) (hc : c <= 1) : IsInPatternSet ps_0613 (D_cfg a b 
   simp only [evalVarCond]
   omega
 def Closes (cfg : Cfg (Fin 2) (Fin 6)) : Prop :=
-  ∃ cfg', (cfg [target]⊢⁺ cfg') /\
-          (IsInPatternSet ps_0613 cfg' \/ (step target cfg').isNone)
+  ∃ cfg', (cfg [target_tm]⊢⁺ cfg') /\
+          (IsInPatternSet ps_0613 cfg' \/ (step target_tm cfg').isNone)
 lemma closes_of_stepPlus {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
-    (h₁ : c_1 [target]⊢⁺ c_2) (h₂ : Closes c_2) : Closes c_1 := by
+    (h₁ : c_1 [target_tm]⊢⁺ c_2) (h₂ : Closes c_2) : Closes c_1 := by
   obtain ⟨c_3, h₂₃, h₃⟩ := h₂
   exact ⟨c_3, zPt h₁ h₂₃, h₃⟩
 lemma closes_of_stepStar {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
-    (h₁ : c_1 [target]⊢* c_2) (h₂ : Closes c_2) : Closes c_1 := by
+    (h₁ : c_1 [target_tm]⊢* c_2) (h₂ : Closes c_2) : Closes c_1 := by
   obtain ⟨c_3, h₂₃, h₃⟩ := h₂
   exact ⟨c_3, zSpp h₁ h₂₃, h₃⟩
 lemma closes_of_in_ps {c_1 : Cfg (Fin 2) (Fin 6)} {a b c d : Nat}
-    (h₁ : c_1 [target]⊢⁺ D_cfg a b c d) (hc : c <= 1) : Closes c_1 :=
+    (h₁ : c_1 [target_tm]⊢⁺ D_cfg a b c d) (hc : c <= 1) : Closes c_1 :=
   ⟨D_cfg a b c d, h₁, Or.inl (in_ps_D a b c d hc)⟩
 lemma closes_of_halt {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
-    (h₁ : c_1 [target]⊢⁺ c_2) (h₂ : (step target c_2).isNone) : Closes c_1 :=
+    (h₁ : c_1 [target_tm]⊢⁺ c_2) (h₂ : (step target_tm c_2).isNone) : Closes c_1 :=
   ⟨c_2, h₁, Or.inr h₂⟩
 def A_ones (a k b d : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) <{{A}}
@@ -489,7 +487,7 @@ lemma closes_A_ones_k2 (a b d : Nat) : Closes (A_ones a 2 b d) := by
   unfold A_ones
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^3) <{{A}}
       (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default <+ ([0, 1] : List (Fin 2))^a) <{{A}}
         ([1, 1, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^d +> default))))) := by
     simptape; execute
@@ -502,16 +500,16 @@ lemma closes_A_ones_k0 (a b d : Nat) : Closes (A_ones a 0 b d) := by
     unfold A_ones
     have h1 : (((default <+ ([0, 1] : List (Fin 2))^0) <+ ([1] : List (Fin 2))^1) <{{A}}
         (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         (default <{{F}} ([1, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))) := by
       simptape; execute
     refine closes_of_halt h1 ?_
-    simp [step, target, F, zDh]
+    simp [step, target_tm, F, zDh]
   ·
     unfold A_ones
     have h1 : (((default <+ ([0, 1] : List (Fin 2))^1) <+ ([1] : List (Fin 2))^1) <{{A}}
         (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-        [target]⊢⁺ D_cfg 0 (b + 1) 1 d := by
+        [target_tm]⊢⁺ D_cfg 0 (b + 1) 1 d := by
       unfold D_cfg
       rw [zPsr ([1, 1, 0] : List (Fin 2)) b]
       simptape; execute
@@ -520,7 +518,7 @@ lemma closes_A_ones_k0 (a b d : Nat) : Closes (A_ones a 0 b d) := by
     unfold A_ones
     have h1 : (((default <+ ([0, 1] : List (Fin 2))^(a' + 2)) <+ ([1] : List (Fin 2))^1) <{{A}}
         (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((((default <+ ([0, 1] : List (Fin 2))^a') <+ [1]) <+ [0]) {{D}}>
           (([1, 1, 0] : List (Fin 2))^(b + 1) +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default)))) := by
       rw [zPl default ([0, 1] : List (Fin 2)) a' 2]
@@ -536,7 +534,7 @@ lemma closes_A_ones_k0 (a b d : Nat) : Closes (A_ones a 0 b d) := by
     rw [h_eq] at h2
     exact closes_of_stepPlus (zPt h1 h2) (closes_A_ones_k2 a' b (d + 2))
 lemma step_A_ones_ksucc3 (a k b d : Nat) :
-    (A_ones a (k + 3) b d) [target]⊢⁺ (A_ones a k (b + 1) d) := by
+    (A_ones a (k + 3) b d) [target_tm]⊢⁺ (A_ones a k (b + 1) d) := by
   unfold A_ones
   rw [zPl (default <+ ([0, 1] : List (Fin 2))^a) ([1] : List (Fin 2)) (k + 1) 3]
   rw [zPsr ([1, 1, 0] : List (Fin 2)) b]
@@ -548,7 +546,7 @@ lemma closes_H_mid_a0_m1 (b : Nat) : Closes (H_mid 0 (b + 1) 1) := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^0) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^1 +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <{{A}}
         (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^3 +> default))) := by
     rw [zPl (default <+ [1]) ([1, 1, 1] : List (Fin 2)) b 1]
@@ -559,7 +557,7 @@ lemma closes_H_mid_asucc_m1 (a b : Nat) : Closes (H_mid (a + 1) (b + 1) 1) := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^(a + 1)) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^1 +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default <+ ([0, 1] : List (Fin 2))^(a + 1)) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <{{A}}
         (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^3 +> default))) := by
     rw [zPl ((default <+ ([0, 1] : List (Fin 2))^(a + 1)) <+ [1]) ([1, 1, 1] : List (Fin 2)) b 1]
@@ -572,7 +570,7 @@ lemma closes_H_mid_m2 (a b : Nat) : Closes (H_mid a (b + 1) 2) := by
   rw [comm_1_111 (b + 1) (default <+ ([0, 1] : List (Fin 2))^a)]
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [1]) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^2 +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <{{A}}
         ([1, 1, 0] +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^2 +> default)))) := by
     simptape; execute
@@ -583,7 +581,7 @@ lemma closes_H_mid_a0_m3 (b m : Nat) : Closes (H_mid 0 (b + 1) (m + 3)) := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^0) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^(m + 3) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 2)) <{{A}}
         (([1] : List (Fin 2))^(m + 1) +> default)) := by
     have hm : (([1] : List (Fin 2))^(m + 3) +> default) =
@@ -599,19 +597,19 @@ lemma closes_H_mid_a0_m3 (b m : Nat) : Closes (H_mid 0 (b + 1) (m + 3)) := by
   have h2 := shift_A_left_111 (b + 2) (default <+ [1]) (([1] : List (Fin 2))^(m + 1) +> default)
   have h3 : ((default <+ [1]) <{{A}}
       (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (default <{{F}} ([1, 0] +> (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default)))) := by
     simptape; execute
   refine closes_of_halt (zPt (zPsp h1 h2) h3) ?_
-  simp [step, target, F, zDh]
+  simp [step, target_tm, F, zDh]
 lemma step_H_mid_a1_m3_prefix (b m : Nat) :
-    (H_mid 1 (b + 1) (m + 3)) [target]⊢⁺
+    (H_mid 1 (b + 1) (m + 3)) [target_tm]⊢⁺
     (((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^(m + 1) +> default)) := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^1) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^(m + 3) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default <+ ([0, 1] : List (Fin 2))^1) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 2)) <{{A}}
         (([1] : List (Fin 2))^(m + 1) +> default)) := by
     have hm : (([1] : List (Fin 2))^(m + 3) +> default) =
@@ -628,7 +626,7 @@ lemma step_H_mid_a1_m3_prefix (b m : Nat) :
     (([1] : List (Fin 2))^(m + 1) +> default)
   have h3 : (((default <+ ([0, 1] : List (Fin 2))^1) <+ [1]) <{{A}}
       (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ ([1, 1, 1] : List (Fin 2))^1) <+ [0]) {{D}}>
         (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default))) := by
     rw [zPsr ([1, 1, 0] : List (Fin 2)) (b + 1)]
@@ -648,7 +646,7 @@ lemma closes_H_mid_a1_m3 (b m : Nat) : Closes (H_mid 1 (b + 1) (m + 3)) := by
   ·
     have h1 : ((((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
         (([1] : List (Fin 2))^1 +> default)))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((default <+ ([1, 1, 1] : List (Fin 2))^(b + 2)) <{{A}}
           ([1, 1, 0] +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^3 +> default)))) := by
       rw [zPl default ([1, 1, 1] : List (Fin 2)) (b + 2) 1]
@@ -659,7 +657,7 @@ lemma closes_H_mid_a1_m3 (b m : Nat) : Closes (H_mid 1 (b + 1) (m + 3)) := by
   ·
     have h1 : ((((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
         (([1] : List (Fin 2))^2 +> default)))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         (((default <+ [1, 1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <{{A}}
           (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^2 +> default))) := by
       rw [split_111_succ (b + 2) default]
@@ -669,14 +667,14 @@ lemma closes_H_mid_a1_m3 (b m : Nat) : Closes (H_mid 1 (b + 1) (m + 3)) := by
       (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^2 +> default))
     have h3 : ((default <+ [1, 1]) <{{A}}
         (([1, 1, 0] : List (Fin 2))^(b + 3) +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^2 +> default))))
-        [target]⊢⁺ D_cfg 1 (b + 3) 1 2 := by
+        [target_tm]⊢⁺ D_cfg 1 (b + 3) 1 2 := by
       unfold D_cfg
       simptape; execute
     exact closes_of_in_ps (zPt h_pref (zPt (zPsp h1 h2) h3)) (by decide)
   ·
     have h1 : ((((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
         (([1] : List (Fin 2))^(m' + 3) +> default)))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         ((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <{{A}}
           ([1, 1, 0] +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(m' + 1) +> default)))) := by
       have hm : (([1] : List (Fin 2))^(m' + 3) +> default) =
@@ -689,11 +687,11 @@ lemma closes_H_mid_a1_m3 (b m : Nat) : Closes (H_mid 1 (b + 1) (m + 3)) := by
       (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(m' + 1) +> default))
     exact closes_of_in_ps (zPt h_pref (zPt h1 h2)) (by decide)
 lemma step_H_mid_asucc2_m3 (a b m : Nat) :
-    (H_mid (a + 2) (b + 1) (m + 3)) [target]⊢⁺ (H_mid a (b + 3) (m + 1)) := by
+    (H_mid (a + 2) (b + 1) (m + 3)) [target_tm]⊢⁺ (H_mid a (b + 3) (m + 1)) := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^(a + 2)) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 1)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^(m + 3) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default <+ ([0, 1] : List (Fin 2))^(a + 2)) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b + 2)) <{{A}}
         (([1] : List (Fin 2))^(m + 1) +> default)) := by
     have hm : (([1] : List (Fin 2))^(m + 3) +> default) =
@@ -710,7 +708,7 @@ lemma step_H_mid_asucc2_m3 (a b m : Nat) :
     (([1] : List (Fin 2))^(m + 1) +> default)
   have h3 : (((default <+ ([0, 1] : List (Fin 2))^(a + 2)) <+ [1]) <{{A}}
       (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((((default <+ ([0, 1] : List (Fin 2))^a) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^1) <+ [0]) {{D}}>
         (([1, 1, 0] : List (Fin 2))^(b + 2) +> (([1] : List (Fin 2))^(m + 1) +> default))) := by
     rw [zPl default ([0, 1] : List (Fin 2)) a 2]
@@ -743,7 +741,7 @@ def B_mid (a k b d : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^k) {{B}}>
     ([0, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
 lemma closes_B_mid_a0_k1_b0 (d : Nat) : Closes (B_mid 0 1 0 d) := by
-  have h1 : (B_mid 0 1 0 d) [target]⊢⁺ D_cfg 0 0 0 (d + 4) := by
+  have h1 : (B_mid 0 1 0 d) [target_tm]⊢⁺ D_cfg 0 0 0 (d + 4) := by
     unfold B_mid D_cfg
     have hd : (([1] : List (Fin 2))^(d + 4) +> default) =
         ([1, 1, 1, 1] +> (([1] : List (Fin 2))^d +> default)) := by
@@ -753,7 +751,7 @@ lemma closes_B_mid_a0_k1_b0 (d : Nat) : Closes (B_mid 0 1 0 d) := by
     simptape; execute
   exact closes_of_in_ps h1 (by decide)
 lemma closes_B_mid_a1_k1_b0 (d : Nat) : Closes (B_mid 1 1 0 d) := by
-  have h1 : (B_mid 1 1 0 d) [target]⊢⁺
+  have h1 : (B_mid 1 1 0 d) [target_tm]⊢⁺
       (default <{{F}} ([1, 0, 1, 1, 0] +> (([1] : List (Fin 2))^(d + 2) +> default))) := by
     unfold B_mid
     have hd : (([1] : List (Fin 2))^(d + 2) +> default) =
@@ -763,9 +761,9 @@ lemma closes_B_mid_a1_k1_b0 (d : Nat) : Closes (B_mid 1 1 0 d) := by
     rw [hd]
     simptape; execute
   refine closes_of_halt h1 ?_
-  simp [step, target, F, zDh]
+  simp [step, target_tm, F, zDh]
 lemma closes_B_mid_a2_k1_b0 (d : Nat) : Closes (B_mid 2 1 0 d) := by
-  have h1 : (B_mid 2 1 0 d) [target]⊢⁺ D_cfg 0 2 0 (d + 2) := by
+  have h1 : (B_mid 2 1 0 d) [target_tm]⊢⁺ D_cfg 0 2 0 (d + 2) := by
     unfold B_mid D_cfg
     have hd : (([1] : List (Fin 2))^(d + 2) +> default) =
         ([1, 1] +> (([1] : List (Fin 2))^d +> default)) := by
@@ -775,7 +773,7 @@ lemma closes_B_mid_a2_k1_b0 (d : Nat) : Closes (B_mid 2 1 0 d) := by
     simptape; execute
   exact closes_of_in_ps h1 (by decide)
 lemma step_B_mid_asucc3_k1_b0 (a d : Nat) :
-    (B_mid (a + 3) 1 0 d) [target]⊢⁺ (H_mid a 2 (d + 2)) := by
+    (B_mid (a + 3) 1 0 d) [target_tm]⊢⁺ (H_mid a 2 (d + 2)) := by
   unfold B_mid H_mid
   rw [zPl default ([0, 1] : List (Fin 2)) a 3]
   have hd : (([1] : List (Fin 2))^(d + 2) +> default) =
@@ -791,7 +789,7 @@ lemma closes_B_mid_k1_b0 (a d : Nat) : Closes (B_mid a 1 0 d) := by
   · exact closes_B_mid_a2_k1_b0 d
   · exact closes_of_stepPlus (step_B_mid_asucc3_k1_b0 a' d) (closes_H_mid a' 1 (d + 1))
 lemma step_B_mid_ksucc2_b0 (a k d : Nat) :
-    (B_mid a (k + 2) 0 d) [target]⊢⁺ (A_ones a k 0 (d + 3)) := by
+    (B_mid a (k + 2) 0 d) [target_tm]⊢⁺ (A_ones a k 0 (d + 3)) := by
   unfold B_mid A_ones
   rw [zPl (default <+ ([0, 1] : List (Fin 2))^a) ([1] : List (Fin 2)) (k + 1) 1]
   have hd : (([1] : List (Fin 2))^(d + 3) +> default) =
@@ -801,11 +799,11 @@ lemma step_B_mid_ksucc2_b0 (a k d : Nat) :
   rw [hd]
   simptape; execute
 lemma step_B_mid_bsucc (a k b d : Nat) :
-    (B_mid a (k + 1) (b + 1) d) [target]⊢⁺ (B_mid a (k + 2) b (d + 2)) := by
+    (B_mid a (k + 1) (b + 1) d) [target_tm]⊢⁺ (B_mid a (k + 2) b (d + 2)) := by
   unfold B_mid
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) {{B}}>
       ([0, 0] +> (([1, 1, 0] : List (Fin 2))^(b + 1) +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) <+ [0]) <+ [0]) {{D}}>
         (([1, 1, 0] : List (Fin 2))^(b + 1) +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default)))) := by
     simptape; execute
@@ -813,7 +811,7 @@ lemma step_B_mid_bsucc (a k b d : Nat) :
     (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) <+ [0])
   have h3 : (((((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) <+ [0]) <+ [1, 1]) <{{A}}
       (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^(d + 2) +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 2)) {{B}}>
         ([0, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^(d + 2) +> default))))) := by
     rw [zPl (default <+ ([0, 1] : List (Fin 2))^a) ([1] : List (Fin 2)) (k + 1) 1]
@@ -823,12 +821,12 @@ lemma closes_A_ones_a0_k1 (b d : Nat) : Closes (A_ones 0 1 b d) := by
   unfold A_ones
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^0) <+ ([1] : List (Fin 2))^2) <{{A}}
       (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default))))
-      [target]⊢⁺ D_cfg 1 b 1 d := by
+      [target_tm]⊢⁺ D_cfg 1 b 1 d := by
     unfold D_cfg
     simptape; execute
   exact closes_of_in_ps h1 (by decide)
 lemma step_A_ones_asucc_k1 (a b d : Nat) :
-    (A_ones (a + 1) 1 b d) [target]⊢⁺ (B_mid a 2 b d) := by
+    (A_ones (a + 1) 1 b d) [target_tm]⊢⁺ (B_mid a 2 b d) := by
   unfold A_ones B_mid
   rw [zPl default ([0, 1] : List (Fin 2)) a 1]
   simptape; execute
@@ -863,7 +861,7 @@ lemma closes_B_mid_all (a : Nat) : ∀ b k d, Closes (B_mid a (k + 1) b d) := by
 lemma closes_B_mid (b a k d : Nat) : Closes (B_mid a (k + 1) b d) :=
   closes_B_mid_all a b k d
 lemma step_D_cfg_to_D_mid (a : Nat) (r : ListBlank (Fin 2)) :
-    (default {{D}}> (([1, 0] : List (Fin 2))^a +> r)) [target]⊢*
+    (default {{D}}> (([1, 0] : List (Fin 2))^a +> r)) [target_tm]⊢*
     (((default <+ ([0, 1] : List (Fin 2))^a) <+ [0]) {{D}}> r) := by
   have h := shift_D_right_10 a default r
   have h_def : (default <+ ([0] : List (Fin 2))) = default := by
@@ -873,7 +871,7 @@ lemma closes_D_cfg_c1 (a b d : Nat) : Closes (D_cfg a b 1 d) := by
   rcases a with _ | a'
   · rcases b with _ | b'
     ·
-      have h1 : (D_cfg 0 0 1 d) [target]⊢⁺ (D_cfg 0 0 1 (d + 1)) := by
+      have h1 : (D_cfg 0 0 1 d) [target_tm]⊢⁺ (D_cfg 0 0 1 (d + 1)) := by
         unfold D_cfg
         rw [zPsr ([1] : List (Fin 2)) d]
         simptape; execute
@@ -884,7 +882,7 @@ lemma closes_D_cfg_c1 (a b d : Nat) : Closes (D_cfg a b 1 d) := by
       rw [h_def] at h1
       have h2 : ((default <+ [1, 1]) <{{A}}
           (([1, 1, 0] : List (Fin 2))^b' +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^(d + 2) +> default))))
-          [target]⊢⁺ D_cfg 1 b' 1 (d + 2) := by
+          [target_tm]⊢⁺ D_cfg 1 b' 1 (d + 2) := by
         unfold D_cfg
         simptape; execute
       have h_start : ((default {{D}}>
@@ -905,7 +903,7 @@ lemma closes_D_cfg_c1 (a b d : Nat) : Closes (D_cfg a b 1 d) := by
     rw [h_start] at h1
     have h2 : ((((default <+ ([0, 1] : List (Fin 2))^a') <+ [0]) {{D}}>
         ([1, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^d +> default))))))
-        [target]⊢⁺ B_mid a' 1 b d := by
+        [target_tm]⊢⁺ B_mid a' 1 b d := by
       unfold B_mid
       simptape; execute
     exact closes_of_stepStar h1 (closes_of_stepPlus h2 (closes_B_mid b a' 0 d))
@@ -922,7 +920,7 @@ lemma D_cfg_c0_d2_eq (a b : Nat) : D_cfg a b 0 2 = D_cfg a (b + 1) 1 0 := by
 lemma closes_D_cfg_c0_d1 (a b : Nat) : Closes (D_cfg a b 0 1) := by
   rcases b with _ | b'
   · rcases a with _ | a'
-    · have h1 : (D_cfg 0 0 0 1) [target]⊢⁺ (D_cfg 0 0 0 4) := by
+    · have h1 : (D_cfg 0 0 0 1) [target_tm]⊢⁺ (D_cfg 0 0 0 4) := by
         unfold D_cfg
         simptape; execute
       exact closes_of_in_ps h1 (by decide)
@@ -936,7 +934,7 @@ lemma closes_D_cfg_c0_d1 (a b : Nat) : Closes (D_cfg a b 0 1) := by
       rw [h_start] at h1
       have h2 : ((((default <+ ([0, 1] : List (Fin 2))^(a' + 1)) <+ [0]) {{D}}>
           (([1, 1, 0] : List (Fin 2))^0 +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^1 +> default)))))
-          [target]⊢⁺ B_mid (a' + 1) 1 0 0 := by
+          [target_tm]⊢⁺ B_mid (a' + 1) 1 0 0 := by
         unfold B_mid
         simptape; execute
       exact closes_of_stepStar h1 (closes_of_stepPlus h2 (closes_B_mid 0 (a' + 1) 0 0))
@@ -947,7 +945,7 @@ lemma closes_D_cfg_c0_d1 (a b : Nat) : Closes (D_cfg a b 0 1) := by
       (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^1 +> default))
     have h3 : (((((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^(b' + 1)) <+ [0]) {{D}}>
         (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^1 +> default))))
-        [target]⊢⁺
+        [target_tm]⊢⁺
         (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^b') <{{A}}
           ([1, 1, 0] +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^3 +> default)))) := by
       rw [zPl (default <+ ([0, 1] : List (Fin 2))^a) ([1, 1, 1] : List (Fin 2)) b' 1]
@@ -963,7 +961,7 @@ lemma closes_D_cfg_c0_d3 (a b d : Nat) : Closes (D_cfg a b 0 (d + 3)) := by
     (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(d + 3) +> default))
   have h3 : (((((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^b) <+ [0]) {{D}}>
       (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(d + 3) +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^b) <{{A}}
         ([1, 1, 0] +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(d + 1) +> default)))) := by
     have hd : (([1] : List (Fin 2))^(d + 3) +> default) =
@@ -988,8 +986,8 @@ lemma closes_D_cfg (a b c d : Nat) (hc : c <= 1) : Closes (D_cfg a b c d) := by
     · exact closes_D_cfg_c0_d3 a b d'
   · exact closes_D_cfg_c1 a b d
 theorem init_reaches_D :
-    (init []) [target]⊢* (D_cfg 0 0 0 4) := by
-  have h_init : (init []) [target]⊢⁺ (D_cfg 0 0 0 4) := by
+    (init []) [target_tm]⊢* (D_cfg 0 0 0 4) := by
+  have h_init : (init []) [target_tm]⊢⁺ (D_cfg 0 0 0 4) := by
     unfold init D_cfg
     simptape; execute
   exact zPs h_init
@@ -998,7 +996,7 @@ theorem init_reaches_D :
 
 -- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
 
-theorem has_collatz_reduction : HasCollatzReduction target := by
+theorem is_cryptid : IsCryptid target_tm := by
   refine ⟨ps_0613, ⟨D_cfg 0 0 0 4, init_reaches_D, in_ps_D 0 0 0 4 (by decide)⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, h_cond⟩

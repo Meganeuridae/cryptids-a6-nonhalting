@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 2, Stmt.write 1 Dir.left)
   | 1, 0 => some (some 2, Stmt.write 1 Dir.right)
@@ -219,7 +217,7 @@ Transition: `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
 /- Transition function for Holdout 330: `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA` -/
 
 -- ============================================================================
-abbrev suspect_153_tm : Machine (Fin 2) (Fin 6) := target
+abbrev suspect_153_tm : Machine (Fin 2) (Fin 6) := target_tm
 
 -- Section 6: Helper Lemmas & Execute Tactic
 -- ============================================================================
@@ -2838,6 +2836,6 @@ set_option quotPrecheck false
 set_option maxRecDepth 4000000
 set_option maxHeartbeats 8000000
 open Solution in
-theorem has_collatz_reduction : HasCollatzReduction target := suspect_153_cryptid
+theorem is_cryptid : IsCryptid target_tm := suspect_153_cryptid
 
 end BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA

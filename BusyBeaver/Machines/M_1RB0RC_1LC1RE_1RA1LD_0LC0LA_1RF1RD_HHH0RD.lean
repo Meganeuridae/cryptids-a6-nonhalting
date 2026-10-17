@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 2, Stmt.write 0 Dir.right)
   | 1, 0 => some (some 2, Stmt.write 1 Dir.left)
@@ -367,7 +365,7 @@ macro "step" : tactic =>
 macro "execute" : tactic =>
   `(tactic| repeat (any_goals (first | finish | step)))
 lemma shift_C_right_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{C}}> (([0, 1] : List (Fin 2)) ^ k +> r)) [target]⊢*
+    (l {{C}}> (([0, 1] : List (Fin 2)) ^ k +> r)) [target_tm]⊢*
     ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> r) := by
   induction k generalizing l r with
   | zero =>
@@ -376,7 +374,7 @@ lemma shift_C_right_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsr]
     have h1 : (l {{C}}> ([0, 1] +> (([0, 1] : List (Fin 2)) ^ k +> r)))
-        [target]⊢*
+        [target_tm]⊢*
         ((l <+ [0, 1]) {{C}}> (([0, 1] : List (Fin 2)) ^ k +> r)) := by
       dsimp [ListBlank.append]
       execute
@@ -384,7 +382,7 @@ lemma shift_C_right_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPal] at h2
     exact zSt h1 h2
 lemma shift_DC_left_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{D}}> ([0] +> r)) [target]⊢*
+    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{D}}> ([0] +> r)) [target_tm]⊢*
     (l {{D}}> ([0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
   | zero =>
@@ -393,7 +391,7 @@ lemma shift_DC_left_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([1, 0] : List (Fin 2)) ^ k) <+ [1, 0]) {{D}}> ([0] +> r))
-        [target]⊢*
+        [target_tm]⊢*
         ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{D}}> ([0] +> ([1, 0] +> r))) := by
       dsimp [ListBlank.append]
       execute
@@ -401,7 +399,7 @@ lemma shift_DC_left_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPa1] at h2
     exact zSt h1 h2
 lemma shift_C_left_10_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [target]⊢*
+    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [target_tm]⊢*
     (l {{C}}> ([1] +> (([1, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
   | zero =>
@@ -410,7 +408,7 @@ lemma shift_C_left_10_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([1, 0] : List (Fin 2)) ^ k) <+ [1, 0]) {{C}}> ([1] +> r))
-        [target]⊢*
+        [target_tm]⊢*
         ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{C}}> ([1] +> ([1, 1] +> r))) := by
       dsimp [ListBlank.append]
       execute
@@ -418,7 +416,7 @@ lemma shift_C_left_10_0499 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPa1] at h2
     exact zSt h1 h2
 lemma shift_E_0101_0499 (m : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{E}}> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)) [target]⊢*
+    (l {{E}}> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)) [target_tm]⊢*
     ((l <+ ([1, 1, 1, 1] : List (Fin 2)) ^ m) {{E}}> r) := by
   induction m generalizing l r with
   | zero =>
@@ -427,7 +425,7 @@ lemma shift_E_0101_0499 (m : Nat) (l r : ListBlank (Fin 2)) :
   | succ m ih =>
     rw [zPsr]
     have h1 : (l {{E}}> ([0, 1, 0, 1] +> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)))
-        [target]⊢*
+        [target_tm]⊢*
         ((l <+ [1, 1, 1, 1]) {{E}}> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)) := by
       dsimp [ListBlank.append]
       execute
@@ -468,11 +466,11 @@ lemma in_ps_S_ones3 (k j c : Nat) :
   rw [<- zPl default ([1] : List (Fin 2)) 3 k]
   exact in_ps_S_def (3 + k) j c
 lemma step_C001_even_to_E_0499 (l : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)) :
-    (l {{C}}> ([0, 0, 1] +> (([0, 1] : List (Fin 2)) ^ (2 * m) +> r))) [target]⊢⁺
+    (l {{C}}> ([0, 0, 1] +> (([0, 1] : List (Fin 2)) ^ (2 * m) +> r))) [target_tm]⊢⁺
     ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}> r) := by
   rw [pow_01_mul2_eq_pow_0101 m]
   have h1 : (l {{C}}> ([0, 0, 1] +> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ 3) {{E}}> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
     execute
@@ -482,20 +480,20 @@ lemma step_C001_even_to_E_0499 (l : ListBlank (Fin 2)) (m : Nat) (r : ListBlank 
   rw [hm] at h2
   exact zPsp h1 h2
 theorem step_C001_even_b0_halt_0499 (l : ListBlank (Fin 2)) (m : Nat) :
-    ∃ cfg', ((C001_0499 l (2 * m) 0) [target]⊢⁺ cfg') /\ (step target cfg').isNone := by
+    ∃ cfg', ((C001_0499 l (2 * m) 0) [target_tm]⊢⁺ cfg') /\ (step target_tm cfg').isNone := by
   refine ⟨(((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) <+ [1]) {{F}}> default), ?_,
-    by simp [step, target, F]⟩
+    by simp [step, target_tm, F]⟩
   unfold C001_0499
   simp only [zPz, zLan]
   have h1 := step_C001_even_to_E_0499 l m default
   have h2 : ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}> default)
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) <+ [1]) {{F}}> default) := by
     dsimp [ListBlank.append]
     execute
   exact zPt h1 h2
 theorem step_C001_even_b1_0499 (l : ListBlank (Fin 2)) (m : Nat) :
-    (C001_0499 l (2 * m) 1) [target]⊢⁺ (S_L_0499 l (4 * m + 2) 0 0) := by
+    (C001_0499 l (2 * m) 1) [target_tm]⊢⁺ (S_L_0499 l (4 * m + 2) 0 0) := by
   unfold C001_0499 S_L_0499
   simp only [zPz, zLan]
   have h1 := step_C001_even_to_E_0499 l m (([1] : List (Fin 2)) ^ 1 +> default)
@@ -503,13 +501,13 @@ theorem step_C001_even_b1_0499 (l : ListBlank (Fin 2)) (m : Nat) :
   rw [hm, zPl l ([1] : List (Fin 2)) (4 * m + 2) 1] at h1
   have h2 : (((l <+ ([1] : List (Fin 2)) ^ (4 * m + 2)) <+ ([1] : List (Fin 2)) ^ 1) {{E}}>
       (([1] : List (Fin 2)) ^ 1 +> default))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 2)) {{D}}> ([1, 1] +> default)) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
     execute
   exact zPt h1 h2
 theorem step_C001_even_b2_0499 (l : ListBlank (Fin 2)) (m : Nat) :
-    (C001_0499 l (2 * m) 2) [target]⊢⁺ (S_L_0499 l (4 * m + 2) 0 3) := by
+    (C001_0499 l (2 * m) 2) [target_tm]⊢⁺ (S_L_0499 l (4 * m + 2) 0 3) := by
   unfold C001_0499 S_L_0499
   simp only [zPz, zLan]
   have h1 := step_C001_even_to_E_0499 l m (([1] : List (Fin 2)) ^ 2 +> default)
@@ -517,14 +515,14 @@ theorem step_C001_even_b2_0499 (l : ListBlank (Fin 2)) (m : Nat) :
   rw [hm, zPl l ([1] : List (Fin 2)) (4 * m + 2) 1] at h1
   have h2 : (((l <+ ([1] : List (Fin 2)) ^ (4 * m + 2)) <+ ([1] : List (Fin 2)) ^ 1) {{E}}>
       (([1] : List (Fin 2)) ^ 2 +> default))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 2)) {{D}}>
         ([1, 1] +> (([1] : List (Fin 2)) ^ 3 +> default))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
     execute
   exact zPt h1 h2
 theorem step_C001_even_b3_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
-    (C001_0499 l (2 * m) (c + 3)) [target]⊢⁺ (S_L_0499 l (4 * m + 4) 0 c) := by
+    (C001_0499 l (2 * m) (c + 3)) [target_tm]⊢⁺ (S_L_0499 l (4 * m + 4) 0 c) := by
   unfold C001_0499 S_L_0499
   simp only [zPz, zLan]
   have hc : c + 3 = 3 + c := by omega
@@ -532,7 +530,7 @@ theorem step_C001_even_b3_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
   have h1 := step_C001_even_to_E_0499 l m (([1] : List (Fin 2)) ^ 3 +> (([1] : List (Fin 2)) ^ c +> default))
   have h2 : ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}>
       (([1] : List (Fin 2)) ^ 3 +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
         ([1, 1] +> (([1] : List (Fin 2)) ^ c +> default))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -542,13 +540,13 @@ theorem step_C001_even_b3_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
   rw [hm] at h2
   exact zPt h1 h2
 theorem step_C001_odd_b0_0499 (l : ListBlank (Fin 2)) (m : Nat) :
-    (C001_0499 l (2 * m + 1) 0) [target]⊢⁺ (S_L_0499 l (4 * m + 4) 0 1) := by
+    (C001_0499 l (2 * m + 1) 0) [target_tm]⊢⁺ (S_L_0499 l (4 * m + 4) 0 1) := by
   unfold C001_0499 S_L_0499
   simp only [zPz, zLan]
   rw [zPar ([0, 1] : List (Fin 2)) (2 * m) 1 default]
   have h1 := step_C001_even_to_E_0499 l m (([0, 1] : List (Fin 2)) ^ 1 +> default)
   have h2 : ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}> (([0, 1] : List (Fin 2)) ^ 1 +> default))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
         ([1, 1] +> (([1] : List (Fin 2)) ^ 1 +> default))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -558,7 +556,7 @@ theorem step_C001_odd_b0_0499 (l : ListBlank (Fin 2)) (m : Nat) :
   rw [hm] at h2
   exact zPt h1 h2
 theorem step_C001_odd_b1_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
-    (C001_0499 l (2 * m + 1) (c + 1)) [target]⊢⁺ (S_L_0499 l (4 * m + 3) 0 (c + 1)) := by
+    (C001_0499 l (2 * m + 1) (c + 1)) [target_tm]⊢⁺ (S_L_0499 l (4 * m + 3) 0 (c + 1)) := by
   unfold C001_0499 S_L_0499
   simp only [zPz, zLan]
   rw [zPar ([0, 1] : List (Fin 2)) (2 * m) 1 (([1] : List (Fin 2)) ^ (c + 1) +> default),
@@ -566,7 +564,7 @@ theorem step_C001_odd_b1_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
   have h1 := step_C001_even_to_E_0499 l m (([0, 1] : List (Fin 2)) ^ 1 +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
   have h2 : ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}>
       (([0, 1] : List (Fin 2)) ^ 1 +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{D}}>
         ([1, 1] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -574,8 +572,8 @@ theorem step_C001_odd_b1_0499 (l : ListBlank (Fin 2)) (m c : Nat) :
   exact zPt h1 h2
 theorem step_C001_all_0499 (l : ListBlank (Fin 2))
     (hl : ∀ k j c, IsInPatternSet ps_0499 (S_L_0499 l k j c)) (a b : Nat) :
-    ∃ cfg', ((C001_0499 l a b) [target]⊢⁺ cfg') /\
-            (IsInPatternSet ps_0499 cfg' \/ (step target cfg').isNone) := by
+    ∃ cfg', ((C001_0499 l a b) [target_tm]⊢⁺ cfg') /\
+            (IsInPatternSet ps_0499 cfg' \/ (step target_tm cfg').isNone) := by
   have ha : ∃ m, a = 2 * m \/ a = 2 * m + 1 := ⟨a / 2, by omega⟩
   rcases ha with ⟨m, rfl | rfl⟩
   · rcases b with _ | _ | _ | c
@@ -588,32 +586,32 @@ theorem step_C001_all_0499 (l : ListBlank (Fin 2))
     · exact ⟨_, step_C001_odd_b0_0499 l m, Or.inl (hl (4 * m + 4) 0 1)⟩
     · exact ⟨_, step_C001_odd_b1_0499 l m c, Or.inl (hl (4 * m + 3) 0 (c + 1))⟩
 theorem step_D_succ_to_C001_0499 (a b : Nat) :
-    (D_0499 (a + 1) b) [target]⊢⁺ (C001_0499 default a b) := by
+    (D_0499 (a + 1) b) [target_tm]⊢⁺ (C001_0499 default a b) := by
   unfold D_0499 C001_0499
   rw [zPsr ([0, 1] : List (Fin 2)) a (([1] : List (Fin 2)) ^ b +> default)]
   dsimp [ListBlank.append]
   execute
 theorem step_S_def_k0_jsucc_to_C001_0499 (j c : Nat) :
-    (S_L_0499 default 0 (j + 1) c) [target]⊢⁺ (C001_0499 l_hat_0499 j c) := by
+    (S_L_0499 default 0 (j + 1) c) [target_tm]⊢⁺ (C001_0499 l_hat_0499 j c) := by
   unfold S_L_0499 C001_0499 l_hat_0499
   simp only [zPz, zLan]
   rw [zPsr ([0, 1] : List (Fin 2)) j (([1] : List (Fin 2)) ^ c +> default)]
   dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
   execute
 theorem step_S_hat_k0_jsucc_0499 (j c : Nat) :
-    (S_L_0499 l_hat_0499 0 (j + 1) c) [target]⊢⁺ (S_L_0499 default 6 (j + 1) c) := by
+    (S_L_0499 l_hat_0499 0 (j + 1) c) [target_tm]⊢⁺ (S_L_0499 default 6 (j + 1) c) := by
   unfold S_L_0499 l_hat_0499
   simp only [zPz, zLan]
   rw [zPsr ([0, 1] : List (Fin 2)) j (([1] : List (Fin 2)) ^ c +> default)]
   dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
   execute
 theorem step_S_hat_k1_c0_0499 (j : Nat) :
-    (S_L_0499 l_hat_0499 1 j 0) [target]⊢⁺ (S_L_0499 default 1 1 (2 * j + 5)) := by
+    (S_L_0499 l_hat_0499 1 j 0) [target_tm]⊢⁺ (S_L_0499 default 1 1 (2 * j + 5)) := by
   unfold S_L_0499
   simp only [zPz, zLan]
   have h1 : ((l_hat_0499 <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l_hat_0499 <+ [0]) {{C}}> ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
     execute
@@ -621,7 +619,7 @@ theorem step_S_hat_k1_c0_0499 (j : Nat) :
   have h2 := shift_C_right_0499 (j + 1) (l_hat_0499 <+ [0]) default
   rw [append_zero_pow_01 l_hat_0499 (j + 1)] at h2
   have h3 : (((l_hat_0499 <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}> default)
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l_hat_0499 <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 3 +> default))) := by
     dsimp [ListBlank.append]
@@ -632,7 +630,7 @@ theorem step_S_hat_k1_c0_0499 (j : Nat) :
   have hj : 2 * (j + 1) + 3 = 2 * j + 5 := by omega
   rw [hj] at h4
   have h5 : (l_hat_0499 {{C}}> ([1] +> (([1] : List (Fin 2)) ^ (2 * j + 5) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
         ([1, 1] +> (([0, 1] : List (Fin 2)) ^ 1 +> (([1] : List (Fin 2)) ^ (2 * j + 5) +> default)))) := by
     unfold l_hat_0499
@@ -640,13 +638,13 @@ theorem step_S_hat_k1_c0_0499 (j : Nat) :
     execute
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_S_hat_k1_csucc_to_C001_0499 (j c : Nat) :
-    (S_L_0499 l_hat_0499 1 j (c + 1)) [target]⊢⁺
+    (S_L_0499 l_hat_0499 1 j (c + 1)) [target_tm]⊢⁺
     (C001_0499 (default <+ ([1] : List (Fin 2)) ^ 3) (j + 1) c) := by
   unfold S_L_0499 C001_0499
   rw [zPsr ([1] : List (Fin 2)) c default]
   have h1 : ((l_hat_0499 <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l_hat_0499 <+ [0]) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
@@ -656,7 +654,7 @@ theorem step_S_hat_k1_csucc_to_C001_0499 (j c : Nat) :
   rw [append_zero_pow_01 l_hat_0499 (j + 1)] at h2
   have h3 : (((l_hat_0499 <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l_hat_0499 <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{D}}>
         ([0] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [ListBlank.append]
@@ -665,7 +663,7 @@ theorem step_S_hat_k1_csucc_to_C001_0499 (j c : Nat) :
   rw [pow_10_append_1 (j + 1) (([1] : List (Fin 2)) ^ c +> default)] at h4
   have h5 : (l_hat_0499 {{D}}>
       ([0] +> ([1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default <+ ([1] : List (Fin 2)) ^ 3) {{C}}>
         ([0, 0, 1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     unfold l_hat_0499
@@ -673,14 +671,14 @@ theorem step_S_hat_k1_csucc_to_C001_0499 (j c : Nat) :
     execute
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_SL_stride3_0499 (l : ListBlank (Fin 2)) (k j c : Nat) :
-    (S_L_0499 l (k + 3) j (c + 1)) [target]⊢⁺ (S_L_0499 l k (j + 2) c) := by
+    (S_L_0499 l (k + 3) j (c + 1)) [target_tm]⊢⁺ (S_L_0499 l k (j + 2) c) := by
   unfold S_L_0499
   have hk : k + 3 = (k + 2) + 1 := by omega
   rw [hk, zPl l ([1] : List (Fin 2)) (k + 2) 1,
     zPsr ([1] : List (Fin 2)) c default]
   have h1 : (((l <+ ([1] : List (Fin 2)) ^ (k + 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (k + 2)) <+ [0]) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -691,7 +689,7 @@ theorem step_SL_stride3_0499 (l : ListBlank (Fin 2)) (k j c : Nat) :
   rw [append_zero_pow_01 (l <+ ([1] : List (Fin 2)) ^ (k + 2)) (j + 1)] at h2
   have h3 : ((((l <+ ([1] : List (Fin 2)) ^ (k + 2)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (k + 2)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{D}}>
         ([0] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [ListBlank.append]
@@ -702,7 +700,7 @@ theorem step_SL_stride3_0499 (l : ListBlank (Fin 2)) (k j c : Nat) :
     zPl l ([1] : List (Fin 2)) k 2] at h4
   have h5 : (((l <+ ([1] : List (Fin 2)) ^ k) <+ ([1] : List (Fin 2)) ^ 2) {{D}}>
       ([0] +> ([1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ k) {{D}}>
         ([1, 1] +> ([0, 1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -710,14 +708,14 @@ theorem step_SL_stride3_0499 (l : ListBlank (Fin 2)) (k j c : Nat) :
   rw [<- zPsr ([0, 1] : List (Fin 2)) (j + 1) (([1] : List (Fin 2)) ^ c +> default)] at h5
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_SL_c0_k2_0499 (l : ListBlank (Fin 2)) (k j : Nat) :
-    (S_L_0499 l (k + 2) j 0) [target]⊢⁺ (S_L_0499 l k 0 (2 * j + 5)) := by
+    (S_L_0499 l (k + 2) j 0) [target_tm]⊢⁺ (S_L_0499 l k 0 (2 * j + 5)) := by
   unfold S_L_0499
   simp only [zPz, zLan]
   have hk : k + 2 = (k + 1) + 1 := by omega
   rw [hk, zPl l ([1] : List (Fin 2)) (k + 1) 1]
   have h1 : (((l <+ ([1] : List (Fin 2)) ^ (k + 1)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (k + 1)) <+ [0]) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default))) := by
     dsimp [ListBlank.append]
@@ -726,7 +724,7 @@ theorem step_SL_c0_k2_0499 (l : ListBlank (Fin 2)) (k j : Nat) :
   have h2 := shift_C_right_0499 (j + 1) ((l <+ ([1] : List (Fin 2)) ^ (k + 1)) <+ [0]) default
   rw [append_zero_pow_01 (l <+ ([1] : List (Fin 2)) ^ (k + 1)) (j + 1)] at h2
   have h3 : ((((l <+ ([1] : List (Fin 2)) ^ (k + 1)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}> default)
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((l <+ ([1] : List (Fin 2)) ^ (k + 1)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 3 +> default))) := by
     dsimp [ListBlank.append]
@@ -739,19 +737,19 @@ theorem step_SL_c0_k2_0499 (l : ListBlank (Fin 2)) (k j : Nat) :
   rw [hj] at h4
   have h5 : (((l <+ ([1] : List (Fin 2)) ^ k) <+ ([1] : List (Fin 2)) ^ 1) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ (2 * j + 5) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((l <+ ([1] : List (Fin 2)) ^ k) {{D}}>
         ([1, 1] +> (([1] : List (Fin 2)) ^ (2 * j + 5) +> default))) := by
     dsimp [ListBlank.append]
     execute
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_S_k1_c0_0499 (j : Nat) :
-    (S_L_0499 default 1 j 0) [target]⊢⁺ (S_L_0499 default 0 0 (2 * j + 3)) := by
+    (S_L_0499 default 1 j 0) [target_tm]⊢⁺ (S_L_0499 default 0 0 (2 * j + 3)) := by
   unfold S_L_0499
   simp only [zPz, zLan]
   have h1 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default : ListBlank (Fin 2)) {{C}}> ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default))) := by
     dsimp [ListBlank.append]
     execute
@@ -761,11 +759,11 @@ theorem step_S_k1_c0_0499 (j : Nat) :
   have hj1 : j + 1 = 1 + j := by omega
   rw [hj1, zPl default ([0, 1] : List (Fin 2)) 1 j] at h12
   change (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
-      ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default))) [target]⊢⁺
+      ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> default))) [target_tm]⊢⁺
       ((((default <+ ([1] : List (Fin 2)) ^ 1) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ j) {{C}}> default) at h12
   rw [append_zero_pow_01 (default <+ ([1] : List (Fin 2)) ^ 1) j] at h12
   have h3 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ j) <+ [0]) {{C}}> default)
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ j) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 3 +> default))) := by
     dsimp [ListBlank.append]
@@ -775,19 +773,19 @@ theorem step_S_k1_c0_0499 (j : Nat) :
     <- zPar ([1] : List (Fin 2)) (2 * j) 3 default] at h4
   have h5 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ (2 * j + 3) +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default : ListBlank (Fin 2)) {{D}}>
         ([1, 1] +> (([1] : List (Fin 2)) ^ (2 * j + 3) +> default))) := by
     dsimp [ListBlank.append]
     execute
   exact zPt (zPsp (zPt h12 h3) h4) h5
 theorem step_S_k1_csucc_0499 (j c : Nat) :
-    (S_L_0499 default 1 j (c + 1)) [target]⊢⁺ (D_0499 (j + 2) c) := by
+    (S_L_0499 default 1 j (c + 1)) [target_tm]⊢⁺ (D_0499 (j + 2) c) := by
   unfold S_L_0499 D_0499
   rw [zPsr ([1] : List (Fin 2)) c default]
   have h1 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default : ListBlank (Fin 2)) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -797,7 +795,7 @@ theorem step_S_k1_csucc_0499 (j c : Nat) :
   rw [default_pow_01 (j + 1)] at h2
   have h3 : ((((default : ListBlank (Fin 2)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{D}}>
         ([0] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [ListBlank.append]
@@ -811,12 +809,12 @@ theorem step_S_k1_csucc_0499 (j c : Nat) :
   rw [h5] at h4
   exact zPsp (zPt (zPsp h1 h2) h3) h4
 theorem step_S_k2_csucc_0499 (j c : Nat) :
-    (S_L_0499 default 2 j (c + 1)) [target]⊢⁺ (D_0499 (j + 3) c) := by
+    (S_L_0499 default 2 j (c + 1)) [target_tm]⊢⁺ (D_0499 (j + 3) c) := by
   unfold S_L_0499 D_0499
   rw [zPsr ([1] : List (Fin 2)) c default]
   have h1 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ [0]) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -827,7 +825,7 @@ theorem step_S_k2_csucc_0499 (j c : Nat) :
   rw [append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) (j + 1)] at h2
   have h3 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ (j + 1)) {{D}}>
         ([0] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [ListBlank.append]
@@ -837,7 +835,7 @@ theorem step_S_k2_csucc_0499 (j c : Nat) :
   rw [pow_10_append_1 (j + 1) (([1] : List (Fin 2)) ^ c +> default)] at h4
   have h5 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([0] +> ([1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((default : ListBlank (Fin 2)) {{D}}>
         (([0, 1] : List (Fin 2)) ^ 2 +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))) := by
     dsimp [ListBlank.append]
@@ -847,18 +845,18 @@ theorem step_S_k2_csucc_0499 (j c : Nat) :
   rw [hj] at h5
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_S_k0_j0_0499 (c : Nat) :
-    (S_L_0499 default 0 0 c) [target]⊢⁺ (D_0499 1 (c + 2)) := by
+    (S_L_0499 default 0 0 c) [target_tm]⊢⁺ (D_0499 1 (c + 2)) := by
   unfold S_L_0499 D_0499
   rw [Nat.add_comm c 2, zPar ([1] : List (Fin 2)) 2 c default]
   dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
   execute
 theorem step_SL_hat_k2_csucc_0499 (j c : Nat) :
-    (S_L_0499 l_hat_0499 2 j (c + 1)) [target]⊢⁺ (S_L_0499 default 1 (j + 3) c) := by
+    (S_L_0499 l_hat_0499 2 j (c + 1)) [target_tm]⊢⁺ (S_L_0499 default 1 (j + 3) c) := by
   unfold S_L_0499 l_hat_0499
   rw [zPsr ([1] : List (Fin 2)) c default]
   have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) <+ ([1] : List (Fin 2)) ^ 2) {{D}}>
       ([1, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) <+ ([1] : List (Fin 2)) ^ 1) <+ [0]) {{C}}>
         ([0, 1] +> (([0, 1] : List (Fin 2)) ^ j +> ([1] +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -871,7 +869,7 @@ theorem step_SL_hat_k2_csucc_0499 (j c : Nat) :
   have h3 : ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) <+ ([1] : List (Fin 2)) ^ 1) <+
       ([1, 0] : List (Fin 2)) ^ (j + 1) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ c +> default)))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) <+ ([1] : List (Fin 2)) ^ 1) <+
         ([1, 0] : List (Fin 2)) ^ (j + 1)) {{D}}>
         ([0] +> ([1] +> (([1] : List (Fin 2)) ^ c +> default)))) := by
@@ -883,7 +881,7 @@ theorem step_SL_hat_k2_csucc_0499 (j c : Nat) :
   rw [pow_10_append_1 (j + 1) (([1] : List (Fin 2)) ^ c +> default)] at h4
   have h5 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
       ([0] +> ([1] +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default)))))
-      [target]⊢⁺
+      [target_tm]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{D}}>
         ([1, 1] +> (([0, 1] : List (Fin 2)) ^ 2 +> (([0, 1] : List (Fin 2)) ^ (j + 1) +> (([1] : List (Fin 2)) ^ c +> default))))) := by
     dsimp [ListBlank.append]
@@ -893,23 +891,23 @@ theorem step_SL_hat_k2_csucc_0499 (j c : Nat) :
   rw [hj] at h5
   exact zPt (zPsp (zPt (zPsp h1 h2) h3) h4) h5
 theorem step_SL_hat_k0_j0_0499 (c : Nat) :
-    (S_L_0499 l_hat_0499 0 0 c) [target]⊢⁺ (S_L_0499 default 2 0 (c + 2)) := by
+    (S_L_0499 l_hat_0499 0 0 c) [target_tm]⊢⁺ (S_L_0499 default 2 0 (c + 2)) := by
   unfold S_L_0499 l_hat_0499
   rw [Nat.add_comm c 2, zPar ([1] : List (Fin 2)) 2 c default]
   dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
   execute
-theorem init_to_D_0499 : (init []) [target]⊢⁺ (D_0499 1 1) := by
+theorem init_to_D_0499 : (init []) [target_tm]⊢⁺ (D_0499 1 1) := by
   unfold init D_0499
   simp only [Tape.mk₁, zPz, zPsl, zCal, zAnl,
     zLan, zLac]
   execute
-theorem init_reaches_S_0499 : (init []) [target]⊢* (S_L_0499 default 2 0 0) :=
+theorem init_reaches_S_0499 : (init []) [target_tm]⊢* (S_L_0499 default 2 0 0) :=
   zPs
     (zPt (zPt init_to_D_0499 (step_D_succ_to_C001_0499 0 1))
       (step_C001_even_b1_0499 default 0))
 theorem step_S_def_all_0499 (k j c : Nat) :
-    ∃ cfg', ((S_L_0499 default k j c) [target]⊢⁺ cfg') /\
-            (IsInPatternSet ps_0499 cfg' \/ (step target cfg').isNone) := by
+    ∃ cfg', ((S_L_0499 default k j c) [target_tm]⊢⁺ cfg') /\
+            (IsInPatternSet ps_0499 cfg' \/ (step target_tm cfg').isNone) := by
   rcases k with _ | _ | _ | k'
   ·
     rcases j with _ | j'
@@ -938,8 +936,8 @@ theorem step_S_def_all_0499 (k j c : Nat) :
     · exact ⟨_, step_SL_c0_k2_0499 default (k' + 1) j, Or.inl (in_ps_S_def (k' + 1) 0 (2 * j + 5))⟩
     · exact ⟨_, step_SL_stride3_0499 default k' j c', Or.inl (in_ps_S_def k' (j + 2) c')⟩
 theorem step_S_hat_all_0499 (k j c : Nat) :
-    ∃ cfg', ((S_L_0499 l_hat_0499 k j c) [target]⊢⁺ cfg') /\
-            (IsInPatternSet ps_0499 cfg' \/ (step target cfg').isNone) := by
+    ∃ cfg', ((S_L_0499 l_hat_0499 k j c) [target_tm]⊢⁺ cfg') /\
+            (IsInPatternSet ps_0499 cfg' \/ (step target_tm cfg').isNone) := by
   rcases k with _ | _ | _ | k'
   ·
     rcases j with _ | j'
@@ -976,7 +974,7 @@ set_option quotPrecheck false
 set_option maxRecDepth 4000000
 set_option maxHeartbeats 8000000
 open Solution in
-theorem has_collatz_reduction : HasCollatzReduction target := by
+theorem is_cryptid : IsCryptid target_tm := by
   refine ⟨ps_0499, ⟨S_L_0499 default 2 0 0, init_reaches_S_0499, in_ps_S_def 2 0 0⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, h_cond⟩

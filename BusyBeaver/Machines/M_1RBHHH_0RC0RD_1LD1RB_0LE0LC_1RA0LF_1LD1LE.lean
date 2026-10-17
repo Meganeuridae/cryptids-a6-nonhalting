@@ -1,31 +1,29 @@
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.PostTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Computability.TuringMachine.StackTuringMachine
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.ENat.Lattice
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.List.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Data.Nat.Basic
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Logic.Relation
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Order.Lattice.Nat
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Linarith
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.NormNum
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Ring
-import BusyBeaver.Basic
-import BusyBeaver.Bridge.Tactic.Zify
+module
+
+import Mathlib.Computability.TuringMachine.PostTuringMachine
+import Mathlib.Computability.TuringMachine.StackTuringMachine
+import Mathlib.Data.ENat.Lattice
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Nat.Basic
+import Mathlib.Logic.Relation
+import Mathlib.Order.Lattice.Nat
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Zify
+
+set_option linter.deprecated false
+set_option linter.flexible false
+set_option linter.style.longLine false
+
 
 /-!
-# Busy Beaver Machine `1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE` — `has_collatz_reduction` (`HasCollatzReduction target`)
+# Busy Beaver Machine `1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE` — `is_cryptid` (`IsCryptid target_tm`)
 
-This file's trusted header matches `suspects/defs/has_collatz_reduction.lean` at HEAD
-and defines `target` for `1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE`. Do not modify the trusted
+See <https://wiki.bbchallenge.org/wiki/1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE>.
+
+This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
+and defines `target_tm` for `1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE`. Do not modify the trusted
 definitions section or the goal theorem signature.
 -/
 
@@ -158,7 +156,7 @@ def IsCryptid (M : Machine Γ Λ) : Prop :=
                (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
 
 /-- Transition function for `1RB---_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE`. -/
-def target : Machine (Fin 2) (Fin 6)
+def target_tm : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => none
   | 1, 0 => some (some 2, Stmt.write 0 Dir.right)
@@ -204,7 +202,7 @@ namespace Solution
 @[simp] lemma default_head : (default : ListBlank (Fin 2)).head = 0 := rfl
 @[simp] lemma default_tail : (default : ListBlank (Fin 2)).tail = default := rfl
 
-lemma step_to_stepPlus {c₁ c₂ : Cfg (Fin 2) (Fin 6)} (h : step target c₁ = some c₂) : c₁ [target]⊢⁺ c₂ := ⟨1, by decide, h⟩
+lemma step_to_stepPlus {c₁ c₂ : Cfg (Fin 2) (Fin 6)} (h : step target_tm c₁ = some c₂) : c₁ [target_tm]⊢⁺ c₂ := ⟨1, by decide, h⟩
 
 @[simp] def pat_0 : TapePattern (Fin 2) (Fin 6) := { left := .default, head := some 5, right := (.sym 0 (.sym 0 (.sym 0 (.sym 1 (.rep [1] 0 .default))))) }
 @[simp] def pat_1 : TapePattern (Fin 2) (Fin 6) := { left := .default, head := some 3, right := (.sym 0 (.sym 1 (.sym 0 (.sym 0 (.sym 1 (.rep [1] 0 .default)))))) }
@@ -1194,1346 +1192,1346 @@ lemma mem_ps_196 : (pat_196, VarCond.true) ∈ ps := .tail _ (.tail _ (.tail _ (
 lemma in_ps_196 (vars : Nat → Nat) : IsInPatternSet ps (evalTapePattern pat_196 vars) :=
   ⟨(pat_196, .true), mem_ps_196, vars, rfl, trivial⟩
 
-lemma init_reaches_pat_0 : (init []) [target]⊢* (evalTapePattern pat_0 (fun k => match k with | 0 => 0 | _ => 0)) := by
+lemma init_reaches_pat_0 : (init []) [target_tm]⊢* (evalTapePattern pat_0 (fun k => match k with | 0 => 0 | _ => 0)) := by
   use 5
-  have h_raw : multiStep target (init []) 5 = some (⟨some 5, ⟨0, default, (0 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> default⟩⟩ : Cfg (Fin 2) (Fin 6)) := rfl
+  have h_raw : multiStep target_tm (init []) 5 = some (⟨some 5, ⟨0, default, (0 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> default⟩⟩ : Cfg (Fin 2) (Fin 6)) := rfl
   rw [h_raw]
   simp only [pat_0, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail]
 
 lemma step_pat_0 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_0 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_0 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_1 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_1 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_0, pat_1, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_0, pat_1, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_1 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_1 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_1 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_2 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_2 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_1, pat_2, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_1, pat_2, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_2 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_2 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_2 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_3 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_3 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_2, pat_3, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_2, pat_3, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_3 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_3 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_3 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_4 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_4 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_3, pat_4, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_3, pat_4, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_4 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_4 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_4 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_5 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_5 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_4, pat_5, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_4, pat_5, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_5 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_5 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_5 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_6 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_6 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_5, pat_6, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_5, pat_6, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_6 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_6 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_6 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_7 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_7 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_6, pat_7, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_6, pat_7, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_7 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_7 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_7 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_8 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_8 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_7, pat_8, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_7, pat_8, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_8 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_8 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_8 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_9 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_9 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_8, pat_9, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_8, pat_9, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_9 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_9 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_9 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_10 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_10 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_9, pat_10, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_9, pat_10, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_11 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_11 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_9, pat_11, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_9, pat_11, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_10 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_10 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_10 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_12 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_12 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_10, pat_12, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_10, pat_12, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_11 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_11 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_11 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_13 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_13 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_11, pat_13, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_11, pat_13, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_14 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_14 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_11, pat_14, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_11, pat_14, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_12 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_12 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_12 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_15 (fun k => match k with | 0 => vars 0 | 1 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_15 (fun k => match k with | 0 => vars 0 | 1 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_12, pat_15, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_12, pat_15, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_13 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_13 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_13 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_16 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_16 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_13, pat_16, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_13, pat_16, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_14 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_14 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_14 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_17 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_17 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_14, pat_17, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_14, pat_17, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_18 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_18 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_14, pat_18, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_14, pat_18, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_15 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_15 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_15 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_19 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_19 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_15, pat_19, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_15, pat_19, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_16 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_16 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_16 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_20 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_20 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_16, pat_20, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_16, pat_20, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_17 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_17 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_17 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_21 (fun k => match k with | 0 => vars 0 | 1 => 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_21 (fun k => match k with | 0 => vars 0 | 1 => 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_17, pat_21, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_17, pat_21, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_18 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_18 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_18 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_22 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_22 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_18, pat_22, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_18, pat_22, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_19 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_19 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_19 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_23 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_23 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_19, pat_23, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_19, pat_23, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_20 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_20 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_20 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_24 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_24 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_20, pat_24, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_20, pat_24, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_21 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_21 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_21 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_25 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_25 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_21, pat_25, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_21, pat_25, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_26 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_26 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_21, pat_26, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_21, pat_26, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_22 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_22 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_22 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_27 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_27 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_22, pat_27, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_22, pat_27, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_23 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_23 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_23 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_28 (fun k => match k with | 0 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_28 (fun k => match k with | 0 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_23, pat_28, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_23, pat_28, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_29 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_29 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_23, pat_29, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_23, pat_29, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_24 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_24 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_24 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_30 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_30 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_24, pat_30, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_24, pat_30, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_25 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_25 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_25 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_31 (fun k => match k with | 0 => 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_31 (fun k => match k with | 0 => 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_25, pat_31, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_25, pat_31, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_32 (fun k => match k with | 0 => v | 1 => 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_32 (fun k => match k with | 0 => v | 1 => 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_25, pat_32, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_25, pat_32, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_26 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_26 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_26 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_33 (fun k => match k with | 0 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_33 (fun k => match k with | 0 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_26, pat_33, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_26, pat_33, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_34 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_34 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_26, pat_34, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_26, pat_34, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_27 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_27 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_27 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_35 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_35 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_27, pat_35, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_27, pat_35, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_36 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_36 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_27, pat_36, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_27, pat_36, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_28 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_28 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_28 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_37 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_37 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_28, pat_37, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_28, pat_37, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_29 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_29 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_29 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_38 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_38 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_29, pat_38, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_29, pat_38, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_39 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_39 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_29, pat_39, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_29, pat_39, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_30 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_30 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_30 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_40 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_40 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_30, pat_40, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_30, pat_40, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_31 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_31 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_31 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 0 with _ | u
   ·
     refine ⟨evalTapePattern pat_41 (fun _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_41 (fun _ => 0))⟩
-    dsimp only [evalTapePattern, pat_31, pat_41, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_31, pat_41, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_42 (fun k => match k with | 0 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_42 (fun k => match k with | 0 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_31, pat_42, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_31, pat_42, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_32 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_32 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_32 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_43 (fun k => match k with | 0 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_43 (fun k => match k with | 0 => 0 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_32, pat_43, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_32, pat_43, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_44 (fun k => match k with | 0 => v | 1 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_44 (fun k => match k with | 0 => v | 1 => 0 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_32, pat_44, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_32, pat_44, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_45 (fun k => match k with | 0 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_45 (fun k => match k with | 0 => u | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_32, pat_45, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_32, pat_45, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_46 (fun k => match k with | 0 => v | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_46 (fun k => match k with | 0 => v | 1 => u | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_32, pat_46, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_32, pat_46, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_33 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_33 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_33 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_47 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_47 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_33, pat_47, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_33, pat_47, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_34 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_34 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_34 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_48 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_48 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_34, pat_48, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_34, pat_48, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_49 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_49 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_34, pat_49, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_34, pat_49, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_35 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_35 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_35 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_50 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_50 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_35, pat_50, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_35, pat_50, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_36 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_36 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_36 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_48 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_48 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_36, pat_48, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_36, pat_48, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_49 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_49 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_36, pat_49, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_36, pat_49, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_37 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_37 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_37 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_51 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_51 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_37, pat_51, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_37, pat_51, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_38 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_38 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_38 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 0 with _ | u
   ·
     refine ⟨evalTapePattern pat_52 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_52 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_38, pat_52, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_38, pat_52, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_53 (fun k => match k with | 0 => 0 | 1 => u | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_53 (fun k => match k with | 0 => 0 | 1 => u | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_38, pat_53, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_38, pat_53, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_39 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_39 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_39 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_52 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_52 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_39, pat_52, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_39, pat_52, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_53 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_53 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_39, pat_53, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_39, pat_53, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_40 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_40 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_40 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_54 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_54 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_40, pat_54, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_40, pat_54, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_55 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_55 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_40, pat_55, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_40, pat_55, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_41 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_41 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_41 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_56 (fun k => match k with | 0 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_56 (fun k => match k with | 0 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_41, pat_56, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_41, pat_56, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_42 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_42 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_42 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_57 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_57 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_42, pat_57, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_42, pat_57, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_43 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_43 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_43 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 0 with _ | u
   ·
     refine ⟨evalTapePattern pat_58 (fun k => match k with | 0 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_58 (fun k => match k with | 0 => 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_43, pat_58, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_43, pat_58, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_59 (fun k => match k with | 0 => 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_59 (fun k => match k with | 0 => 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_43, pat_59, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_43, pat_59, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_44 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_44 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_44 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_58 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_58 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_44, pat_58, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_44, pat_58, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_59 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_59 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_44, pat_59, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_44, pat_59, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_45 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_45 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_45 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_8 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_8 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_45, pat_8, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_45, pat_8, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_46 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_46 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_46 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_8 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_8 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_46, pat_8, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_46, pat_8, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_47 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_47 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_47 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_60 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_60 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_47, pat_60, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_47, pat_60, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_48 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_48 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_48 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 0 with _ | u
   ·
     refine ⟨evalTapePattern pat_61 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_61 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_48, pat_61, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_48, pat_61, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_62 (fun k => match k with | 0 => 0 | 1 => u | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_62 (fun k => match k with | 0 => 0 | 1 => u | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_48, pat_62, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_48, pat_62, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_49 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_49 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_49 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_61 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_61 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_49, pat_61, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_49, pat_61, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_62 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_62 (fun k => match k with | 0 => (vars 0 + 1) | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_49, pat_62, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_49, pat_62, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_50 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_50 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_50 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_60 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_60 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_50, pat_60, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_50, pat_60, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_51 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_51 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_51 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_63 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_63 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_51, pat_63, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_51, pat_63, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_52 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_52 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_52 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_64 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_64 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_52, pat_64, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_52, pat_64, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_53 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_53 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_53 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_65 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_65 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_53, pat_65, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_53, pat_65, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_54 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_54 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_54 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_66 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_66 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_54, pat_66, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_54, pat_66, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_55 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_55 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_55 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_67 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_67 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_55, pat_67, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_55, pat_67, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_68 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_68 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_55, pat_68, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_55, pat_68, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_56 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_56 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_56 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_69 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_69 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_56, pat_69, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_56, pat_69, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_57 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_57 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_57 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_70 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_70 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_57, pat_70, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_57, pat_70, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_58 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_58 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_58 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_71 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_71 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_58, pat_71, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_58, pat_71, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_59 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_59 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_59 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_72 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_72 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_59, pat_72, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_59, pat_72, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_21 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_21 (fun k => match k with | 0 => vars 0 | 1 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_59, pat_21, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_59, pat_21, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_60 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_60 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_60 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_73 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_73 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_60, pat_73, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_60, pat_73, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_61 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_61 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_61 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_74 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_74 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_61, pat_74, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_61, pat_74, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_62 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_62 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_62 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_75 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_75 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_62, pat_75, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_62, pat_75, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_63 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_63 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_63 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_76 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_76 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_63, pat_76, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_63, pat_76, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_64 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_64 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_64 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_77 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_77 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_64, pat_77, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_64, pat_77, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_65 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_65 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_65 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_78 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_78 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_65, pat_78, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_65, pat_78, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_79 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_79 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_65, pat_79, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_65, pat_79, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_66 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_66 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_66 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_80 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_80 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_66, pat_80, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_66, pat_80, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_67 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_67 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_67 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_81 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_81 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_67, pat_81, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_67, pat_81, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_68 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_68 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_68 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_82 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_82 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_68, pat_82, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_68, pat_82, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_83 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_83 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_68, pat_83, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_68, pat_83, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_69 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_69 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_69 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_84 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_84 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_69, pat_84, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_69, pat_84, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_70 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_70 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_70 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_85 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_85 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_70, pat_85, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_70, pat_85, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_71 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_71 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_71 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_86 (fun k => match k with | 0 => vars 0 | 1 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_86 (fun k => match k with | 0 => vars 0 | 1 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_71, pat_86, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_71, pat_86, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_72 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_72 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_72 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_87 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_87 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_72, pat_87, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_72, pat_87, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_73 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_73 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_73 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_88 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_88 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_73, pat_88, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_73, pat_88, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_74 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_74 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_74 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_89 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_89 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_74, pat_89, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_74, pat_89, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_75 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_75 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_75 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_90 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_90 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_75, pat_90, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_75, pat_90, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_91 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_91 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_75, pat_91, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_75, pat_91, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_76 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_76 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_76 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_92 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_92 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_76, pat_92, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_76, pat_92, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_77 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_77 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_77 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_93 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_93 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_77, pat_93, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_77, pat_93, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_78 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_78 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_78 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_94 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_94 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_78, pat_94, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_78, pat_94, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_79 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_79 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_79 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_95 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_95 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_79, pat_95, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_79, pat_95, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_80 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_80 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_80 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_96 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_96 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_80, pat_96, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_80, pat_96, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_81 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_81 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_81 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_97 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_97 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_81, pat_97, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_81, pat_97, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_82 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_82 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_82 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_98 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_98 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_82, pat_98, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_82, pat_98, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_83 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_83 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_83 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_99 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_99 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_83, pat_99, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_83, pat_99, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_100 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_100 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_83, pat_100, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_83, pat_100, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_84 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_84 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_84 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_59 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_59 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_84, pat_59, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_84, pat_59, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_85 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_85 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_85 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_101 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_101 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_85, pat_101, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_85, pat_101, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_86 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_86 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_86 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_102 (fun k => match k with | 0 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_102 (fun k => match k with | 0 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_86, pat_102, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_86, pat_102, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_103 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_103 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_86, pat_103, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_86, pat_103, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_87 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_87 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_87 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_104 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_104 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_87, pat_104, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_87, pat_104, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_88 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_88 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_88 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_105 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_105 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_88, pat_105, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_88, pat_105, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_89 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_89 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_89 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_106 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_106 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_89, pat_106, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_89, pat_106, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_90 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_90 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_90 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_107 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_107 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_90, pat_107, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_90, pat_107, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_91 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_91 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_91 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_108 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_108 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_91, pat_108, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_91, pat_108, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_92 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_92 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_92 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_109 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_109 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_92, pat_109, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_92, pat_109, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_110 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_110 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_92, pat_110, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_92, pat_110, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_93 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_93 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_93 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_15 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_15 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_93, pat_15, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_93, pat_15, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_94 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_94 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_94 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_111 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_111 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_94, pat_111, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_94, pat_111, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_95 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_95 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_95 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_112 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_112 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_95, pat_112, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_95, pat_112, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_113 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_113 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_95, pat_113, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_95, pat_113, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_96 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_96 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_96 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_114 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_114 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_96, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_96, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_115 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_115 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_96, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_96, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_97 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_97 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_97 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_116 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_116 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_97, pat_116, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_97, pat_116, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_116 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_116 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_97, pat_116, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_97, pat_116, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_98 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_98 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_98 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_117 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_117 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_98, pat_117, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_98, pat_117, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_117 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_117 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_98, pat_117, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_98, pat_117, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_99 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_99 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_99 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_118 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_118 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_99, pat_118, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_99, pat_118, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_118 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_118 (fun k => match k with | 0 => vars 0 | 1 => (u + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_99, pat_118, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_99, pat_118, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_100 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_100 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_100 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_119 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_119 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 3 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_100, pat_119, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_100, pat_119, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_120 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_120 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 3 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_100, pat_120, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_100, pat_120, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_119 (fun k => match k with | 0 => vars 1 | 1 => (u + 1) | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_119 (fun k => match k with | 0 => vars 1 | 1 => (u + 1) | 2 => vars 3 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_100, pat_119, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_100, pat_119, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_120 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (u + 1) | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_120 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (u + 1) | 3 => vars 3 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_100, pat_120, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_100, pat_120, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_101 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_101 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_101 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_121 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_121 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_101, pat_121, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_101, pat_121, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_102 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_102 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_102 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_0 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_0 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_102, pat_0, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_102, pat_0, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_103 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_103 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_103 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_122 (fun k => match k with | 0 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_122 (fun k => match k with | 0 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_103, pat_122, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_103, pat_122, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_123 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_123 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_103, pat_123, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_103, pat_123, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_104 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_104 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_104 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_58 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_58 (fun k => match k with | 0 => (vars 0 + 1) | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_104, pat_58, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_104, pat_58, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_105 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_105 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_105 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_124 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_124 (fun k => match k with | 0 => vars 0 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_105, pat_124, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_105, pat_124, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_125 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_125 (fun k => match k with | 0 => vars 0 | 1 => u | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_105, pat_125, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_105, pat_125, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_106 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_106 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_106 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_126 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_126 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_106, pat_126, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_106, pat_126, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_127 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_127 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_106, pat_127, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_106, pat_127, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_107 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_107 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_107 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_128 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_128 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_107, pat_128, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_107, pat_128, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_108 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_108 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_108 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     refine ⟨evalTapePattern pat_129 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_129 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_108, pat_129, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_108, pat_129, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_130 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_130 (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => u | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_108, pat_130, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_108, pat_130, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_109 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_109 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_109 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_131 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_131 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_109, pat_131, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_109, pat_131, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_110 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_110 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_110 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_132 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_132 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_110, pat_132, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_110, pat_132, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_111 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_111 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_111 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_133 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_133 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_111, pat_133, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_111, pat_133, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_112 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_112 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_112 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_134 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_134 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_112, pat_134, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_112, pat_134, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_113 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_113 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_113 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_135 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_135 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_113, pat_135, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_113, pat_135, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_114 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_114 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_114 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_136 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_136 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_114, pat_136, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_114, pat_136, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_115 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_115 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_115 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_38 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_38 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_115, pat_38, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_115, pat_38, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_39 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_39 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_115, pat_39, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_115, pat_39, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_116 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_116 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
-  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 1 (.sym 0 (.rep [1, 0] 1 (.sym 0 (.sym 1 (.rep [1] 2 .default)))))))) } (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target, evalTapePattern, evalTapeExpr])⟩
-  dsimp only [evalTapePattern, pat_116, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  ∃ cfg', ((evalTapePattern pat_116 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
+  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 1 (.sym 0 (.rep [1, 0] 1 (.sym 0 (.sym 1 (.rep [1] 2 .default)))))))) } (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target_tm, evalTapePattern, evalTapeExpr])⟩
+  dsimp only [evalTapePattern, pat_116, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_117 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_117 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_117 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_137 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_137 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_117, pat_137, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_117, pat_137, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_118 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_118 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_118 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_97 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_97 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_118, pat_97, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_118, pat_97, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_119 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_119 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_119 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_98 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_98 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_119, pat_98, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_119, pat_98, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_120 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_120 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_120 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_99 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_99 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_120, pat_99, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_120, pat_99, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_100 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_100 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_120, pat_100, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_120, pat_100, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_121 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_121 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_121 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_138 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_138 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_121, pat_138, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_121, pat_138, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_122 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_122 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_122 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_139 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_139 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_122, pat_139, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_122, pat_139, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_123 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_123 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_123 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_140 (fun k => match k with | 0 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_140 (fun k => match k with | 0 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_123, pat_140, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_123, pat_140, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_141 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_141 (fun k => match k with | 0 => v | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_123, pat_141, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_123, pat_141, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_124 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_124 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_124 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_142 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_142 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_124, pat_142, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_124, pat_142, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_125 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_125 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_125 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_143 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_143 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_125, pat_143, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_125, pat_143, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_126 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_126 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_126 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_144 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_144 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_126, pat_144, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_126, pat_144, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_127 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_127 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_127 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     refine ⟨evalTapePattern pat_145 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_145 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_127, pat_145, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_127, pat_145, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_146 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_146 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_127, pat_146, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_127, pat_146, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_128 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_128 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_128 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_147 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_147 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_128, pat_147, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_128, pat_147, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_129 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_129 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_129 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_148 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_148 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_129, pat_148, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_129, pat_148, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_130 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_130 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_130 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_149 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_149 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_130, pat_149, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_130, pat_149, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_131 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_131 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_131 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_3 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_3 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_131, pat_3, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_131, pat_3, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_132 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_132 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_132 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_76 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_76 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_132, pat_76, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_132, pat_76, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_133 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_133 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_133 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_150 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => (vars 2 + 1) | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_150 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => (vars 2 + 1) | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_133, pat_150, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_133, pat_150, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_134 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_134 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_134 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_111 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_111 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_134, pat_111, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_134, pat_111, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_135 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_135 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_135 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     refine ⟨evalTapePattern pat_112 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_112 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_135, pat_112, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_135, pat_112, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_113 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_113 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | 3 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_135, pat_113, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_135, pat_113, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_136 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_136 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_136 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_51 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_51 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_136, pat_51, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_136, pat_51, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_137 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_137 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_137 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_114 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_114 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_137, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_137, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_115 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_115 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_137, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_137, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_138 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_138 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_138 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_84 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_84 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_138, pat_84, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_138, pat_84, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_139 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_139 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
-  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 0 (.sym 1 (.rep [1] 1 .default))))) } (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target, evalTapePattern, evalTapeExpr])⟩
-  dsimp only [evalTapePattern, pat_139, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  ∃ cfg', ((evalTapePattern pat_139 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
+  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 0 (.sym 1 (.rep [1] 1 .default))))) } (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target_tm, evalTapePattern, evalTapeExpr])⟩
+  dsimp only [evalTapePattern, pat_139, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_140 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_140 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_140 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_151 (fun k => match k with | 0 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_151 (fun k => match k with | 0 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_140, pat_151, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_140, pat_151, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_141 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_141 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_141 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_152 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_152 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_141, pat_152, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_141, pat_152, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_153 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_153 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_141, pat_153, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_141, pat_153, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_142 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_142 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_142 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_85 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_85 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_142, pat_85, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_142, pat_85, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_143 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_143 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_143 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_88 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_88 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_143, pat_88, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_143, pat_88, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_144 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_144 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_144 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_150 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_150 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_144, pat_150, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_144, pat_150, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_145 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_145 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_145 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_154 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_154 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_145, pat_154, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_145, pat_154, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_146 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_146 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_146 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     refine ⟨evalTapePattern pat_155 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_155 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_146, pat_155, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_146, pat_155, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_156 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_156 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_146, pat_156, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_146, pat_156, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_147 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_147 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_147 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     refine ⟨evalTapePattern pat_126 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_126 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_147, pat_126, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_147, pat_126, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_127 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_127 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_147, pat_127, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_147, pat_127, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_148 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_148 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_148 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_128 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_128 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_148, pat_128, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_148, pat_128, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_149 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_149 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_149 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 2 with _ | u
   ·
     refine ⟨evalTapePattern pat_129 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_129 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_149, pat_129, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_149, pat_129, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_130 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_130 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | 2 => u | 3 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_149, pat_130, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_149, pat_130, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_150 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_150 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_150 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_157 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_157 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_150, pat_157, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_150, pat_157, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_158 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_158 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_150, pat_158, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_150, pat_158, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_151 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_151 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_151 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_51 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_51 (fun k => match k with | 0 => 0 | 1 => vars 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_151, pat_51, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_151, pat_51, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_152 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_152 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_152 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 0 with _ | u
   ·
     refine ⟨evalTapePattern pat_159 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_159 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_152, pat_159, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_152, pat_159, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_159 (fun k => match k with | 0 => (u + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_159 (fun k => match k with | 0 => (u + 1) | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_152, pat_159, evalTapeExpr]; rw [h_vr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_152, pat_159, evalTapeExpr]; rw [h_vr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_153 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_153 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_153 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vr : vars 1 with _ | u
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_160 (fun k => match k with | 0 => 0 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_160 (fun k => match k with | 0 => 0 | 1 => vars 2 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_153, pat_160, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_153, pat_160, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_161 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_161 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_153, pat_161, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_153, pat_161, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     rcases h_vl : vars 0 with _ | v
     ·
       refine ⟨evalTapePattern pat_160 (fun k => match k with | 0 => (u + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_160 (fun k => match k with | 0 => (u + 1) | 1 => vars 2 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_153, pat_160, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_153, pat_160, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
     ·
       refine ⟨evalTapePattern pat_161 (fun k => match k with | 0 => v | 1 => (u + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_161 (fun k => match k with | 0 => v | 1 => (u + 1) | 2 => vars 2 | _ => 0))⟩
-      dsimp only [evalTapePattern, pat_153, pat_161, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+      dsimp only [evalTapePattern, pat_153, pat_161, evalTapeExpr]; rw [h_vr, h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_154 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_154 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_154 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_162 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_162 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_154, pat_162, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_154, pat_162, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_155 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_155 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_155 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_14 (fun k => match k with | 0 => vars 1 | 1 => 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_14 (fun k => match k with | 0 => vars 1 | 1 => 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_155, pat_14, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_155, pat_14, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_146 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_146 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_155, pat_146, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_155, pat_146, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_156 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_156 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_156 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_163 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_163 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_156, pat_163, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_156, pat_163, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_164 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_164 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_156, pat_164, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_156, pat_164, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_157 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_157 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_157 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_165 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_165 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_157, pat_165, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_157, pat_165, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_158 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_158 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_158 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_166 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_166 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_158, pat_166, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_158, pat_166, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_159 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_159 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
-  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 1 (.sym 0 (.rep [1, 0] 1 (.sym 0 (.sym 1 (.rep [1] 2 .default)))))))) } (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target, evalTapePattern, evalTapeExpr])⟩
-  dsimp only [evalTapePattern, pat_159, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  ∃ cfg', ((evalTapePattern pat_159 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
+  refine ⟨evalTapePattern { left := (.sym 1 (.rep [1] 0 .default)), head := some 0, right := (.sym 1 (.sym 0 (.sym 1 (.sym 0 (.rep [1, 0] 1 (.sym 0 (.sym 1 (.rep [1] 2 .default)))))))) } (fun k => match k with | 0 => 0 | 1 => vars 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inr (by simp [step, target_tm, evalTapePattern, evalTapeExpr])⟩
+  dsimp only [evalTapePattern, pat_159, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_160 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_160 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_160 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_167 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_167 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_160, pat_167, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_160, pat_167, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_161 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_161 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_161 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_152 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_152 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_161, pat_152, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_161, pat_152, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_153 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_153 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_161, pat_153, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_161, pat_153, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_162 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_162 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_162 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_168 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_168 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_162, pat_168, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_162, pat_168, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_163 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_163 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_163 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_169 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_169 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_163, pat_169, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_163, pat_169, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_164 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_164 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_164 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_170 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_170 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_164, pat_170, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_164, pat_170, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_165 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_165 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_165 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_171 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_171 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_165, pat_171, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_165, pat_171, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_166 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_166 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_166 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_172 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_172 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_166, pat_172, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_166, pat_172, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_173 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_173 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_166, pat_173, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_166, pat_173, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_167 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_167 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_167 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_51 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_51 (fun k => match k with | 0 => (vars 0 + 1) | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_167, pat_51, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_167, pat_51, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_168 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_168 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_168 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_174 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_174 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_168, pat_174, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_168, pat_174, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_169 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_169 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_169 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_175 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_175 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_169, pat_175, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_169, pat_175, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_170 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_170 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_170 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_176 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_176 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_170, pat_176, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_170, pat_176, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_177 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_177 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_170, pat_177, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_170, pat_177, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_171 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_171 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_171 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_178 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_178 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_171, pat_178, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_171, pat_178, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_172 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_172 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_172 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_179 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_179 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_172, pat_179, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_172, pat_179, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_173 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_173 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_173 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_180 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_180 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_173, pat_180, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_173, pat_180, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_174 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_174 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_174 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_181 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_181 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => 0 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_174, pat_181, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_174, pat_181, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_175 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_175 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_175 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_182 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_182 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_175, pat_182, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_175, pat_182, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_176 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_176 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_176 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_183 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_183 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_176, pat_183, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_176, pat_183, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_177 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_177 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_177 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_184 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_184 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_177, pat_184, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_177, pat_184, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_178 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_178 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_178 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_114 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_114 (fun k => match k with | 0 => 0 | 1 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_178, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_178, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_115 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_115 (fun k => match k with | 0 => v | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_178, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_178, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_179 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_179 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_179 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_185 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_185 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_179, pat_185, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_179, pat_185, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_180 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_180 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_180 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_186 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_186 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_180, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_180, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_180, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_180, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_181 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_181 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_181 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_188 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_188 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_181, pat_188, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_181, pat_188, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_182 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_182 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_182 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_35 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_35 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_182, pat_35, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_182, pat_35, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_36 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_36 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_182, pat_36, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_182, pat_36, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_183 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_183 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_183 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_175 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_175 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_183, pat_175, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_183, pat_175, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_184 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_184 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_184 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_176 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_176 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_184, pat_176, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_184, pat_176, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_177 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_177 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_184, pat_177, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_184, pat_177, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_185 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_185 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_185 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_189 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_189 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_185, pat_189, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_185, pat_189, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_186 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_186 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_186 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_190 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_190 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_186, pat_190, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_186, pat_190, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_187 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_187 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_187 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_191 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_191 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | 3 => vars 3 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_187, pat_191, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_187, pat_191, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_188 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_188 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_188 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_192 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_192 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_188, pat_192, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_188, pat_192, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_189 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_189 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_189 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_114 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_114 (fun k => match k with | 0 => (vars 1 + 1) | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_189, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_189, pat_114, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_115 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_115 (fun k => match k with | 0 => v | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_189, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_189, pat_115, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_190 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_190 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_190 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_185 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_185 (fun k => match k with | 0 => vars 0 | 1 => (vars 1 + 1) | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_190, pat_185, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_190, pat_185, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_191 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_191 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_191 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_186 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_186 (fun k => match k with | 0 => vars 1 | 1 => (vars 2 + 1) | 2 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_191, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_191, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => (vars 2 + 1) | 3 => vars 3 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_191, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_191, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_192 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_192 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_192 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_193 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_193 (fun k => match k with | 0 => vars 1 | 1 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_192, pat_193, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_192, pat_193, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_194 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_194 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_192, pat_194, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_192, pat_194, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_193 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_193 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_193 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_195 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_195 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_193, pat_195, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_193, pat_195, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_194 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_194 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_194 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_196 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_196 (fun k => match k with | 0 => vars 0 | 1 => vars 1 | 2 => vars 2 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_194, pat_196, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_194, pat_196, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_195 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_195 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_195 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   refine ⟨evalTapePattern pat_185 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_185 (fun k => match k with | 0 => vars 0 | 1 => 0 | 2 => vars 1 | _ => 0))⟩
-  dsimp only [evalTapePattern, pat_195, pat_185, evalTapeExpr]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+  dsimp only [evalTapePattern, pat_195, pat_185, evalTapeExpr]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 lemma step_pat_196 (vars : Nat → Nat) :
-  ∃ cfg', ((evalTapePattern pat_196 vars) [target]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
+  ∃ cfg', ((evalTapePattern pat_196 vars) [target_tm]⊢⁺ cfg') ∧ (IsInPatternSet ps cfg' ∨ (step target_tm cfg').isNone) := by
   rcases h_vl : vars 0 with _ | v
   ·
     refine ⟨evalTapePattern pat_186 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_186 (fun k => match k with | 0 => vars 1 | 1 => 0 | 2 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_196, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_196, pat_186, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
   ·
     refine ⟨evalTapePattern pat_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0), step_to_stepPlus ?_, Or.inl (in_ps_187 (fun k => match k with | 0 => v | 1 => vars 1 | 2 => 0 | 3 => vars 2 | _ => 0))⟩
-    dsimp only [evalTapePattern, pat_196, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
+    dsimp only [evalTapePattern, pat_196, pat_187, evalTapeExpr]; rw [h_vl]; simp only [step, target_tm, evalTapePattern, evalTapeExpr, pow_zero_list, pow_succ_list, cons_append_list, List.singleton_append, List.nil_append, Turing.Tape.write, Turing.Tape.move, listblank_append_nil, listblank_append_cons, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, zero_cons_default, default_head, default_tail, Option.map]
 
 
 end Solution
@@ -2543,7 +2541,7 @@ end Solution
 -- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
 
 open Solution in
-theorem has_collatz_reduction : HasCollatzReduction target := by
+theorem is_cryptid : IsCryptid target_tm := by
   refine ⟨ps, ⟨evalTapePattern pat_0 (fun k => match k with | 0 => 0 | _ => 0), init_reaches_pat_0, in_ps_0 (fun k => match k with | 0 => 0 | _ => 0)⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩
