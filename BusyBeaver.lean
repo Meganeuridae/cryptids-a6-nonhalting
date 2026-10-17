@@ -58,7 +58,6 @@ public import BusyBeaver.Machines.M_1RB1RE_1LC0RA_1RD0LB_1LB1RC_1LF0RD_HHH0LE
 public import BusyBeaver.Machines.M_1RB1RE_1LC1LD_HHH1LA_1LB1LE_0RF0RA_1LD1RF
 public import BusyBeaver.Machines.M_1RB1RF_0LC0RF_1RD1LC_HHH0LE_0RC1LF_1RA0LE
 public import BusyBeaver.Machines.M_1RB1RF_1LC1LF_0RE1LD_0LB1LD_HHH1RC_1RA0RD
-public import BusyBeaver.Machines.M_1RBHHH_0RC0RD_1LD1RB_0LE0LC_1RA0LF_1LD1LE
 
 /-!
 # Busy Beaver Holdouts (`BusyBeaver`)
