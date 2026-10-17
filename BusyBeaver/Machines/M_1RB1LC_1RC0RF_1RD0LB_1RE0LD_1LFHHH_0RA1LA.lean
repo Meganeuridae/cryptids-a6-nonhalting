@@ -1,55 +1,40 @@
+/-
+Copyright (c) 2026 Google LLC. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
-public import BusyBeaver.Defs
 public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
-public import Lean.PrettyPrinter.Delaborator.Basic
-public import Mathlib.Computability.TuringMachine.Tape
-public import Mathlib.Util.Notation3
-public import Mathlib.Computability.TuringMachine.PostTuringMachine
-public import Mathlib.Computability.TuringMachine.StackTuringMachine
-public import Mathlib.Data.ENat.Lattice
-public import Mathlib.Data.List.Basic
-public import Mathlib.Data.Nat.Basic
-public import Mathlib.Logic.Relation
-public import Mathlib.Order.Lattice.Nat
-public import Mathlib.Tactic.Linarith
-public import Mathlib.Tactic.NormNum
-public import Mathlib.Tactic.Ring
-public import Mathlib.Tactic.Zify
-
-set_option linter.deprecated false
-set_option linter.flexible false
-set_option linter.style.longLine false
-
 
 /-!
-# Busy Beaver Machine `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA` — `is_cryptid` (`IsCryptid target_tm`)
+# Busy Beaver Holdout `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
 
-See <https://wiki.bbchallenge.org/wiki/1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA>.
-
-This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
-and defines `target_tm` for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`. Do not modify the trusted
-definitions section or the goal theorem signature.
+## Collatz-like Acceleration Rules
+Canonical configurations map out to R1, R2, Q, S4, S6 parametrized by `n`.
 -/
 
-open Mathlib Relation Nat Turing BusyBeaver
 
 @[expose] public section
 
 namespace BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA
 
--- BEGIN TRUSTED DEFINITIONS (DO NOT MODIFY)
-
 variable {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
 
-/-- Step and multi-step relations. -/
+def list_nat_repeat (a : List (Fin 2)) (n : Nat) : List (Fin 2) := a ^ n
+@[simp] lemma list_nat_repeat_eq (a : List (Fin 2)) (n : Nat) : list_nat_repeat a n = a ^ n := rfl
+
+open SixState Turing
+
+def machine : ConjectureMachines.Machine 6 2 :=
+  load_rle_machine% "1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA"
+abbrev target : Machine (Fin 2) (Fin 6) := machine.toBB
+
 notation3 c₁ " [" M "]⊢ " c₂ => step M c₁ = some c₂
 notation3 c₁ " [" M "]⊢^{" n "} " c₂ => multiStep M c₁ n = some c₂
 notation3 c₁ " [" M "]⊢* " c₂ => ∃ n, multiStep M c₁ n = some c₂
 notation3 c₁ " [" M "]⊢⁺ " c₂ => ∃ n > 0, multiStep M c₁ n = some c₂
 
-/-- Tape construction notations. -/
 notation l " {{" s "}} " r => (⟨s, l, r⟩ : Tape _)
 notation:67 s:67 " << " a:68 => ListBlank.cons a s
 infixr:67 " >> " => ListBlank.cons
@@ -58,180 +43,32 @@ infixr:67 " +> " => ListBlank.append
 notation3 l " {{" q "}}> " r => (⟨some q, ⟨ListBlank.head r, l, ListBlank.tail r⟩⟩ : Cfg _ _)
 notation3 l " <{{" q "}} " r => (⟨some q, ⟨ListBlank.head l, ListBlank.tail l, r⟩⟩ : Cfg _ _)
 
-/-- Power notation for repeating lists on tapes: `l^n`. -/
-@[simp]
-def list_nat_repeat (l : List Γ) (n : Nat) := match n with
-  | 0 => []
-  | n + 1 => List.append l (list_nat_repeat l n)
-
-local instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
-
-/-- A configuration is halting for `M` if no next transition is defined. -/
-def IsHaltingConfiguration (M : Machine Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
-  (step M cfg).isNone
-
-/-- Parametric regular-expression tape half-expressions. -/
-inductive TapeExpr (Γ : Type*)
-  | default : TapeExpr Γ
-  | sym (a : Γ) (rest : TapeExpr Γ)
-  | rep (blk : List Γ) (var_idx : Nat) (rest : TapeExpr Γ)
-
-def evalTapeExpr {Γ : Type*} [Inhabited Γ] : TapeExpr Γ → (Nat → Nat) → ListBlank Γ
-  | .default, _ => default
-  | .sym a rest, vars => ListBlank.cons a (evalTapeExpr rest vars)
-  | .rep blk v rest, vars => ListBlank.append (blk ^ vars v) (evalTapeExpr rest vars)
-
-structure TapePattern (Γ Λ : Type*) where
-  left : TapeExpr Γ
-  head : Option Λ
-  right : TapeExpr Γ
-
-def evalTapePattern {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-    (p : TapePattern Γ Λ) (vars : Nat → Nat) : Cfg Γ Λ :=
-  let r := evalTapeExpr p.right vars
-  ⟨p.head, ⟨r.head, evalTapeExpr p.left vars, r.tail⟩⟩
-
-inductive VarCond
-  | ge_const (idx : Nat) (val : Nat)
-  | ge_var (idx1 idx2 : Nat)
-  | and (c1 c2 : VarCond)
-  | or (c1 c2 : VarCond)
-  | not (c : VarCond)
-  | true
-
-def evalVarCond : VarCond → (Nat → Nat) → Prop
-  | .ge_const idx val, vars => vars idx ≥ val
-  | .ge_var idx1 idx2, vars => vars idx1 ≥ vars idx2
-  | .and c1 c2, vars => evalVarCond c1 vars ∧ evalVarCond c2 vars
-  | .or c1 c2, vars => evalVarCond c1 vars ∨ evalVarCond c2 vars
-  | .not c, vars => ¬ evalVarCond c vars
-  | .true, _ => True
-
-abbrev TapePatternSet (Γ Λ : Type*) := List (TapePattern Γ Λ × VarCond)
-
-def IsInPatternSet {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-    (ps : TapePatternSet Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
-  ∃ (entry : TapePattern Γ Λ × VarCond), entry ∈ ps ∧
-    ∃ (vars : Nat → Nat), cfg = evalTapePattern entry.1 vars ∧ evalVarCond entry.2 vars
-
-/--
-Trusted Definition (`IsCryptid`):
-The long-term behavior of `M` is governed by a closed accelerated pattern set `ps`
-containing a reachable initial configuration, where every pattern in `ps` transitions
-in `⊢⁺` (`n ≥ 1` steps) to another pattern in `ps` or to a halting state.
--/
-def IsCryptid (M : Machine Γ Λ) : Prop :=
-  ∃ (ps : TapePatternSet Γ Λ),
-    (∃ cfg₀, ((init []) [M]⊢* cfg₀) ∧ IsInPatternSet ps cfg₀) ∧
-    (∀ cfg, IsInPatternSet ps cfg →
-      ∃ cfg', (cfg [M]⊢⁺ cfg') ∧
-               (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
-
-/-- Transition function for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`. -/
-def target_tm : Machine (Fin 2) (Fin 6)
-  | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
-  | 0, 1 => some (some 2, Stmt.write 1 Dir.left)
-  | 1, 0 => some (some 2, Stmt.write 1 Dir.right)
-  | 1, 1 => some (some 5, Stmt.write 0 Dir.right)
-  | 2, 0 => some (some 3, Stmt.write 1 Dir.right)
-  | 2, 1 => some (some 1, Stmt.write 0 Dir.left)
-  | 3, 0 => some (some 4, Stmt.write 1 Dir.right)
-  | 3, 1 => some (some 3, Stmt.write 0 Dir.left)
-  | 4, 0 => some (some 5, Stmt.write 1 Dir.left)
-  | 4, 1 => none
-  | 5, 0 => some (some 0, Stmt.write 0 Dir.right)
-  | 5, 1 => some (some 0, Stmt.write 1 Dir.left)
-
--- END TRUSTED DEFINITIONS
-
-
--- BEGIN EXPLORATORY DEFINITIONS AND LEMMAS
-
-namespace Solution
-
-set_option linter.unusedVariables false
-set_option linter.unusedSimpArgs false
-set_option linter.deprecated false
-set_option linter.dupNamespace false
-set_option linter.unreachableTactic false
-set_option linter.unusedTactic false
-set_option quotPrecheck false
-set_option maxRecDepth 4000000
-set_option maxHeartbeats 8000000
-
-variable {zG_ zL_ α β γ : Type*} [Inhabited zG_] [Inhabited zL_]
-abbrev A : Fin 6 := 0
-abbrev B : Fin 6 := 1
-abbrev C : Fin 6 := 2
-abbrev D : Fin 6 := 3
-abbrev E : Fin 6 := 4
-abbrev F : Fin 6 := 5
-/-!
-# Busy Beaver Candidate: Suspect 153 (Holdout #330)
-
-Candidate information and tracking metadata are stored in `metadata.json` in this directory.
-
-Transition: `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
-(Holdout #330 in `bb6_holdouts_797.txt`, Block #59 of size 2 in `bb6_holdouts_1630_grouped.txt`)
--/
-
-
-
--- ============================================================================
--- Section 2: Turing Machine Infrastructure & Notations
--- ============================================================================
-
-
-/- A Turing machine statement writing a symbol and moving in direction `dir`. -/
--- ============================================================================
--- Section 5: Specific Turing Machine: Suspect 153 (Holdout #330)
--- ============================================================================
-/- Transition function for Holdout 330: `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA` -/
-
--- ============================================================================
-abbrev suspect_153_tm : Machine (Fin 2) (Fin 6) := target_tm
-
--- Section 6: Helper Lemmas & Execute Tactic
--- ============================================================================
-
-set_option linter.unusedSimpArgs false
-set_option maxHeartbeats 8000000
-set_option maxRecDepth 4000000
-
-@[simp] lemma multiStep_zero (M : Machine Γ Λ) (config : Cfg Γ Λ) : multiStep M config 0 = some config := rfl
-@[simp] lemma multiStep_one (M : Machine Γ Λ) (config : Cfg Γ Λ) : multiStep M config 1 = step M config := rfl
-@[simp] lemma multiStep_succ (M : Machine Γ Λ) (config : Cfg Γ Λ) (n : ℕ) :
-    multiStep M config (n + 1) = Option.bind (multiStep M config n) (step M) := by
-  rw [multiStep, Function.iterate_succ', Function.comp_apply, multiStep]
+abbrev target_tm := target
+abbrev suspect_153_tm := target
 
 @[simp] lemma pow_zero_list (l : List (Fin 2)) : l ^ (0 : Nat) = [] := rfl
 @[simp] lemma pow_succ_list (l : List (Fin 2)) (n : Nat) : l ^ (n + 1) = l ++ (l ^ n) := rfl
-@[simp] lemma cons_append_list (x : Fin 2) (xs ys : List (Fin 2)) : (x :: xs) ++ ys = x :: (xs ++ ys) := rfl
+@[simp] lemma cons_append_list (x : Fin 2) (xs ys : List (Fin 2)) : (x :: xs)
+  ++ ys = x :: (xs ++ ys) := rfl
 @[simp] lemma append_nil_list (l : List (Fin 2)) : l ++ [] = l := List.append_nil l
 @[simp] lemma listblank_append_nil (b : ListBlank (Fin 2)) : ([] : List (Fin 2)) +> b = b := rfl
-@[simp] lemma listblank_append_cons (x : Fin 2) (xs : List (Fin 2)) (b : ListBlank (Fin 2)) : (x :: xs) +> b = x >> (xs +> b) := rfl
+@[simp] lemma listblank_append_cons (x : Fin 2) (xs : List (Fin 2)) (b : ListBlank (Fin 2)) : (x ::
+  xs) +> b = x >> (xs +> b) := rfl
 @[simp] lemma zero_cons_default : (0 : Fin 2) >> default = default := by
   apply Turing.ListBlank.ext; intro i; cases i <;> rfl
 @[simp] lemma default_head : (default : ListBlank (Fin 2)).head = 0 := rfl
 @[simp] lemma default_tail : (default : ListBlank (Fin 2)).tail = default := rfl
 
-omit [Inhabited Γ] in
 @[simp]
-theorem list_pow_add (l : List Γ) (n m : Nat) : l^(n + m) = l^n ++ l^m := match m with
-  | 0 => by simp_rw [HPow.hPow, add_zero, list_nat_repeat, List.append_nil]
-  | m + 1 => by
-    rw [add_comm m 1, ← add_assoc, add_comm 1 m, list_pow_add]
-    simp only [HPow.hPow, list_nat_repeat, List.append_eq, List.append_assoc]
-    rw [← List.append_assoc, ← List.append_assoc, List.append_cancel_right_eq]
-    induction n with
-    | zero => simp
-    | succ n ih => simpa
+theorem list_pow_add (l : List (Fin 2)) (n m : Nat) : l^(n + m) = l^n ++ l^m := by
+  change (List.replicate (n + m) l).flatten = (List.replicate n l).flatten
+    ++ (List.replicate m l).flatten
+  rw [List.replicate_add, List.flatten_append]
 
-omit [Inhabited Γ] in
-theorem list_pow_add_comm (l : List Γ) (n m : Nat) : l^n ++ l^m = l^m ++ l^n := by
+theorem list_pow_add_comm (l : List (Fin 2)) (n m : Nat) : l^n ++ l^m = l^m ++ l^n := by
   rw [← list_pow_add, add_comm, list_pow_add]
 
-lemma listblank_append_append (s : ListBlank Γ) (l₁ l₂ : List Γ) :
+lemma listblank_append_append (s : ListBlank (Fin 2)) (l₁ l₂ : List (Fin 2)) :
     (s <+ l₁) <+ l₂ = s <+ (l₂ ++ l₁) := by
   unfold ListBlank.append
   split
@@ -272,15 +109,6 @@ lemma step_stepStar {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
 lemma step_stepPlus {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
     (tm : Machine Γ Λ) (c₁ c₂ : Cfg Γ Λ) (h : c₁ [tm]⊢ c₂) :
     c₁ [tm]⊢⁺ c₂ := ⟨1, by decide, step_multiStep tm c₁ c₂ h⟩
-
-lemma multiStep_add {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-    (tm : Machine Γ Λ) (c₁ : Cfg Γ Λ) (n m : Nat) :
-    multiStep tm c₁ (n + m) = (multiStep tm c₁ n).bind (fun c₂ => multiStep tm c₂ m) := by
-  induction m with
-  | zero => simp
-  | succ m' ih =>
-    rw [Nat.add_succ, multiStep_succ, ih, Option.bind_assoc]
-    simp_rw [multiStep_succ]
 
 lemma multiStep_trans {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
     (tm : Machine Γ Λ) (c₁ c₂ c₃ : Cfg Γ Λ) (n m : Nat)
@@ -328,12 +156,18 @@ lemma step_stepStar_trans {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
 macro "finish" : tactic =>
   `(tactic| exact ⟨0, rfl⟩)
 macro "step_plus" : tactic =>
-  `(tactic| refine step_stepStar_stepPlus (by (try simp only [Turing.ListBlank.head_cons, default_head]); rfl) ?_ <;>
-    simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Tape.write, zero_cons_default, default_head, default_tail])
+  `(tactic|
+    refine step_stepStar_stepPlus
+        (by (try simp only [Turing.ListBlank.head_cons, default_head]); rfl) ?_ <;>
+      simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons,
+        Tape.write, zero_cons_default, default_head, default_tail])
 macro "step" : tactic =>
-  `(tactic| refine step_stepStar_trans (by (try simp only [Turing.ListBlank.head_cons, default_head]); rfl) ?_ <;>
-    simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Tape.write, zero_cons_default, default_head, default_tail])
-macro "execute" : tactic =>
+  `(tactic|
+    refine step_stepStar_trans
+        (by (try simp only [Turing.ListBlank.head_cons, default_head]); rfl) ?_ <;>
+      simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons,
+        Tape.write, zero_cons_default, default_head, default_tail])
+macro "bb_steps" : tactic =>
   `(tactic| step_plus <;> repeat (any_goals (first | finish | step)))
 
 
@@ -394,21 +228,22 @@ lemma LA_add (a k : Nat) : LA (a + k) = LA a <+ (U4 ^ k) := by
 -- Section 2: Universal One-Bit & Multi-Bit `LA` Consumption Laws
 -- ============================================================================
 
-/-- 8-step trigger from `((l <+ U4) {{A}}> ((1 : Fin 2) >> r))` to `(l {{C}}> ([1, 1, 1, 1, 0] +> r))`. -/
+/-- 8-step trigger from `((l <+ U4) {{A}}> ((1 : Fin 2) >> r))` to `(l {{C}}> ([1, 1, 1, 1,
+  0] +> r))`. -/
 lemma step_trigger_1_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> ((1 : Fin 2) >> r)) [suspect_153_tm]⊢⁺
     (l {{C}}> (([1, 1, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- 10-step left `{{C}}>` step across one `U4 = [0, 0, 1, 1]` block. -/
 lemma step_C_left_U4_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{C}}> (([1, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (l {{C}}> (([1, 1, 1, 1, 0] : List (Fin 2)) +> (V4 +> r))) := by
-  simp only [U4, V4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, V4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- Inductive left `{{C}}>` sweep across `U4 ^ k` (`10k` steps). -/
 lemma shift_C_left_U4_0349 (k : Nat) (l r : ListBlank (Fin 2)) :
@@ -427,21 +262,23 @@ lemma shift_C_left_U4_0349 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [h_r] at h2
     exact stepStar_trans h1 h2
 
-/-- 9-step left-boundary bounce from `default {{C}}> ([1, 1, 1, 1, 0] +> r)` to `default {{A}}> (V4 +> (V4 +> r))`. -/
+/-- 9-step left-boundary bounce from `default {{C}}> ([1, 1, 1, 1,
+  0] +> r)` to `default {{A}}> (V4 +> (V4 +> r))`. -/
 lemma step_C_bounce_0349 (r : ListBlank (Fin 2)) :
-    ((default : ListBlank (Fin 2)) {{C}}> (([1, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ((default : ListBlank (Fin 2)) {{C}}> (([1, 1, 1, 1,
+      0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((default : ListBlank (Fin 2)) {{A}}> (V4 +> (V4 +> r))) := by
-  simp only [V4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [V4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- 6-step right `{{A}}>` step across one `V4 = [0, 1, 1, 0]` block. -/
 lemma step_A_right_V4_0349 (l r : ListBlank (Fin 2)) :
     (l {{A}}> (V4 +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> r) := by
-  simp only [U4, V4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, V4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- Inductive right `{{A}}>` sweep across `V4 ^ k` (`6k` steps). -/
 lemma shift_A_right_V4_0349 (k : Nat) (l r : ListBlank (Fin 2)) :
@@ -507,15 +344,17 @@ lemma consume_3_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
 -- Section 3: Local In-Place Rewrites & Combined `LA` Block Consumers
 -- ============================================================================
 
-/-- 10-step local rewrite `((l <+ U4) {{A}}> ([0, 1, 0, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0] +> r))`. -/
+/-- 10-step local rewrite `((l <+ U4) {{A}}> ([0, 1, 0, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1,
+  0] +> r))`. -/
 lemma rewrite_10_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
-/-- Combined `[0, 1, 0, 1]` consumer: `LA (a + 1) {{A}}> ([0, 1, 0, 1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0] +> r)`. -/
+/-- Combined `[0, 1, 0, 1]` consumer: `LA (a + 1) {{A}}> ([0, 1, 0,
+  1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0] +> r)`. -/
 lemma consume_0101_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA (a + 4) {{A}}> (([0] : List (Fin 2)) +> r)) := by
@@ -524,15 +363,17 @@ lemma consume_0101_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
   have h2 := consume_3_LA_0349 a (([0] : List (Fin 2)) +> r)
   exact stepPlus_trans' h1 h2
 
-/-- 12-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0] +> r))`. -/
+/-- 12-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1,
+  0] +> r))`. -/
 lemma rewrite_12_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
-/-- Combined `[0, 0, 1, 1]` consumer: `LA (a + 1) {{A}}> ([0, 0, 1, 1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0] +> r)`. -/
+/-- Combined `[0, 0, 1, 1]` consumer: `LA (a + 1) {{A}}> ([0, 0, 1,
+  1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0] +> r)`. -/
 lemma consume_0011_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 1, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA (a + 4) {{A}}> (([0] : List (Fin 2)) +> r)) := by
@@ -541,16 +382,18 @@ lemma consume_0011_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
   have h2 := consume_3_LA_0349 a (([0] : List (Fin 2)) +> r)
   exact stepPlus_trans' h1 h2
 
-/-- 28-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 1, 0, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0, 0, 1, 1, 0] +> r))`. -/
+/-- 28-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 1, 0,
+  1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0, 0, 1, 1, 0] +> r))`. -/
 lemma rewrite_28_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- Combined `[0, 0, 1, 0, 1, 1, 0, 1]` consumer:
-    `LA (a + 1) {{A}}> ([0, 0, 1, 0, 1, 1, 0, 1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0, 0, 1, 1, 0] +> r)`. -/
+    `LA (a + 1) {{A}}> ([0, 0, 1, 0, 1, 1, 0, 1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0, 0, 1, 1,
+      0] +> r)`. -/
 lemma consume_00101101_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA (a + 4) {{A}}> (([0, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
@@ -559,13 +402,14 @@ lemma consume_00101101_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
   have h2 := consume_3_LA_0349 a (([0, 0, 1, 1, 0] : List (Fin 2)) +> r)
   exact stepPlus_trans' h1 h2
 
-/-- 22-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 0, 1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0, 1, 1, 0] +> r))`. -/
+/-- 22-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 0,
+  1] +> r)) ⊢⁺ ((l <+ U4) {{A}}> ([1, 1, 1, 0, 1, 1, 0] +> r))`. -/
 lemma rewrite_22_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- Combined `[0, 0, 1, 0, 1, 0, 1]` consumer:
     `LA (a + 1) {{A}}> ([0, 0, 1, 0, 1, 0, 1] +> r) ⊢⁺ LA (a + 4) {{A}}> ([0, 1, 1, 0] +> r)`. -/
@@ -577,13 +421,14 @@ lemma consume_0010101_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
   have h2 := consume_3_LA_0349 a (([0, 1, 1, 0] : List (Fin 2)) +> r)
   exact stepPlus_trans' h1 h2
 
-/-- 92-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 1, 1, 0, 1] +> r)) ⊢⁺ (l {{A}}> ([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] +> r))`. -/
+/-- 92-step local rewrite `((l <+ U4) {{A}}> ([0, 0, 1, 0, 1, 1, 1, 0,
+  1] +> r)) ⊢⁺ (l {{A}}> ([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] +> r))`. -/
 lemma rewrite_92_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 1, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 -- ============================================================================
 -- Section 4: Universal Halting Suffix Theorem (`halt_LA_S6_0349`) & `S6(2)`
@@ -594,9 +439,9 @@ lemma rewrite_92_0349 (l r : ListBlank (Fin 2)) :
 lemma step_halt_00001_0349 (l r : ListBlank (Fin 2)) :
     (l {{A}}> (([0, 0, 0, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ [1, 1, 1, 1]) {{E}}> ((1 : Fin 2) >> r)) := by
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 -- ============================================================================
 -- Section 5: Universal `D`-Drain Parity-Absorption Laws (`drain_LA_odd/even`)
@@ -606,23 +451,27 @@ lemma step_halt_00001_0349 (l r : ListBlank (Fin 2)) :
     `l {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> ([1, 0] +> r))`. -/
 lemma step_drain_entry_48_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
-    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (([1, 0] : List (Fin 2)) +> r))) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (([1,
+      0] : List (Fin 2)) +> r))) := by
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- 98-step `D`-drain step across two `U4` blocks (`U4 ^ 2 = [0, 0, 1, 1, 0, 0, 1, 1]`):
-    `(((l <+ U4) <+ U4) {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> r)) ⊢⁺ (l {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> (W8 +> r)))`. -/
+    `(((l <+ U4) <+ U4) {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> r)) ⊢⁺ (l {{D}}> ([1, 0, 0,
+      0, 0, 1, 1, 0, 1, 0, 1] +> (W8 +> r)))`. -/
 lemma step_drain_2U4_98_0349 (l r : ListBlank (Fin 2)) :
-    (((l <+ U4) <+ U4) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    (((l <+ U4) <+ U4) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (W8 +> r))) := by
-  simp only [U4, W8, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, W8, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 /-- Inductive `D`-drain across `2 * m` blocks of `U4` (`98m` micro-steps). -/
 lemma shift_drain_2m_0349 (m : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ (U4 ^ (2 * m))) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢*
+    ((l <+ (U4 ^ (2 * m))) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢*
     (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> ((W8 ^ m) +> r))) := by
   induction m generalizing l r with
   | zero => exact ⟨0, rfl⟩
@@ -639,32 +488,39 @@ lemma shift_drain_2m_0349 (m : Nat) (l r : ListBlank (Fin 2)) :
     rw [h_r] at h2
     exact stepStar_trans h1 h2
 
-/-- 66-step odd left-boundary turnaround from `default {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> r)`. -/
+/-- 66-step odd left-boundary turnaround from `default {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+  1] +> r)`. -/
 lemma step_drain_odd_end_66_0349 (r : ListBlank (Fin 2)) :
-    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
-    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> r)) := by
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
-/-- 70-step even left-boundary turnaround from `(default <+ U4) {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] +> r)`. -/
+/-- 70-step even left-boundary turnaround from `(default <+ U4) {{D}}> ([1, 0, 0, 0, 0, 1, 1, 0,
+  1, 0, 1] +> r)`. -/
 lemma step_drain_even_end_70_0349 (r : ListBlank (Fin 2)) :
-    (((default : ListBlank (Fin 2)) <+ U4) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
-    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+    (((default : ListBlank (Fin 2)) <+ U4) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> r)) := by
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma consume_1_LA_zero_0349 (r : ListBlank (Fin 2)) :
     ((default : ListBlank (Fin 2)) {{A}}> ((1 : Fin 2) >> r)) [suspect_153_tm]⊢⁺
     (LA 1 {{A}}> r) := by
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq, cons_append_list,
-    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow, Turing.ListBlank.head_cons,
+      Turing.ListBlank.tail_cons]
+  bb_steps
 
 /-- 269-step universal post-drain prefix transition to `LA 7 {{A}}> r`. -/
 lemma step_drain_prefix_269_0349 (r : ListBlank (Fin 2)) :
-    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r))
+    ((default : ListBlank (Fin 2)) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> r))
     [suspect_153_tm]⊢⁺ (LA 7 {{A}}> r) := by
   have h1 := consume_1_LA_zero_0349 (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)
   have h2 := consume_2_LA_0349 0 (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)
@@ -677,7 +533,8 @@ lemma step_drain_prefix_269_0349 (r : ListBlank (Fin 2)) :
 
 /-- Universal Odd `D`-Drain + Prefix Law (`98m + 383` micro-steps):
     For all `m : Nat` and `r : ListBlank (Fin 2)`,
-    `LA (2 * m + 1) {{A}}> ([0, 1, 1, 1, 0, 1, 1, 1, 0] +> r) ⊢⁺ LA 7 {{A}}> ((W8 ^ m) +> ([1, 0] +> r))`. -/
+    `LA (2 * m + 1) {{A}}> ([0, 1, 1, 1, 0, 1, 1, 1, 0] +> r) ⊢⁺ LA 7 {{A}}> ((W8 ^ m) +> ([1,
+      0] +> r))`. -/
 theorem drain_LA_odd_to_LA7_0349 (m : Nat) (r : ListBlank (Fin 2)) :
     (LA (2 * m + 1) {{A}}> (([0, 1, 1, 1, 0, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 7 {{A}}> ((W8 ^ m) +> (([1, 0] : List (Fin 2)) +> r))) := by
@@ -691,7 +548,8 @@ theorem drain_LA_odd_to_LA7_0349 (m : Nat) (r : ListBlank (Fin 2)) :
 
 /-- Universal Even `D`-Drain + Prefix Law (`98m + 387` micro-steps, exact +4 step parity offset):
     For all `m : Nat` and `r : ListBlank (Fin 2)`,
-    `LA (2 * m + 2) {{A}}> ([0, 1, 1, 1, 0, 1, 1, 1, 0] +> r) ⊢⁺ LA 7 {{A}}> ((W8 ^ m) +> ([1, 0] +> r))`. -/
+    `LA (2 * m + 2) {{A}}> ([0, 1, 1, 1, 0, 1, 1, 1, 0] +> r) ⊢⁺ LA 7 {{A}}> ((W8 ^ m) +> ([1,
+      0] +> r))`. -/
 theorem drain_LA_even_to_LA7_0349 (m : Nat) (r : ListBlank (Fin 2)) :
     (LA (2 * m + 2) {{A}}> (([0, 1, 1, 1, 0, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 7 {{A}}> ((W8 ^ m) +> (([1, 0] : List (Fin 2)) +> r))) := by
@@ -714,18 +572,22 @@ theorem drain_LA_even_to_LA7_0349 (m : Nat) (r : ListBlank (Fin 2)) :
 -- ============================================================================
 
 /-- Shared 17-bit `W8^2 ++ [1]` prefix consumer (`192a + 1616` micro-steps):
-    `LA (a + 1) {{A}}> ([1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1] +> r) ⊢⁺ LA (a + 14) {{A}}> ([0] +> r)`. -/
+    `LA (a + 1) {{A}}> ([1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+      1] +> r) ⊢⁺ LA (a + 14) {{A}}> ([0] +> r)`. -/
 theorem consume_W8_prefix_13_0349 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r))
     [suspect_153_tm]⊢⁺ (LA (a + 14) {{A}}> (([0] : List (Fin 2)) +> r)) := by
-  have h1 := consume_1_LA_0349 a (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)
-  have h2 := step_A_right_V4_0349 (LA (a + 2)) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)
+  have h1 := consume_1_LA_0349 a (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+    1] : List (Fin 2)) +> r)
+  have h2 := step_A_right_V4_0349 (LA (a + 2)) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+    1] : List (Fin 2)) +> r)
   rw [← LA_succ (a + 2)] at h2
   have h3 := consume_2_LA_0349 (a + 2) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)
   have h4 := consume_0101_LA_0349 (a + 4) (([1, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)
   have h5 := consume_0101_LA_0349 (a + 7) (([1, 0, 1] : List (Fin 2)) +> r)
   have h6 := consume_0101_LA_0349 (a + 10) r
-  exact stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' h1 h2) h3) h4) h5) h6
+  exact stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' h1 h2)
+    h3) h4) h5) h6
 
 /-- Shared 8-bit `[0, 0, 1, 1, 0, 1, 1, 0]` mid-segment consumer (`96a + 438` micro-steps):
     `LA (a + 1) {{A}}> ([0, 0, 1, 1, 0, 1, 1, 0] +> r) ⊢⁺ LA (a + 7) {{A}}> ([0, 0] +> r)`. -/
@@ -758,7 +620,8 @@ theorem consume_W8_2_tail_12_0349 (a : Nat) (r : ListBlank (Fin 2)) :
   have h5 := consume_1_LA_0349 (a + 10) (([0, 1, 1, 0] : List (Fin 2)) +> r)
   have h6 := step_A_right_V4_0349 (LA (a + 12)) r
   rw [← LA_succ (a + 12)] at h6
-  exact stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' h1 h2) h3) h4) h5) h6
+  exact stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' h1 h2)
+    h3) h4) h5) h6
 
 /-- Universal 5-Block `W8` (+31) Consumption Theorem on Holdout #330 (`448a + 7442` micro-steps):
     For all `a : Nat` and `r : ListBlank (Fin 2)`,
@@ -777,9 +640,10 @@ theorem consume_5_W8_LA_0349 (a : Nat) (r : ListBlank (Fin 2)) :
 lemma consume_1_LA_zero (r : ListBlank (Fin 2)) :
     (LA 0 {{A}}> (([1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 1 {{A}}> r) := by
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq, cons_append_list,
-    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons,
+      Turing.ListBlank.tail_cons]
+  bb_steps
 
 lemma consume_V4_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA a {{A}}> (([0, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -816,9 +680,9 @@ lemma consume_rewrite92_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_24_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 0, 1, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_24_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 1, 0, 0, 1, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -829,9 +693,9 @@ lemma rewrite_24_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_20_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 1, 0, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_20_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 1, 0, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -842,9 +706,9 @@ lemma rewrite_20_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_38a_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_38a_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -855,9 +719,9 @@ lemma rewrite_38a_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_38b_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_38b_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -868,9 +732,9 @@ lemma rewrite_38b_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_26_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 1, 0, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     ((l <+ U4) {{A}}> (([1, 1, 1, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_26_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 1, 0, 0, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -881,9 +745,9 @@ lemma rewrite_26_LA (a : Nat) (r : ListBlank (Fin 2)) :
 lemma rewrite_56_0349 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rewrite_56_LA (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 1) {{A}}> (([0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
@@ -901,7 +765,8 @@ lemma drain_D_even_to_LA7 (m : Nat) (r : ListBlank (Fin 2)) :
   exact stepPlus_trans' (stepStar_stepPlus_stepPlus h2 h3) h4
 
 lemma drain_D_odd_to_LA7 (m : Nat) (r : ListBlank (Fin 2)) :
-    (LA (2 * m + 1) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    (LA (2 * m + 1) {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 7 {{A}}> ((W8 ^ m) +> r)) := by
   have h_la : LA (2 * m + 1) = (default <+ U4) <+ (U4 ^ (2 * m)) := by
     have h_eq : 2 * m + 1 = 1 + 2 * m := by omega
@@ -915,14 +780,16 @@ lemma drain_D_odd_to_LA7 (m : Nat) (r : ListBlank (Fin 2)) :
   exact stepPlus_trans' (stepStar_stepPlus_stepPlus h2 h3) h4
 
 lemma drain_D_any_to_LA7 (k : Nat) (r : ListBlank (Fin 2)) :
-    ∃ m : Nat, (LA k {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ∃ m : Nat, (LA k {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
       (LA 7 {{A}}> ((W8 ^ m) +> r)) := by
   rcases nat_even_or_odd k with ⟨m, rfl⟩ | ⟨m, rfl⟩
   · exact ⟨m, drain_D_even_to_LA7 m r⟩
   · exact ⟨m, drain_D_odd_to_LA7 m r⟩
 
 lemma drain_A_any_to_LA7 (k : Nat) (r : ListBlank (Fin 2)) :
-    ∃ m : Nat, (LA (k + 1) {{A}}> (([0, 1, 1, 1, 0, 1, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ∃ m : Nat, (LA (k + 1) {{A}}> (([0, 1, 1, 1, 0, 1, 1, 1,
+      0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
       (LA 7 {{A}}> ((W8 ^ m) +> (([1, 0] : List (Fin 2)) +> r))) := by
   rcases nat_even_or_odd k with ⟨m, rfl⟩ | ⟨m, rfl⟩
   · exact ⟨m, drain_LA_odd_to_LA7_0349 m r⟩
@@ -937,10 +804,13 @@ def P_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n) {{A}}> default
 def R1_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1]) {{A}}> default
 def R2_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1]) {{A}}> default
 def R3_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1]) {{A}}> default
-def T1_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 1, 0, 0, 1]) {{A}}> default
+def T1_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 1, 0, 0,
+  1]) {{A}}> default
 def Q_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 1, 1, 1]) {{A}}> default
-def S4_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]) {{A}}> default
-def S6_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default
+def S4_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1,
+  1]) {{A}}> default
+def S6_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) := (LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1,
+  1]) {{A}}> default
 
 abbrev r_R2 : List (Fin 2) := [1, 0, 0, 1]
 abbrev r_3 : List (Fin 2) := [1, 0, 1, 1, 0, 1, 0, 0, 1]
@@ -964,33 +834,35 @@ def Scan (k b : Nat) (pfx rend : List (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
 lemma Q_entry_40 (l : ListBlank (Fin 2)) :
     ((l <+ ([0, 0, 1, 1, 1, 1] : List (Fin 2))) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (r_Q +> default))) := by
-  simp only [r_Q, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [r_Q, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma S4_entry_100 (l : ListBlank (Fin 2)) :
     ((l <+ ([0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1] : List (Fin 2))) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (r_S4 +> default))) := by
-  simp only [r_S4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [r_S4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma S6_entry_152 (l : ListBlank (Fin 2)) :
-    (((l <+ U4) <+ ([0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1] : List (Fin 2))) {{A}}> default) [suspect_153_tm]⊢⁺
+    (((l <+ U4) <+ ([0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1,
+      1] : List (Fin 2))) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (r_S6 +> default))) := by
-  simp only [U4, r_S6, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, r_S6, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_D_B4_50 (l r : ListBlank (Fin 2)) :
     ((l <+ U4) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (B4 +> r))) := by
-  simp only [U4, B4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, B4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma shift_D_B4 (n : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ (U4 ^ n)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢*
+    ((l <+ (U4 ^ n)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1,
+      0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢*
     (l {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ n) +> r))) := by
   induction n generalizing l r with
   | zero => exact ⟨0, rfl⟩
@@ -1005,21 +877,25 @@ lemma shift_D_B4 (n : Nat) (l r : ListBlank (Fin 2)) :
     exact stepStar_trans h1 h2
 
 lemma step_D_B4_bounce_58 (r : ListBlank (Fin 2)) :
-    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
+    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1,
+      0] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 1 {{A}}> (([0, 0, 0, 1, 1, 0, 1, 1, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq, cons_append_list,
-    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons,
+      Turing.ListBlank.tail_cons]
+  bb_steps
 
 lemma step_D_B4_bounce_125 (r : ListBlank (Fin 2)) :
     (LA 1 {{A}}> (([0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1] : List (Fin 2)) +> r)) [suspect_153_tm]⊢⁺
     (LA 1 {{A}}> (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] : List (Fin 2)) +> r)) := by
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq, cons_append_list,
-    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil, Turing.ListBlank.head_cons,
+      Turing.ListBlank.tail_cons]
+  bb_steps
 
 lemma step_D_B4_bounce_to_LA6 (r : ListBlank (Fin 2)) :
-    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (([1] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
+    ((default : ListBlank (Fin 2)) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1,
+      0] : List (Fin 2)) +> (([1] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
     (LA 6 {{A}}> (([0, 0, 1, 0] : List (Fin 2)) +> r)) := by
   have h1 := step_D_B4_bounce_58 (([1] : List (Fin 2)) +> r)
   have h2 := step_D_B4_bounce_125 r
@@ -1029,7 +905,8 @@ lemma step_D_B4_bounce_to_LA6 (r : ListBlank (Fin 2)) :
   exact stepPlus_trans' (stepPlus_trans' (stepPlus_trans' (stepPlus_trans' h1 h2) h3) h4) h5
 
 lemma sweep_D_B4_to_Scan (n : Nat) (rend : List (Fin 2)) :
-    (LA (n + 1) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1, 0] : List (Fin 2)) +> (rend +> default))) [suspect_153_tm]⊢⁺
+    (LA (n + 1) {{D}}> (([1, 0, 0, 0, 0, 0, 0, 1, 1,
+      0] : List (Fin 2)) +> (rend +> default))) [suspect_153_tm]⊢⁺
     (Scan 6 n [0, 0, 1, 0, 1, 1, 0] rend) := by
   have h1 := shift_D_B4 (n + 1) default (rend +> default)
   have h2 := step_D_B4_bounce_to_LA6 (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ n) +> (rend +> default)))
@@ -1046,7 +923,8 @@ lemma rem_halt_1 (k : Nat) :
   rfl
 
 lemma rem_halt_2 (k : Nat) :
-    ∃ cfg', ((LA k {{A}}> (([0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ cfg') ∧
+    ∃ cfg', ((LA k {{A}}> (([0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ cfg') ∧
       (step suspect_153_tm cfg').isNone := by
   have h := step_halt_00001_0349 (LA k) (([1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
   refine ⟨_, h, ?_⟩
@@ -1056,113 +934,123 @@ lemma rem_halt_2 (k : Nat) :
 lemma rem_to_Q_0001_raw (l : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
     ((l <+ [0, 0, 1, 1, 1, 1]) {{A}}> default) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_Q_0001 (k : Nat) :
-    (LA (k + 1) {{A}}> (([0, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (Q_cfg k) := by
+    (LA (k + 1) {{A}}> (([0, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (Q_cfg k) := by
   rw [LA_succ k]; exact rem_to_Q_0001_raw (LA k)
 
 lemma rem_to_S6_0001011001_raw (l : ListBlank (Fin 2)) :
-    ((l <+ U4) {{A}}> (([0, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    ((l <+ U4) {{A}}> (([0, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
     ((l <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_S6_0001011001 (k : Nat) :
-    (LA (k + 1) {{A}}> (([0, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S6_cfg k) := by
+    (LA (k + 1) {{A}}> (([0, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S6_cfg k) := by
   rw [LA_succ k]; exact rem_to_S6_0001011001_raw (LA k)
 
 lemma rem_to_S4_00011001_raw (l : ListBlank (Fin 2)) :
     ((l <+ U4) {{A}}> (([0, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
     ((l <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]) {{A}}> default) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_S4_00011001 (k : Nat) :
-    (LA (k + 1) {{A}}> (([0, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S4_cfg k) := by
+    (LA (k + 1) {{A}}> (([0, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S4_cfg k) := by
   rw [LA_succ k]; exact rem_to_S4_00011001_raw (LA k)
 
 lemma rem_to_R1_001 (k : Nat) :
     (LA k {{A}}> (([0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R1_cfg k) := by
   unfold R1_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R1_0010 (k : Nat) :
     (LA k {{A}}> (([0, 0, 1, 0] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R1_cfg k) := by
   unfold R1_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R1_01 (k : Nat) :
     (LA k {{A}}> (([0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R1_cfg k) := by
   unfold R1_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R2_001001 (k : Nat) :
-    (LA k {{A}}> (([0, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R2_cfg k) := by
+    (LA k {{A}}> (([0, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R2_cfg k) := by
   unfold R2_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R2_00101 (k : Nat) :
     (LA k {{A}}> (([0, 0, 1, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R2_cfg k) := by
   unfold R2_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R2_01001 (k : Nat) :
     (LA k {{A}}> (([0, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R2_cfg k) := by
   unfold R2_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_R3_00101001 (k : Nat) :
-    (LA k {{A}}> (([0, 0, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R3_cfg k) := by
+    (LA k {{A}}> (([0, 0, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (R3_cfg k) := by
   unfold R3_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_T1_001011001 (k : Nat) :
-    (LA k {{A}}> (([0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (T1_cfg k) := by
+    (LA k {{A}}> (([0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (T1_cfg k) := by
   unfold T1_cfg
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_S6_011101_raw (l : ListBlank (Fin 2)) :
     (((l <+ U4) <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
     ((l <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_to_S6_011101 (k : Nat) :
-    (LA (k + 2) {{A}}> (([0, 1, 1, 1, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S6_cfg k) := by
+    (LA (k + 2) {{A}}> (([0, 1, 1, 1, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺ (S6_cfg k) := by
   rw [LA_succ (k + 1), LA_succ k]
   exact rem_to_S6_011101_raw (LA k)
 
 lemma rem_ddrain_82_raw (l : ListBlank (Fin 2)) :
-    ((l <+ U4) {{A}}> (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    ((l <+ U4) {{A}}> (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (r_3 +> default))) := by
-  simp only [U4, r_3, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, r_3, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_ddrain_82 (k : Nat) :
-    ∃ m : Nat, (LA (k + 1) {{A}}> (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    ∃ m : Nat, (LA (k + 1) {{A}}> (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
       (HubTail 7 m r_3) := by
   rw [LA_succ k]
   have h1 := rem_ddrain_82_raw (LA k)
@@ -1170,14 +1058,17 @@ lemma rem_ddrain_82 (k : Nat) :
   exact ⟨m, stepPlus_trans' h1 h2⟩
 
 lemma rem_ddrain_158_raw (l : ListBlank (Fin 2)) :
-    ((((l <+ U4) <+ U4) <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
-    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (W8 +> (r_4 +> default)))) := by
-  simp only [U4, W8, r_4, cons_append_list, listblank_append_cons, listblank_append_nil,
+    ((((l <+ U4) <+ U4) <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> (W8 +> (r_4 +> default)))) := by
+  simp only [U4, W8, r_4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_ddrain_158 (k : Nat) :
-    ∃ m : Nat, (LA (k + 3) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    ∃ m : Nat, (LA (k + 3) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
       (HubTail 7 m r_4) := by
   rw [LA_succ (k + 2), LA_succ (k + 1), LA_succ k]
   have h1 := rem_ddrain_158_raw (LA k)
@@ -1188,14 +1079,17 @@ lemma rem_ddrain_158 (k : Nat) :
   exact ⟨m + 1, stepPlus_trans' h1 h2⟩
 
 lemma rem_ddrain_232_raw (l : ListBlank (Fin 2)) :
-    ((((l <+ U4) <+ U4) <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
-    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (W8 +> (r_5 +> default)))) := by
-  simp only [U4, W8, r_5, cons_append_list, listblank_append_cons, listblank_append_nil,
+    ((((l <+ U4) <+ U4) <+ U4) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0,
+      1] : List (Fin 2)) +> (W8 +> (r_5 +> default)))) := by
+  simp only [U4, W8, r_5, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma rem_ddrain_232 (k : Nat) :
-    ∃ m : Nat, (LA (k + 3) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
+    ∃ m : Nat, (LA (k + 3) {{A}}> (([0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) [suspect_153_tm]⊢⁺
       (HubTail 7 m r_5) := by
   rw [LA_succ (k + 2), LA_succ (k + 1), LA_succ k]
   have h1 := rem_ddrain_232_raw (LA k)
@@ -1221,16 +1115,23 @@ abbrev pnil : List (Fin 2) := []
 
 
 def pat_Master : TapePattern (Fin 2) (Fin 6) :=
-  { left := .rep [0, 0, 1] 1 (.rep [1] 2 (.rep U4 0 .default)), head := some A, right := .default }
+  { left  := .rep [0, 0, 1] 1 (.rep [1] 2 (.rep [0, 0, 1, 1] 0 .default))
+    head  := some A
+    right := .default }
 
 def cond_Master : VarCond :=
   .or (.and (.ge_const 1 1) (.and (.not (.ge_const 1 2)) (.not (.ge_const 2 1))))
     (.or (.and (.ge_const 1 2) (.and (.not (.ge_const 1 3)) (.not (.ge_const 2 1))))
-      (.or (.and (.ge_const 1 1) (.and (.not (.ge_const 1 2)) (.and (.ge_const 2 3) (.not (.ge_const 2 4)))))
-        (.or (.and (.ge_const 1 3) (.and (.not (.ge_const 1 4)) (.and (.ge_const 2 3) (.not (.ge_const 2 4)))))
-             (.and (.ge_const 1 3) (.and (.not (.ge_const 1 4)) (.and (.ge_const 2 5) (.not (.ge_const 2 6))))))))
+      (.or (.and (.ge_const 1 1) (.and (.not (.ge_const 1 2)) (.and (.ge_const 2 3) (.not
+        (.ge_const 2 4)))))
+        (.or (.and (.ge_const 1 3) (.and (.not (.ge_const 1 4)) (.and (.ge_const 2 3) (.not
+          (.ge_const 2 4)))))
+             (.and (.ge_const 1 3) (.and (.not (.ge_const 1 4)) (.and (.ge_const 2 5) (.not
+               (.ge_const 2 6))))))))
 
-def ps_153 : TapePatternSet (Fin 2) (Fin 6) := [(pat_Master, cond_Master)]
+def ps : TapePatternSet (Fin 2) (Fin 6) := [(pat_Master, cond_Master)]
+
+abbrev ps_153 : TapePatternSet (Fin 2) (Fin 6) := ps
 
 lemma eval_pat_R1 (vars : Nat -> Nat) (h1 : vars 1 = 1) (h2 : vars 2 = 0) :
     evalTapePattern pat_Master vars = R1_cfg (vars 0) := by
@@ -1305,26 +1206,20 @@ def ScanBundle (b : Nat) (rend : List (Fin 2)) : Prop :=
 
 lemma step_P_0 : (P_cfg 0) [suspect_153_tm]⊢⁺ (P_cfg 3) := by
   unfold P_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
-    listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow]
+  bb_steps
 
 lemma step_P_1 : (P_cfg 1) [suspect_153_tm]⊢⁺ (S4_cfg 0) := by
   unfold P_cfg S4_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
-    listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil]
+  bb_steps
 
 lemma step_P_2plus_raw (l : ListBlank (Fin 2)) :
     (((l <+ U4) <+ U4) {{A}}> default) [suspect_153_tm]⊢⁺
     ((l <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [U4, listblank_append_cons, listblank_append_nil]
+  bb_steps
 
 lemma step_P (n : Nat) :
     ∃ cfg', ((P_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1341,18 +1236,16 @@ lemma step_P (n : Nat) :
 
 lemma step_R1_0 : (R1_cfg 0) [suspect_153_tm]⊢⁺ (R1_cfg 4) := by
   unfold R1_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
-    listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil]
+  bb_steps
 
 lemma R1_entry_77 (l : ListBlank (Fin 2)) :
     (((l <+ U4) <+ [0, 0, 1]) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_R1 (n : Nat) :
     ∃ cfg', ((R1_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1396,18 +1289,20 @@ lemma step_R1 (n : Nat) :
 lemma T1_entry_84 (l : ListBlank (Fin 2)) :
     ((l <+ [0, 0, 1, 0, 0, 1, 1, 0, 0, 1]) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) := by
-  simp only [cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_T1 (n : Nat) :
     ∃ cfg', ((T1_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
       (IsInPatternSet ps_153 cfg' ∨ (step suspect_153_tm cfg').isNone) := by
   rcases n with _ | n'
   · have h1 := T1_entry_84 default
-    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have h12 := stepPlus_trans' h1 h2
-    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_0 := stepPlus_trans' h12 hs_0
     have hs_1 := consume_1_LA 1 (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hc_0 hs_1
@@ -1422,11 +1317,14 @@ lemma step_T1 (n : Nat) :
     have h_rem := rem_to_R1_01 7
     exact ⟨R1_cfg 7, stepPlus_trans' hc_5 h_rem, Or.inl (in_R1 7)⟩
   · have h1 := T1_entry_84 (LA (n' + 1))
-    have hs_0 := consume_1_LA n' (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA n' (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_0 := stepPlus_trans' h1 hs_0
-    have hs_1 := consume_1_LA (n' + 1) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (n' + 1) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hc_0 hs_1
-    have hs_2 := consume_1_LA (n' + 2) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (n' + 2) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_V4_LA (n' + 4) (([1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
@@ -1442,18 +1340,17 @@ lemma step_T1 (n : Nat) :
 
 lemma step_R3_0 : (R3_cfg 0) [suspect_153_tm]⊢⁺ (T1_cfg 4) := by
   unfold R3_cfg T1_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
-    listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil]
+  bb_steps
 
 lemma R3_entry_137 (l : ListBlank (Fin 2)) :
     (((l <+ U4) <+ [0, 0, 1, 0, 0, 1, 0, 0, 1]) {{A}}> default) [suspect_153_tm]⊢⁺
-    (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) := by
-  simp only [U4, cons_append_list, listblank_append_cons, listblank_append_nil,
+    (l {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) := by
+  simp only [U4, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_R3 (n : Nat) :
     ∃ cfg', ((R3_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1461,11 +1358,14 @@ lemma step_R3 (n : Nat) :
   rcases n with _ | _ | n'
   · exact reaches_trans (step_R3_0) (step_T1 4)
   · have h1 := R3_entry_137 default
-    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have h12 := stepPlus_trans' h1 h2
-    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_0 := stepPlus_trans' h12 hs_0
-    have hs_1 := consume_1_LA 1 (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA 1 (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hc_0 hs_1
     have hs_2 := consume_V4_LA 3 (([1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
@@ -1478,13 +1378,17 @@ lemma step_R3 (n : Nat) :
   · unfold R3_cfg
     rw [LA_succ (n' + 1)]
     have h1 := R3_entry_137 (LA (n' + 1))
-    have hs_0 := consume_1_LA n' (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA n' (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_0 := stepPlus_trans' h1 hs_0
-    have hs_1 := consume_1_LA (n' + 1) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (n' + 1) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hc_0 hs_1
-    have hs_2 := consume_1_LA (n' + 2) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (n' + 2) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_V4_LA (n' + 4) (([1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_V4_LA (n' + 4) (([1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_1_LA (n' + 4) (([1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -1507,7 +1411,8 @@ lemma step_HubTail_r_R2 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R1_001 (a + 8)
     exact ⟨R1_cfg (a + 8), stepPlus_trans' hs_0 h_rem, Or.inl (in_R1 (a + 8))⟩
   · unfold HubTail r_R2
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
@@ -1517,12 +1422,16 @@ lemma step_HubTail_r_R2 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_01001 (a + 11)
     exact ⟨R2_cfg (a + 11), stepPlus_trans' hc_3 h_rem, Or.inl (in_R2 (a + 11))⟩
   · unfold HubTail r_R2
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -1533,18 +1442,25 @@ lemma step_HubTail_r_R2 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_Q_0001 (a + 19)
     exact ⟨Q_cfg (a + 19), stepPlus_trans' hc_6 h_rem, Or.inl (in_Q (a + 19))⟩
   · unfold HubTail r_R2
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
     have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
@@ -1553,22 +1469,31 @@ lemma step_HubTail_r_R2 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_001001 (a + 26)
     exact ⟨R2_cfg (a + 26), stepPlus_trans' hc_8 h_rem, Or.inl (in_R2 (a + 26))⟩
   · unfold HubTail r_R2
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
     have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
@@ -1577,11 +1502,13 @@ lemma step_HubTail_r_R2 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R3_00101001 (a + 32)
     exact reaches_trans (stepPlus_trans' hc_10 h_rem) (step_R3 (a + 32))
   · unfold HubTail
-    have h_w8 : (W8 ^ (w' + 5)) +> (r_R2 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_R2 +> default)) := by
+    have h_w8 : (W8 ^ (w' + 5)) +> (r_R2 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_R2
+      +> default)) := by
       rw [Nat.add_comm w' 5, pow_add_append_right W8 5 w']
     rw [h_w8]
     have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (r_R2 +> default))
-    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38 a)))
+    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38
+      a)))
 
 lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     ∃ cfg', ((HubTail k w r_3) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1600,10 +1527,13 @@ lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R1_001 (a + 10)
     exact ⟨R1_cfg (a + 10), stepPlus_trans' hc_2 h_rem, Or.inl (in_R1 (a + 10))⟩
   · unfold HubTail r_3
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
@@ -1614,16 +1544,22 @@ lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_Q_0001 (a + 16)
     exact ⟨Q_cfg (a + 16), stepPlus_trans' hc_5 h_rem, Or.inl (in_Q (a + 16))⟩
   · unfold HubTail r_3
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
     have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
@@ -1632,22 +1568,31 @@ lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_001001 (a + 23)
     exact ⟨R2_cfg (a + 23), stepPlus_trans' hc_7 h_rem, Or.inl (in_R2 (a + 23))⟩
   · unfold HubTail r_3
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
     have hs_9 := consume_00101101_LA (a + 25) (([0, 0, 1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
@@ -1656,26 +1601,37 @@ lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     rcases rem_halt_1 (a + 32) with ⟨cfg', h_rem, h_halt⟩
     exact ⟨cfg', stepPlus_trans' hc_10 h_rem, Or.inr h_halt⟩
   · unfold HubTail r_3
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
-    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
-    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_10 := stepPlus_trans' hc_9 hs_10
     have hs_11 := consume_0010101_LA (a + 31) (([1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_11 := stepPlus_trans' hc_10 hs_11
@@ -1686,11 +1642,13 @@ lemma step_HubTail_r_3 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_01001 (a + 37)
     exact ⟨R2_cfg (a + 37), stepPlus_trans' hc_13 h_rem, Or.inl (in_R2 (a + 37))⟩
   · unfold HubTail
-    have h_w8 : (W8 ^ (w' + 5)) +> (r_3 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_3 +> default)) := by
+    have h_w8 : (W8 ^ (w' + 5)) +> (r_3 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_3
+      +> default)) := by
       rw [Nat.add_comm w' 5, pow_add_append_right W8 5 w']
     rw [h_w8]
     have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (r_3 +> default))
-    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38 a)))
+    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38
+      a)))
 
 lemma step_HubTail_r_4 (k w : Nat) (hk : k ≥ 7) :
     ∃ cfg', ((HubTail k w r_4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1707,12 +1665,16 @@ lemma step_HubTail_r_4 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_T1_001011001 (a + 9)
     exact reaches_trans (stepPlus_trans' hc_1 h_rem) (step_T1 (a + 9))
   · unfold HubTail r_4
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_V4_LA (a + 11) (([0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -1721,18 +1683,25 @@ lemma step_HubTail_r_4 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_01001 (a + 15)
     exact ⟨R2_cfg (a + 15), stepPlus_trans' hc_5 h_rem, Or.inl (in_R2 (a + 15))⟩
   · unfold HubTail r_4
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
     have hs_7 := rewrite_20_LA (a + 19) (([1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
@@ -1749,56 +1718,80 @@ lemma step_HubTail_r_4 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R1_001 (a + 25)
     exact ⟨R1_cfg (a + 25), stepPlus_trans' hc_12 h_rem, Or.inl (in_R1 (a + 25))⟩
   · unfold HubTail r_4
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
     have hs_9 := consume_0011_LA (a + 25) (([0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
     have h_rem := rem_to_S6_0001011001 (a + 28)
     exact ⟨S6_cfg (a + 28), stepPlus_trans' hc_9 h_rem, Or.inl (in_S6 (a + 28))⟩
   · unfold HubTail r_4
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1,
+      0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0, 0, 1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
-    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
-    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_10 := stepPlus_trans' hc_9 hs_10
     have hs_11 := rewrite_38a_LA (a + 31) (([1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_11 := stepPlus_trans' hc_10 hs_11
-    have hs_12 := consume_1_LA (a + 31) (([1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_12 := consume_1_LA (a + 31) (([1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_12 := stepPlus_trans' hc_11 hs_12
-    have hs_13 := consume_1_LA (a + 32) (([1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_13 := consume_1_LA (a + 32) (([1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_13 := stepPlus_trans' hc_12 hs_13
-    have hs_14 := consume_1_LA (a + 33) (([0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_14 := consume_1_LA (a + 33) (([0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_14 := stepPlus_trans' hc_13 hs_14
     have hs_15 := consume_0011_LA (a + 34) (([0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_15 := stepPlus_trans' hc_14 hs_15
@@ -1807,11 +1800,13 @@ lemma step_HubTail_r_4 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_001001 (a + 41)
     exact ⟨R2_cfg (a + 41), stepPlus_trans' hc_16 h_rem, Or.inl (in_R2 (a + 41))⟩
   · unfold HubTail
-    have h_w8 : (W8 ^ (w' + 5)) +> (r_4 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_4 +> default)) := by
+    have h_w8 : (W8 ^ (w' + 5)) +> (r_4 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_4
+      +> default)) := by
       rw [Nat.add_comm w' 5, pow_add_append_right W8 5 w']
     rw [h_w8]
     have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (r_4 +> default))
-    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38 a)))
+    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38
+      a)))
 
 lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     ∃ cfg', ((HubTail k w r_5) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1834,12 +1829,16 @@ lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R1_001 (a + 12)
     exact ⟨R1_cfg (a + 12), stepPlus_trans' hc_4 h_rem, Or.inl (in_R1 (a + 12))⟩
   · unfold HubTail r_5
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_V4_LA (a + 11) (([1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -1852,18 +1851,25 @@ lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R1_01 (a + 15)
     exact ⟨R1_cfg (a + 15), stepPlus_trans' hc_7 h_rem, Or.inl (in_R1 (a + 15))⟩
   · unfold HubTail r_5
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
     have hs_7 := consume_0101_LA (a + 19) (([1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
@@ -1872,22 +1878,31 @@ lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_R2_01001 (a + 26)
     exact ⟨R2_cfg (a + 26), stepPlus_trans' hc_8 h_rem, Or.inl (in_R2 (a + 26))⟩
   · unfold HubTail r_5
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
     have hs_9 := consume_0011_LA (a + 25) (([0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
@@ -1898,26 +1913,38 @@ lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_Q_0001 (a + 34)
     exact ⟨Q_cfg (a + 34), stepPlus_trans' hc_11 h_rem, Or.inl (in_Q (a + 34))⟩
   · unfold HubTail r_5
-    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_7 := stepPlus_trans' hc_6 hs_7
-    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1,
+      0, 0, 1] : List (Fin 2)) +> default)
     have hc_8 := stepPlus_trans' hc_7 hs_8
-    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_9 := consume_00101101_LA (a + 25) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_9 := stepPlus_trans' hc_8 hs_9
-    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_10 := consume_0011_LA (a + 28) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_10 := stepPlus_trans' hc_9 hs_10
     have hs_11 := consume_00101101_LA (a + 31) (([1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_11 := stepPlus_trans' hc_10 hs_11
@@ -1926,27 +1953,27 @@ lemma step_HubTail_r_5 (k w : Nat) (hk : k ≥ 7) :
     have h_rem := rem_to_T1_001011001 (a + 38)
     exact reaches_trans (stepPlus_trans' hc_12 h_rem) (step_T1 (a + 38))
   · unfold HubTail
-    have h_w8 : (W8 ^ (w' + 5)) +> (r_5 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_5 +> default)) := by
+    have h_w8 : (W8 ^ (w' + 5)) +> (r_5 +> default) = (W8 ^ 5) +> ((W8 ^ w') +> (r_5
+      +> default)) := by
       rw [Nat.add_comm w' 5, pow_add_append_right W8 5 w']
     rw [h_w8]
     have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (r_5 +> default))
-    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38 a)))
+    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38
+      a)))
 
 
 lemma step_R2_0 : (R2_cfg 0) [suspect_153_tm]⊢⁺ (R1_cfg 4) := by
   unfold R2_cfg R1_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
-    listblank_append_cons, listblank_append_nil,
-    Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  simp only [LA, U4, HPow.hPow,
+    listblank_append_cons, listblank_append_nil]
+  bb_steps
 
 lemma step_R2_succ_raw (l : ListBlank (Fin 2)) :
     (((l <+ U4) <+ [0, 0, 1, 0, 0, 1]) {{A}}> default) [suspect_153_tm]⊢⁺
     (l {{D}}> (([1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1] : List (Fin 2)) +> (r_R2 +> default))) := by
-  simp only [U4, r_R2, cons_append_list, listblank_append_cons, listblank_append_nil,
+  simp only [U4, r_R2, listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_R2 (n : Nat) :
     ∃ cfg', ((R2_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -1960,7 +1987,6 @@ lemma step_R2 (n : Nat) :
     exact reaches_trans (stepPlus_trans' h1 h2) (step_HubTail_r_R2 7 m (by decide))
 
 
-set_option maxHeartbeats 8000000 in
 lemma hub_w0_10 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 7) {{A}}> ((W8 ^ 0) +> (([1, 0] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
     (LA (a + 8) {{A}}> (([0] : List (Fin 2)) +> r)) :=
@@ -1980,7 +2006,8 @@ lemma hub_w1_10 (a : Nat) (r : ListBlank (Fin 2)) :
 lemma hub_w2_10 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 7) {{A}}> ((W8 ^ 2) +> (([1, 0] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
     (LA (a + 20) {{A}}> (([0, 0] : List (Fin 2)) +> r)) := by
-  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_1 := stepPlus_trans' hs_0 hs_1
   have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
@@ -1997,14 +2024,19 @@ lemma hub_w2_10 (a : Nat) (r : ListBlank (Fin 2)) :
 lemma hub_w3_10 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 7) {{A}}> ((W8 ^ 3) +> (([1, 0] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
     (LA (a + 26) {{A}}> (([0, 0, 1, 0] : List (Fin 2)) +> r)) := by
-  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
-  have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+    0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+    1, 0] : List (Fin 2)) +> r)
   have hc_1 := stepPlus_trans' hs_0 hs_1
-  have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hc_2 := stepPlus_trans' hc_1 hs_2
-  have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hc_3 := stepPlus_trans' hc_2 hs_3
-  have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hc_4 := stepPlus_trans' hc_3 hs_4
   have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_5 := stepPlus_trans' hc_4 hs_5
@@ -2018,20 +2050,28 @@ lemma hub_w3_10 (a : Nat) (r : ListBlank (Fin 2)) :
 lemma hub_w4_10 (a : Nat) (r : ListBlank (Fin 2)) :
     (LA (a + 7) {{A}}> ((W8 ^ 4) +> (([1, 0] : List (Fin 2)) +> r))) [suspect_153_tm]⊢⁺
     (LA (a + 32) {{A}}> (([0, 0, 1, 0, 1, 0] : List (Fin 2)) +> r)) := by
-  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
-  have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_0 := consume_1_LA (a + 6) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1,
+    0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_1 := consume_V4_LA (a + 8) (([1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+    1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_1 := stepPlus_trans' hs_0 hs_1
-  have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_2 := consume_1_LA (a + 8) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_2 := stepPlus_trans' hc_1 hs_2
-  have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_3 := consume_1_LA (a + 9) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0,
+    1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_3 := stepPlus_trans' hc_2 hs_3
-  have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_4 := consume_0101_LA (a + 10) (([1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0,
+    1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_4 := stepPlus_trans' hc_3 hs_4
-  have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_5 := consume_0101_LA (a + 13) (([1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0,
+    1, 0] : List (Fin 2)) +> r)
   have hc_5 := stepPlus_trans' hc_4 hs_5
-  have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_6 := consume_0101_LA (a + 16) (([0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hc_6 := stepPlus_trans' hc_5 hs_6
-  have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
+  have hs_7 := consume_0011_LA (a + 19) (([0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1,
+    0] : List (Fin 2)) +> r)
   have hc_7 := stepPlus_trans' hc_6 hs_7
   have hs_8 := consume_0011_LA (a + 22) (([0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0] : List (Fin 2)) +> r)
   have hc_8 := stepPlus_trans' hc_7 hs_8
@@ -2048,18 +2088,26 @@ lemma step_HubW8 (rend : List (Fin 2)) (k w b : Nat) (hk : k ≥ 7) (hb : ScanBu
   intro w ih k hk
   rcases ge_7_exists k hk with ⟨a, rfl⟩
   rcases w with _ | _ | _ | _ | _ | w'
-  · exact reaches_trans (hub_w0_10 a ((B4 ^ b) +> (rend +> default))) (hb.1 (a + 8) (Nat.le_trans (by decide) (Nat.le_add_left 8 a)))
-  · exact reaches_trans (hub_w1_10 a ((B4 ^ b) +> (rend +> default))) (hb.2.2.2.2.2.1 (a + 11) (Nat.le_trans (by decide) (Nat.le_add_left 11 a)))
-  · exact reaches_trans (hub_w2_10 a ((B4 ^ b) +> (rend +> default))) (hb.2.2.2.2.1 (a + 20) (Nat.le_trans (by decide) (Nat.le_add_left 20 a)))
-  · exact reaches_trans (hub_w3_10 a ((B4 ^ b) +> (rend +> default))) (hb.2.2.1 (a + 26) (Nat.le_trans (by decide) (Nat.le_add_left 26 a)))
-  · exact reaches_trans (hub_w4_10 a ((B4 ^ b) +> (rend +> default))) (hb.2.1 (a + 32) (Nat.le_trans (by decide) (Nat.le_add_left 32 a)))
+  · exact reaches_trans (hub_w0_10 a ((B4 ^ b) +> (rend
+    +> default))) (hb.1 (a + 8) (Nat.le_trans (by decide) (Nat.le_add_left 8 a)))
+  · exact reaches_trans (hub_w1_10 a ((B4 ^ b) +> (rend
+    +> default))) (hb.2.2.2.2.2.1 (a + 11) (Nat.le_trans (by decide) (Nat.le_add_left 11 a)))
+  · exact reaches_trans (hub_w2_10 a ((B4 ^ b) +> (rend
+    +> default))) (hb.2.2.2.2.1 (a + 20) (Nat.le_trans (by decide) (Nat.le_add_left 20 a)))
+  · exact reaches_trans (hub_w3_10 a ((B4 ^ b) +> (rend
+    +> default))) (hb.2.2.1 (a + 26) (Nat.le_trans (by decide) (Nat.le_add_left 26 a)))
+  · exact reaches_trans (hub_w4_10 a ((B4 ^ b) +> (rend
+    +> default))) (hb.2.1 (a + 32) (Nat.le_trans (by decide) (Nat.le_add_left 32 a)))
   · unfold HubW8
     have h_w8 : (W8 ^ (w' + 5)) +> (([1, 0] : List (Fin 2)) +> ((B4 ^ b) +> (rend +> default))) =
-        (W8 ^ 5) +> ((W8 ^ w') +> (([1, 0] : List (Fin 2)) +> ((B4 ^ b) +> (rend +> default)))) := by
+        (W8 ^ 5) +> ((W8 ^ w') +> (([1,
+          0] : List (Fin 2)) +> ((B4 ^ b) +> (rend +> default)))) := by
       rw [Nat.add_comm w' 5, pow_add_append_right W8 5 w']
     rw [h_w8]
-    have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (([1, 0] : List (Fin 2)) +> ((B4 ^ b) +> (rend +> default))))
-    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38 a)))
+    have h1 := consume_5_W8_LA_0349 (a + 6) ((W8 ^ w') +> (([1,
+      0] : List (Fin 2)) +> ((B4 ^ b) +> (rend +> default))))
+    exact reaches_trans h1 (ih w' (by omega) (a + 38) (Nat.le_trans (by decide) (Nat.le_add_left 38
+      a)))
 
 lemma step_HubW8_r_Q (k w b : Nat) (hk : k ≥ 7) (hb : ScanBundle b r_Q) :
     ∃ cfg', ((HubW8 k w b r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2086,13 +2134,14 @@ lemma step_Scan_p0_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b
   · unfold Scan p0 r_Q
     have h_rem := rem_to_S6_011101 (a + 2)
     exact ⟨S6_cfg (a + 2), h_rem, Or.inl (in_S6 (a + 2))⟩
-  ·
-    unfold Scan p0
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_Q +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_Q +> default)) := by
+  · unfold Scan p0
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_Q +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_Q
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
     rcases drain_A_any_to_LA7 (a + 3) ((B4 ^ b') +> (r_Q +> default)) with ⟨m, h1⟩
-    exact reaches_trans h1 (step_HubW8_r_Q 7 m b' (by decide) (ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
+    exact reaches_trans h1 (step_HubW8_r_Q 7 m b' (by decide) (ih b' (Nat.lt_trans
+      (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
 
 lemma step_Scan_p0_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p0 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2101,11 +2150,14 @@ lemma step_Scan_p0_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle 
   rcases b with _ | _ | b'
   · unfold Scan p0 r_S6
     have hs_0 := rewrite_26_LA (a + 3) (([0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 4) (([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 4) (([1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 5) (([0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 5) (([0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_0011_LA (a + 6) (([0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -2114,13 +2166,14 @@ lemma step_Scan_p0_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle 
   · unfold Scan p0 r_S6
     rcases rem_ddrain_158 (a + 1) with ⟨m, h_rem⟩
     exact reaches_trans (h_rem) (step_HubTail_r_4 7 m (by decide))
-  ·
-    unfold Scan p0
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_S6 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S6 +> default)) := by
+  · unfold Scan p0
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_S6 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S6
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
     rcases drain_A_any_to_LA7 (a + 3) ((B4 ^ b') +> (r_S6 +> default)) with ⟨m, h1⟩
-    exact reaches_trans h1 (step_HubW8_r_S6 7 m b' (by decide) (ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
+    exact reaches_trans h1 (step_HubW8_r_S6 7 m b' (by decide) (ih b' (Nat.lt_trans
+      (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
 
 lemma step_Scan_p0_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p0 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2134,13 +2187,14 @@ lemma step_Scan_p0_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle 
   · unfold Scan p0 r_S4
     rcases rem_ddrain_232 (a + 1) with ⟨m, h_rem⟩
     exact reaches_trans (h_rem) (step_HubTail_r_5 7 m (by decide))
-  ·
-    unfold Scan p0
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_S4 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S4 +> default)) := by
+  · unfold Scan p0
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_S4 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S4
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
     rcases drain_A_any_to_LA7 (a + 3) ((B4 ^ b') +> (r_S4 +> default)) with ⟨m, h1⟩
-    exact reaches_trans h1 (step_HubW8_r_S4 7 m b' (by decide) (ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
+    exact reaches_trans h1 (step_HubW8_r_S4 7 m b' (by decide) (ih b' (Nat.lt_trans
+      (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))))
 
 lemma step_Scan_p001010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b p001010 r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2156,14 +2210,17 @@ lemma step_Scan_p001010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBun
     have h_b4 : (B4 ^ (b' + 1)) +> (r_Q +> default) = B4 +> ((B4 ^ b') +> (r_Q +> default)) :=
       pow_succ_append_right B4 b' (r_Q +> default)
     rw [h_b4]
-    have hs_0 := consume_0010101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
-    have hs_1 := consume_V4_LA (a + 7) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_0 := consume_0010101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_1 := consume_V4_LA (a + 7) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 7) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_1_LA (a + 8) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide) (Nat.le_add_left 10 a)))
+    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide)
+      (Nat.le_add_left 10 a)))
 
 lemma step_Scan_p001010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p001010 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2171,8 +2228,10 @@ lemma step_Scan_p001010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBu
   rcases ge_4_exists k hk with ⟨a, rfl⟩
   rcases b with _ | b'
   · unfold Scan p001010 r_S6
-    have hs_0 := consume_0010101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_V4_LA (a + 7) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_0010101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_V4_LA (a + 7) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_0011_LA (a + 7) (([0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
@@ -2182,14 +2241,17 @@ lemma step_Scan_p001010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBu
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S6 +> default) = B4 +> ((B4 ^ b') +> (r_S6 +> default)) :=
       pow_succ_append_right B4 b' (r_S6 +> default)
     rw [h_b4]
-    have hs_0 := consume_0010101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
-    have hs_1 := consume_V4_LA (a + 7) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_0 := consume_0010101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_1 := consume_V4_LA (a + 7) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 7) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_1_LA (a + 8) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide) (Nat.le_add_left 10 a)))
+    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide)
+      (Nat.le_add_left 10 a)))
 
 lemma step_Scan_p001010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p001010 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2208,14 +2270,17 @@ lemma step_Scan_p001010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBu
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S4 +> default) = B4 +> ((B4 ^ b') +> (r_S4 +> default)) :=
       pow_succ_append_right B4 b' (r_S4 +> default)
     rw [h_b4]
-    have hs_0 := consume_0010101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
-    have hs_1 := consume_V4_LA (a + 7) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_0 := consume_0010101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_1 := consume_V4_LA (a + 7) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 7) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_1_LA (a + 8) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide) (Nat.le_add_left 10 a)))
+    exact reaches_trans (hc_3) ((ih b' (Nat.lt_succ_self b')).1 (a + 10) (Nat.le_trans (by decide)
+      (Nat.le_add_left 10 a)))
 
 lemma step_Scan_p0010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b p0010 r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2227,9 +2292,11 @@ lemma step_Scan_p0010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     exact ⟨R2_cfg (a + 4), h_rem, Or.inl (in_R2 (a + 4))⟩
   · unfold Scan p0010 r_Q
     have hs_0 := consume_rewrite92_LA (a + 3) default
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1,
+      0] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1,
+      0] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
     have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
@@ -2241,25 +2308,33 @@ lemma step_Scan_p0010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     have hc_6 := stepPlus_trans' hc_5 hs_6
     have h_rem := rem_to_R1_0010 (a + 9)
     exact ⟨R1_cfg (a + 9), stepPlus_trans' hc_6 h_rem, Or.inl (in_R1 (a + 9))⟩
-  ·
-    unfold Scan p0010
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_Q +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_Q +> default)) := by
+  · unfold Scan p0010
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_Q +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_Q
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
-    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
+    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' +
+      1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
 
 lemma step_Scan_p0010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p0010 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2268,11 +2343,14 @@ lemma step_Scan_p0010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBund
   rcases b with _ | _ | b'
   · unfold Scan p0010 r_S6
     have hs_0 := rewrite_38b_LA (a + 3) (([0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 4) (([1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 4) (([1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 5) (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 5) (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_V4_LA (a + 7) (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -2283,40 +2361,55 @@ lemma step_Scan_p0010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBund
     have h_rem := rem_to_R1_01 (a + 10)
     exact ⟨R1_cfg (a + 10), stepPlus_trans' hc_6 h_rem, Or.inl (in_R1 (a + 10))⟩
   · unfold Scan p0010 r_S6
-    have hs_0 := consume_rewrite92_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_rewrite92_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0,
+      1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1,
+      1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1,
+      0, 0, 1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
     rcases rem_ddrain_82 (a + 8) with ⟨m, h_rem⟩
     exact reaches_trans (stepPlus_trans' hc_6 h_rem) (step_HubTail_r_3 7 m (by decide))
-  ·
-    unfold Scan p0010
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_S6 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S6 +> default)) := by
+  · unfold Scan p0010
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_S6 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S6
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
-    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
+    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' +
+      1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
 
 lemma step_Scan_p0010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p0010 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2333,15 +2426,20 @@ lemma step_Scan_p0010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBund
     exact ⟨R1_cfg (a + 9), stepPlus_trans' hc_2 h_rem, Or.inl (in_R1 (a + 9))⟩
   · unfold Scan p0010 r_S4
     have hs_0 := consume_rewrite92_LA (a + 3) (([0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
     have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_6 := stepPlus_trans' hc_5 hs_6
@@ -2357,25 +2455,33 @@ lemma step_Scan_p0010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBund
     have hc_11 := stepPlus_trans' hc_10 hs_11
     have h_rem := rem_to_R1_001 (a + 13)
     exact ⟨R1_cfg (a + 13), stepPlus_trans' hc_11 h_rem, Or.inl (in_R1 (a + 13))⟩
-  ·
-    unfold Scan p0010
-    have h_b4 : (B4 ^ (b' + 2)) +> (r_S4 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S4 +> default)) := by
+  · unfold Scan p0010
+    have h_b4 : (B4 ^ (b' + 2)) +> (r_S4 +> default) = (B4 ^ 2) +> ((B4 ^ b') +> (r_S4
+      +> default)) := by
       rw [Nat.add_comm b' 2, pow_add_append_right B4 2 b']
     rw [h_b4]
-    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
-    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_0 := consume_rewrite92_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_1 := consume_1_LA (a + 2) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_2 := consume_1_LA (a + 3) (([1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_3 := consume_1_LA (a + 4) (([0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_4 := consume_V4_LA (a + 6) (([1, 1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_4 := stepPlus_trans' hc_3 hs_4
-    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_5 := consume_1_LA (a + 6) (([1, 0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_5 := stepPlus_trans' hc_4 hs_5
-    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_6 := consume_1_LA (a + 7) (([0, 0, 1, 0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_6 := stepPlus_trans' hc_5 hs_6
-    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' + 1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
+    exact reaches_trans (hc_6) ((ih b' (Nat.lt_trans (Nat.lt_succ_self b') (Nat.lt_succ_self (b' +
+      1)))).2.2.2.1 (a + 9) (Nat.le_trans (by decide) (Nat.le_add_left 9 a)))
 
 lemma step_Scan_p0010110_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b p0010110 r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2393,12 +2499,15 @@ lemma step_Scan_p0010110_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBu
     have h_b4 : (B4 ^ (b' + 1)) +> (r_Q +> default) = B4 +> ((B4 ^ b') +> (r_Q +> default)) :=
       pow_succ_append_right B4 b' (r_Q +> default)
     rw [h_b4]
-    have hs_0 := consume_00101101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
-    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_0 := consume_00101101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_0011_LA (a + 9) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by decide) (Nat.le_add_left 13 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by
+      decide) (Nat.le_add_left 13 a)))
 
 lemma step_Scan_p0010110_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p0010110 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2406,8 +2515,10 @@ lemma step_Scan_p0010110_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanB
   rcases ge_4_exists k hk with ⟨a, rfl⟩
   rcases b with _ | b'
   · unfold Scan p0010110 r_S6
-    have hs_0 := consume_00101101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_0011_LA (a + 6) (([0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_00101101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
+    have hs_1 := consume_0011_LA (a + 6) (([0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
     rcases rem_halt_2 (a + 10) with ⟨cfg', h_rem, h_halt⟩
     exact ⟨cfg', stepPlus_trans' hc_1 h_rem, Or.inr h_halt⟩
@@ -2415,12 +2526,15 @@ lemma step_Scan_p0010110_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanB
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S6 +> default) = B4 +> ((B4 ^ b') +> (r_S6 +> default)) :=
       pow_succ_append_right B4 b' (r_S6 +> default)
     rw [h_b4]
-    have hs_0 := consume_00101101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
-    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_0 := consume_00101101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_0011_LA (a + 9) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by decide) (Nat.le_add_left 13 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by
+      decide) (Nat.le_add_left 13 a)))
 
 lemma step_Scan_p0010110_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p0010110 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2437,12 +2551,15 @@ lemma step_Scan_p0010110_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanB
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S4 +> default) = B4 +> ((B4 ^ b') +> (r_S4 +> default)) :=
       pow_succ_append_right B4 b' (r_S4 +> default)
     rw [h_b4]
-    have hs_0 := consume_00101101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
-    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_0 := consume_00101101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_1 := consume_0011_LA (a + 6) (([0, 1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_0011_LA (a + 9) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by decide) (Nat.le_add_left 13 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.1 (a + 13) (Nat.le_trans (by
+      decide) (Nat.le_add_left 13 a)))
 
 lemma step_Scan_p00_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b p00 r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2456,8 +2573,10 @@ lemma step_Scan_p00_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle 
     have h_b4 : (B4 ^ (b' + 1)) +> (r_Q +> default) = B4 +> ((B4 ^ b') +> (r_Q +> default)) :=
       pow_succ_append_right B4 b' (r_Q +> default)
     rw [h_b4]
-    have hs_0 := consume_0011_LA (a + 3) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
-    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    have hs_0 := consume_0011_LA (a + 3) (([1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by
+      decide) (Nat.le_add_left 7 a)))
 
 lemma step_Scan_p00_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p00 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2466,11 +2585,14 @@ lemma step_Scan_p00_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle
   rcases b with _ | b'
   · unfold Scan p00 r_S6
     have hs_0 := rewrite_24_LA (a + 3) (([0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
-    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA (a + 3) (([1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 4) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 4) (([1, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 5) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 5) (([0, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
     have hs_4 := consume_V4_LA (a + 7) (([0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
@@ -2482,8 +2604,10 @@ lemma step_Scan_p00_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S6 +> default) = B4 +> ((B4 ^ b') +> (r_S6 +> default)) :=
       pow_succ_append_right B4 b' (r_S6 +> default)
     rw [h_b4]
-    have hs_0 := consume_0011_LA (a + 3) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
-    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    have hs_0 := consume_0011_LA (a + 3) (([1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by
+      decide) (Nat.le_add_left 7 a)))
 
 lemma step_Scan_p00_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p00 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2497,8 +2621,10 @@ lemma step_Scan_p00_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S4 +> default) = B4 +> ((B4 ^ b') +> (r_S4 +> default)) :=
       pow_succ_append_right B4 b' (r_S4 +> default)
     rw [h_b4]
-    have hs_0 := consume_0011_LA (a + 3) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
-    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    have hs_0 := consume_0011_LA (a + 3) (([1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    exact reaches_trans (hs_0) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.1 (a + 7) (Nat.le_trans (by
+      decide) (Nat.le_add_left 7 a)))
 
 lemma step_Scan_p010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b p010 r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2513,10 +2639,12 @@ lemma step_Scan_p010_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle
     have h_b4 : (B4 ^ (b' + 1)) +> (r_Q +> default) = B4 +> ((B4 ^ b') +> (r_Q +> default)) :=
       pow_succ_append_right B4 b' (r_Q +> default)
     rw [h_b4]
-    have hs_0 := consume_0101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_0 := consume_0101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hs_1 := consume_V4_LA (a + 7) ((B4 ^ b') +> (r_Q +> default))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by decide) (Nat.le_add_left 8 a)))
+    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by
+      decide) (Nat.le_add_left 8 a)))
 
 lemma step_Scan_p010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b p010 r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2524,14 +2652,18 @@ lemma step_Scan_p010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
   rcases ge_4_exists k hk with ⟨a, rfl⟩
   rcases b with _ | b'
   · unfold Scan p010 r_S6
-    have hs_0 := consume_0101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_0101_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hs_1 := rewrite_56_LA (a + 6) (([1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    have hs_2 := consume_1_LA (a + 5) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_1_LA (a + 5) (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA (a + 6) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA (a + 6) (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_1_LA (a + 7) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_1_LA (a + 7) (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
     have hs_5 := consume_V4_LA (a + 9) (([1, 1, 0, 1, 1, 0, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
@@ -2549,10 +2681,12 @@ lemma step_Scan_p010_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S6 +> default) = B4 +> ((B4 ^ b') +> (r_S6 +> default)) :=
       pow_succ_append_right B4 b' (r_S6 +> default)
     rw [h_b4]
-    have hs_0 := consume_0101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_0 := consume_0101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hs_1 := consume_V4_LA (a + 7) ((B4 ^ b') +> (r_S6 +> default))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by decide) (Nat.le_add_left 8 a)))
+    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by
+      decide) (Nat.le_add_left 8 a)))
 
 lemma step_Scan_p010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b p010 r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2569,10 +2703,12 @@ lemma step_Scan_p010_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S4 +> default) = B4 +> ((B4 ^ b') +> (r_S4 +> default)) :=
       pow_succ_append_right B4 b' (r_S4 +> default)
     rw [h_b4]
-    have hs_0 := consume_0101_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_0 := consume_0101_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hs_1 := consume_V4_LA (a + 7) ((B4 ^ b') +> (r_S4 +> default))
     have hc_1 := stepPlus_trans' hs_0 hs_1
-    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by decide) (Nat.le_add_left 8 a)))
+    exact reaches_trans (hc_1) ((ih b' (Nat.lt_succ_self b')).2.2.2.2.2.2 (a + 8) (Nat.le_trans (by
+      decide) (Nat.le_add_left 8 a)))
 
 lemma step_Scan_pnil_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_Q) :
     ∃ cfg', ((Scan k b pnil r_Q) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2586,12 +2722,14 @@ lemma step_Scan_pnil_r_Q (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle
     have h_b4 : (B4 ^ (b' + 1)) +> (r_Q +> default) = B4 +> ((B4 ^ b') +> (r_Q +> default)) :=
       pow_succ_append_right B4 b' (r_Q +> default)
     rw [h_b4]
-    have hs_0 := consume_1_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
+    have hs_0 := consume_1_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hs_1 := consume_1_LA (a + 4) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 5) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_Q +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide)
+      (Nat.le_add_left 7 a)))
 
 lemma step_Scan_pnil_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S6) :
     ∃ cfg', ((Scan k b pnil r_S6) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2599,7 +2737,8 @@ lemma step_Scan_pnil_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
   rcases ge_4_exists k hk with ⟨a, rfl⟩
   rcases b with _ | b'
   · unfold Scan pnil r_S6
-    have hs_0 := consume_1_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA (a + 3) (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hs_1 := consume_0011_LA (a + 4) (([0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have h_rem := rem_to_T1_001011001 (a + 8)
@@ -2608,12 +2747,14 @@ lemma step_Scan_pnil_r_S6 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S6 +> default) = B4 +> ((B4 ^ b') +> (r_S6 +> default)) :=
       pow_succ_append_right B4 b' (r_S6 +> default)
     rw [h_b4]
-    have hs_0 := consume_1_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
+    have hs_0 := consume_1_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hs_1 := consume_1_LA (a + 4) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 5) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S6 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide)
+      (Nat.le_add_left 7 a)))
 
 lemma step_Scan_pnil_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundle b' r_S4) :
     ∃ cfg', ((Scan k b pnil r_S4) [suspect_153_tm]⊢⁺ cfg') ∧
@@ -2630,12 +2771,14 @@ lemma step_Scan_pnil_r_S4 (k b : Nat) (hk : k ≥ 4) (ih : ∀ b' < b, ScanBundl
     have h_b4 : (B4 ^ (b' + 1)) +> (r_S4 +> default) = B4 +> ((B4 ^ b') +> (r_S4 +> default)) :=
       pow_succ_append_right B4 b' (r_S4 +> default)
     rw [h_b4]
-    have hs_0 := consume_1_LA (a + 3) (([1, 1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
+    have hs_0 := consume_1_LA (a + 3) (([1, 1,
+      0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hs_1 := consume_1_LA (a + 4) (([1, 0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_1 := stepPlus_trans' hs_0 hs_1
     have hs_2 := consume_1_LA (a + 5) (([0] : List (Fin 2)) +> ((B4 ^ b') +> (r_S4 +> default)))
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide) (Nat.le_add_left 7 a)))
+    exact reaches_trans (hc_2) ((ih b' (Nat.lt_succ_self b')).1 (a + 7) (Nat.le_trans (by decide)
+      (Nat.le_add_left 7 a)))
 
 
 
@@ -2710,30 +2853,36 @@ lemma step_S4 (n : Nat) :
 
 lemma S6_0_entry_232 :
     (S6_cfg 0) [suspect_153_tm]⊢⁺
-    (LA 0 {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)) := by
+    (LA 0 {{A}}> (([1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)) := by
   unfold S6_cfg
-  simp only [LA, U4, HPow.hPow, list_nat_repeat, List.append_eq,
-    cons_append_list, List.nil_append, append_nil_list,
+  simp only [LA, U4, HPow.hPow,
     listblank_append_cons, listblank_append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  execute
+  bb_steps
 
 lemma step_S6 (n : Nat) :
     ∃ cfg', ((S6_cfg n) [suspect_153_tm]⊢⁺ cfg') ∧
       (IsInPatternSet ps_153 cfg' ∨ (step suspect_153_tm cfg').isNone) := by
   rcases n with _ | _ | n'
   · have h1 := S6_0_entry_232
-    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have h2 := consume_1_LA_zero (([1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
+      0, 1] : List (Fin 2)) +> default)
     have h12 := stepPlus_trans' h1 h2
-    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_0 := consume_1_LA 0 (([1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_0 := stepPlus_trans' h12 hs_0
-    have hs_1 := consume_1_LA 1 (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_1 := consume_1_LA 1 (([0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_1 := stepPlus_trans' hc_0 hs_1
-    have hs_2 := consume_V4_LA 3 (([1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_2 := consume_V4_LA 3 (([1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_2 := stepPlus_trans' hc_1 hs_2
-    have hs_3 := consume_1_LA 3 (([1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_3 := consume_1_LA 3 (([1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_3 := stepPlus_trans' hc_2 hs_3
-    have hs_4 := consume_1_LA 4 (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have hs_4 := consume_1_LA 4 (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have hc_4 := stepPlus_trans' hc_3 hs_4
     have hs_5 := consume_V4_LA 6 (([0, 1, 1, 0, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
     have hc_5 := stepPlus_trans' hc_4 hs_5
@@ -2744,7 +2893,8 @@ lemma step_S6 (n : Nat) :
     have h_rem := rem_to_R1_01 9
     exact ⟨R1_cfg 9, stepPlus_trans' hc_7 h_rem, Or.inl (in_R1 9)⟩
   · have h1 := S6_entry_152 default
-    have h2 := step_D_B4_bounce_to_LA6 (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1] : List (Fin 2)) +> default)
+    have h2 := step_D_B4_bounce_to_LA6 (([0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0,
+      1] : List (Fin 2)) +> default)
     have h12 := stepPlus_trans' h1 h2
     rcases rem_ddrain_82 5 with ⟨m, h3⟩
     exact reaches_trans (stepPlus_trans' h12 h3) (step_HubTail_r_3 7 m (by decide))
@@ -2766,14 +2916,16 @@ theorem init_to_S6_1 : (init []) [suspect_153_tm]⊢* (S6_cfg 1) := by
     unfold P_cfg; rw [LA_succ 2, LA_succ 1]; exact step_P_2plus_raw (LA 1)
   exact stepStar_trans h1 (stepPlus_stepStar h2)
 
-theorem suspect_153_cryptid (_ : True := trivial) : IsCryptid suspect_153_tm := by
-  refine ⟨ps_153, ⟨S6_cfg 1, init_to_S6_1, in_S6 1⟩, ?_⟩
+
+theorem is_closed_pattern_set : IsClosedPatternSet target ps := by
+  refine ⟨⟨S6_cfg 1, init_to_S6_1, in_S6 1⟩, ?_⟩
   intro cfg h_in
   rcases h_in with ⟨entry, h_mem, vars, rfl, h_cond⟩
   cases h_mem with
   | head =>
     simp only [cond_Master, evalVarCond] at h_cond
-    rcases h_cond with ⟨h1a, h1b, h2a⟩ | ⟨h1a, h1b, h2a⟩ | ⟨h1a, h1b, h2a, h2b⟩ | ⟨h1a, h1b, h2a, h2b⟩ | ⟨h1a, h1b, h2a, h2b⟩
+    rcases h_cond with ⟨h1a, h1b, h2a⟩ | ⟨h1a, h1b, h2a⟩ | ⟨h1a, h1b, h2a, h2b⟩ | ⟨h1a, h1b, h2a,
+      h2b⟩ | ⟨h1a, h1b, h2a, h2b⟩
     · have h1 : vars 1 = 1 := by omega
       have h2 : vars 2 = 0 := by omega
       rw [eval_pat_R1 vars h1 h2]; exact step_R1 (vars 0)
@@ -2792,122 +2944,6 @@ theorem suspect_153_cryptid (_ : True := trivial) : IsCryptid suspect_153_tm := 
   | tail _ h_mem =>
     nomatch h_mem
 
-end Solution
-
--- END EXPLORATORY DEFINITIONS AND LEMMAS
-
--- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
-
-set_option linter.unusedVariables false
-set_option linter.unusedSimpArgs false
-set_option linter.deprecated false
-set_option linter.dupNamespace false
-set_option linter.unreachableTactic false
-set_option linter.unusedTactic false
-set_option quotPrecheck false
-set_option maxRecDepth 4000000
-set_option maxHeartbeats 8000000
-open Solution in
-theorem is_cryptid_target_tm : IsCryptid target_tm := suspect_153_cryptid
-
-
-def machine : ConjectureMachines.Machine 6 2 := load_rle_machine% "1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA"
-abbrev target : BusyBeaver.Machine (Fin 2) (Fin 6) := ConjectureMachines.Machine.toBB machine
-def cvt_TapeExpr {Γ} : TapeExpr Γ → BusyBeaver.TapeExpr Γ
-  | .default => .default
-  | .sym a rest => .sym a (cvt_TapeExpr rest)
-  | .rep blk v rest => .rep blk v (cvt_TapeExpr rest)
-
-theorem list_nat_repeat_eq_flatten_replicate {Γ} (l : List Γ) (n : Nat) :
-  list_nat_repeat l n = (List.replicate n l).flatten := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    simp [list_nat_repeat, List.replicate]
-    rw [ih]
-
-theorem cvt_evalTapeExpr {Γ} [Inhabited Γ] (e : TapeExpr Γ) (vars : Nat → Nat) :
-  evalTapeExpr e vars = BusyBeaver.evalTapeExpr (cvt_TapeExpr e) vars := by
-  induction e with
-  | default => rfl
-  | sym a rest ih =>
-    change [a] +> evalTapeExpr rest vars = [a] +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
-    rw [ih]
-  | rep blk v rest ih =>
-    change list_nat_repeat blk (vars v) +> evalTapeExpr rest vars = (List.replicate (vars v) blk).flatten +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
-    rw [ih, list_nat_repeat_eq_flatten_replicate]
-
-def cvt_TapePattern {Γ Λ} : TapePattern Γ Λ → BusyBeaver.TapePattern Γ Λ
-  | ⟨l, h, r⟩ => ⟨cvt_TapeExpr l, h, cvt_TapeExpr r⟩
-
-theorem cvt_evalTapePattern {Γ Λ} [Inhabited Γ] [Inhabited Λ] (pat : TapePattern Γ Λ) (vars : Nat → Nat) :
-  evalTapePattern pat vars = BusyBeaver.evalTapePattern (cvt_TapePattern pat) vars := by
-  rcases pat with ⟨l, h, r⟩
-  simp [evalTapePattern, BusyBeaver.evalTapePattern, cvt_TapePattern]
-  rw [cvt_evalTapeExpr, cvt_evalTapeExpr]
-  exact ⟨rfl, rfl, rfl⟩
-
-def cvt_VarCond : VarCond → BusyBeaver.VarCond
-  | .ge_const idx val => .ge_const idx val
-  | .ge_var idx1 idx2 => .ge_var idx1 idx2
-  | .and c1 c2 => .and (cvt_VarCond c1) (cvt_VarCond c2)
-  | .or c1 c2 => .or (cvt_VarCond c1) (cvt_VarCond c2)
-  | .not c => .not (cvt_VarCond c)
-  | .true => .true
-
-theorem cvt_evalVarCond (c : VarCond) (vars : Nat → Nat) :
-  evalVarCond c vars ↔ BusyBeaver.evalVarCond (cvt_VarCond c) vars := by
-  induction c with
-  | ge_const idx val => rfl
-  | ge_var idx1 idx2 => rfl
-  | and c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
-  | or c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
-  | not c ih => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih]
-  | true => rfl
-
-def cvt_ps {Γ Λ} (ps : TapePatternSet Γ Λ) : BusyBeaver.TapePatternSet Γ Λ :=
-  ps.map (fun pc => ⟨cvt_TapePattern pc.fst, cvt_VarCond pc.snd⟩)
-
-theorem cvt_IsInPatternSet {Γ Λ} [Inhabited Γ] [Inhabited Λ] (ps : TapePatternSet Γ Λ) (cfg : Cfg Γ Λ) :
-  IsInPatternSet ps cfg ↔ BusyBeaver.IsInPatternSet (cvt_ps ps) cfg := by
-  constructor
-  · rintro ⟨⟨p, c⟩, h_in, vars, h_eq, h_cond⟩
-    use ⟨cvt_TapePattern p, cvt_VarCond c⟩
-    refine ⟨?_, ?_⟩
-    · exact List.mem_map_of_mem h_in
-    · use vars
-      rw [← cvt_evalTapePattern]
-      exact ⟨h_eq, (cvt_evalVarCond c vars).mp h_cond⟩
-  · rintro ⟨⟨p_global, c_global⟩, h_in, vars, h_eq, h_cond⟩
-    simp only [cvt_ps, List.mem_map, Prod.exists] at h_in
-    rcases h_in with ⟨p, c, h_in_ps, h_map⟩
-    have h_map' : p_global = cvt_TapePattern p ∧ c_global = cvt_VarCond c := by
-      injection h_map with h1 h2
-      exact ⟨h1.symm, h2.symm⟩
-    rcases h_map' with ⟨rfl, rfl⟩
-    use ⟨p, c⟩
-    refine ⟨h_in_ps, vars, ?_, ?_⟩
-    · rw [h_eq, cvt_evalTapePattern]
-    · change evalVarCond c vars
-      exact (cvt_evalVarCond c vars).mpr h_cond
-
-theorem local_to_global_IsCryptid {Γ Λ} [Inhabited Γ] [Inhabited Λ] {M : Machine Γ Λ} (h : IsCryptid M) : BusyBeaver.IsCryptid M := by
-  rcases h with ⟨ps, ⟨cfg₀, h_reach₀, h_in₀⟩, h_step⟩
-  use cvt_ps ps
-  constructor
-  · use cfg₀
-    exact ⟨h_reach₀, (cvt_IsInPatternSet ps cfg₀).mp h_in₀⟩
-  · intro cfg h_in
-    rcases h_step cfg ((cvt_IsInPatternSet ps cfg).mpr h_in) with ⟨cfg', h_reach, h_cases⟩
-    use cfg'
-    refine ⟨h_reach, ?_⟩
-    cases h_cases with
-    | inl h_in' => exact Or.inl ((cvt_IsInPatternSet ps cfg').mp h_in')
-    | inr h_halt => exact Or.inr h_halt
-
-theorem is_cryptid : BusyBeaver.IsCryptid target := by
-  have h : target = target_tm := by funext q s; fin_cases q <;> fin_cases s <;> rfl
-  rw [h]
-  exact local_to_global_IsCryptid is_cryptid_target_tm
+theorem has_collatz_reduction : HasCollatzReduction target := ⟨ps, is_closed_pattern_set⟩
 
 end BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA

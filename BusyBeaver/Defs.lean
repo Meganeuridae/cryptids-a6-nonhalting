@@ -184,9 +184,6 @@ def IsClosedPatternSet (M : Machine Γ Λ) (ps : TapePatternSet Γ Λ) : Prop :=
 
 /-- `M`'s blank-tape trajectory enters a closed accelerated `TapePatternSet` in which every
 member configuration steps in `ReachesPlus` either to another member or to a halting state. -/
-def IsCryptid (M : Machine Γ Λ) : Prop :=
-  ∃ ps : TapePatternSet Γ Λ, IsClosedPatternSet M ps
-
 def HasCollatzReduction (M : Machine Γ Λ) : Prop :=
   ∃ ps : TapePatternSet Γ Λ, IsClosedPatternSet M ps
 

@@ -1,177 +1,64 @@
+/-
+Copyright (c) 2026 Google LLC. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
 module
 
-public import BusyBeaver.Defs
 public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
-public import Lean.PrettyPrinter.Delaborator.Basic
-public import Mathlib.Computability.TuringMachine.Tape
-public import Mathlib.Util.Notation3
-public import Mathlib.Computability.TuringMachine.PostTuringMachine
-public import Mathlib.Computability.TuringMachine.StackTuringMachine
-public import Mathlib.Data.ENat.Lattice
-public import Mathlib.Data.List.Basic
-public import Mathlib.Data.Nat.Basic
-public import Mathlib.Logic.Relation
-public import Mathlib.Order.Lattice.Nat
-public import Mathlib.Tactic.Linarith
-public import Mathlib.Tactic.NormNum
-public import Mathlib.Tactic.Ring
-public import Mathlib.Tactic.Zify
-
-set_option linter.deprecated false
-set_option linter.flexible false
-set_option linter.style.longLine false
-
 
 /-!
-# Busy Beaver Machine `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE` — `is_cryptid` (`IsCryptid target_tm`)
+# Busy Beaver Holdout `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`
 
-See <https://wiki.bbchallenge.org/wiki/1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE>.
-
-This file's trusted header matches `suspects/defs/is_cryptid.lean` at HEAD
-and defines `target_tm` for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. Do not modify the trusted
-definitions section or the goal theorem signature.
+## Collatz-like Acceleration Rules
 -/
-
-open Mathlib Relation Nat Turing BusyBeaver
 
 @[expose] public section
 
 namespace BusyBeaver.M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE
 
--- BEGIN TRUSTED DEFINITIONS (DO NOT MODIFY)
+open SixState Turing
 
-variable {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
 
-/-- Step and multi-step relations. -/
-notation3 c₁ " [" M "]⊢ " c₂ => step M c₁ = some c₂
-notation3 c₁ " [" M "]⊢^{" n "} " c₂ => multiStep M c₁ n = some c₂
-notation3 c₁ " [" M "]⊢* " c₂ => ∃ n, multiStep M c₁ n = some c₂
-notation3 c₁ " [" M "]⊢⁺ " c₂ => ∃ n > 0, multiStep M c₁ n = some c₂
+def machine : ConjectureMachines.Machine 6 2 :=
+  load_rle_machine% "1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE"
 
-/-- Tape construction notations. -/
-notation l " {{" s "}} " r => (⟨s, l, r⟩ : Tape _)
-notation:67 s:67 " << " a:68 => ListBlank.cons a s
-infixr:67 " >> " => ListBlank.cons
-notation:67 s:67 " <+ " l:68 => ListBlank.append l s
-infixr:67 " +> " => ListBlank.append
-notation3 l " {{" q "}}> " r => (⟨some q, ⟨ListBlank.head r, l, ListBlank.tail r⟩⟩ : Cfg _ _)
-notation3 l " <{{" q "}} " r => (⟨some q, ⟨ListBlank.head l, ListBlank.tail l, r⟩⟩ : Cfg _ _)
+abbrev target : Machine (Fin 2) (Fin 6) := machine.toBB
 
-/-- Power notation for repeating lists on tapes: `l^n`. -/
+local notation3 c₁ " [" M "]⊢ " c₂ => step M c₁ = some c₂
+local notation3 c₁ " [" M "]⊢^{" n "} " c₂ => multiStep M c₁ n = some c₂
+local notation3 c₁ " [" M "]⊢* " c₂ => ∃ n, multiStep M c₁ n = some c₂
+local notation3 c₁ " [" M "]⊢⁺ " c₂ => ∃ n > 0, multiStep M c₁ n = some c₂
+
+local notation l " {{" s "}} " r => (⟨s, l, r⟩ : Tape _)
+local notation:67 s:67 " << " a:68 => ListBlank.cons a s
+local infixr:67 " >> " => ListBlank.cons
+local notation:67 s:67 " <+ " l:68 => ListBlank.append l s
+local infixr:67 " +> " => ListBlank.append
+local notation3 l " {{" q "}}> " r => (⟨some q, ⟨ListBlank.head r, l, ListBlank.tail r⟩⟩ : Cfg _ _)
+local notation3 l " <{{" q "}} " r => (⟨some q, ⟨ListBlank.head l, ListBlank.tail l, r⟩⟩ : Cfg _ _)
+
 @[simp]
-def list_nat_repeat (l : List Γ) (n : Nat) := match n with
+def listNatRepeat {Γ} (l : List Γ) (n : Nat) : List Γ := match n with
   | 0 => []
-  | n + 1 => List.append l (list_nat_repeat l n)
+  | n + 1 => List.append l (listNatRepeat l n)
 
-local instance instHPowListNat : HPow (List Γ) Nat (List Γ) := ⟨list_nat_repeat⟩
+local instance instHPowListNatLocal {Γ} : HPow (List Γ) Nat (List Γ) := ⟨listNatRepeat⟩
 
-/-- A configuration is halting for `M` if no next transition is defined. -/
-def IsHaltingConfiguration (M : Machine Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
-  (step M cfg).isNone
-
-/-- Parametric regular-expression tape half-expressions. -/
-inductive TapeExpr (Γ : Type*)
-  | default : TapeExpr Γ
-  | sym (a : Γ) (rest : TapeExpr Γ)
-  | rep (blk : List Γ) (var_idx : Nat) (rest : TapeExpr Γ)
-
-def evalTapeExpr {Γ : Type*} [Inhabited Γ] : TapeExpr Γ → (Nat → Nat) → ListBlank Γ
-  | .default, _ => default
-  | .sym a rest, vars => ListBlank.cons a (evalTapeExpr rest vars)
-  | .rep blk v rest, vars => ListBlank.append (blk ^ vars v) (evalTapeExpr rest vars)
-
-structure TapePattern (Γ Λ : Type*) where
-  left : TapeExpr Γ
-  head : Option Λ
-  right : TapeExpr Γ
-
-def evalTapePattern {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-    (p : TapePattern Γ Λ) (vars : Nat → Nat) : Cfg Γ Λ :=
-  let r := evalTapeExpr p.right vars
-  ⟨p.head, ⟨r.head, evalTapeExpr p.left vars, r.tail⟩⟩
-
-inductive VarCond
-  | ge_const (idx : Nat) (val : Nat)
-  | ge_var (idx1 idx2 : Nat)
-  | and (c1 c2 : VarCond)
-  | or (c1 c2 : VarCond)
-  | not (c : VarCond)
-  | true
-
-def evalVarCond : VarCond → (Nat → Nat) → Prop
-  | .ge_const idx val, vars => vars idx ≥ val
-  | .ge_var idx1 idx2, vars => vars idx1 ≥ vars idx2
-  | .and c1 c2, vars => evalVarCond c1 vars ∧ evalVarCond c2 vars
-  | .or c1 c2, vars => evalVarCond c1 vars ∨ evalVarCond c2 vars
-  | .not c, vars => ¬ evalVarCond c vars
-  | .true, _ => True
-
-abbrev TapePatternSet (Γ Λ : Type*) := List (TapePattern Γ Λ × VarCond)
-
-def IsInPatternSet {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
-    (ps : TapePatternSet Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
-  ∃ (entry : TapePattern Γ Λ × VarCond), entry ∈ ps ∧
-    ∃ (vars : Nat → Nat), cfg = evalTapePattern entry.1 vars ∧ evalVarCond entry.2 vars
-
-/--
-Trusted Definition (`IsCryptid`):
-The long-term behavior of `M` is governed by a closed accelerated pattern set `ps`
-containing a reachable initial configuration, where every pattern in `ps` transitions
-in `⊢⁺` (`n ≥ 1` steps) to another pattern in `ps` or to a halting state.
--/
-def IsCryptid (M : Machine Γ Λ) : Prop :=
-  ∃ (ps : TapePatternSet Γ Λ),
-    (∃ cfg₀, ((init []) [M]⊢* cfg₀) ∧ IsInPatternSet ps cfg₀) ∧
-    (∀ cfg, IsInPatternSet ps cfg →
-      ∃ cfg', (cfg [M]⊢⁺ cfg') ∧
-               (IsInPatternSet ps cfg' ∨ (step M cfg').isNone))
-
-/-- Transition function for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. -/
-def target_tm : Machine (Fin 2) (Fin 6)
-  | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
-  | 0, 1 => some (some 5, Stmt.write 0 Dir.left)
-  | 1, 0 => some (some 2, Stmt.write 1 Dir.left)
-  | 1, 1 => some (some 3, Stmt.write 0 Dir.left)
-  | 2, 0 => some (some 3, Stmt.write 1 Dir.right)
-  | 2, 1 => some (some 1, Stmt.write 1 Dir.left)
-  | 3, 0 => none
-  | 3, 1 => some (some 4, Stmt.write 1 Dir.right)
-  | 4, 0 => some (some 0, Stmt.write 0 Dir.right)
-  | 4, 1 => some (some 4, Stmt.write 1 Dir.right)
-  | 5, 0 => some (some 0, Stmt.write 1 Dir.left)
-  | 5, 1 => some (some 4, Stmt.write 0 Dir.left)
-
--- END TRUSTED DEFINITIONS
-
-
--- BEGIN EXPLORATORY DEFINITIONS AND LEMMAS
-
-namespace Solution
-
-set_option linter.unusedVariables false
-set_option linter.unusedSimpArgs false
-set_option linter.deprecated false
-set_option linter.dupNamespace false
-set_option linter.unreachableTactic false
-set_option linter.unusedTactic false
-set_option quotPrecheck false
-set_option maxRecDepth 4000000
-set_option maxHeartbeats 8000000
+lemma flatten_replicate_eq_listNatRepeat {Γ} (l : List Γ) (n : Nat) :
+    (List.replicate n l).flatten = listNatRepeat l n := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    change l ++ (List.replicate n l).flatten = l ++ listNatRepeat l n
+    rw [ih]
 
 variable {zG_ zL_ α β γ : Type*} [Inhabited zG_] [Inhabited zL_]
-abbrev A : Fin 6 := 0
-abbrev B : Fin 6 := 1
-abbrev C : Fin 6 := 2
-abbrev D : Fin 6 := 3
-abbrev E : Fin 6 := 4
-abbrev F : Fin 6 := 5
 variable {zG_ zL_ : Type*} [Inhabited zG_] [Inhabited zL_]
-set_option linter.unusedSimpArgs false
-set_option maxHeartbeats 8000000
-set_option maxRecDepth 4000000
-@[simp] lemma zMz (M : Machine zG_ zL_) (config : Cfg zG_ zL_) : multiStep M config 0 = some config := rfl
-@[simp] lemma zMo (M : Machine zG_ zL_) (config : Cfg zG_ zL_) : multiStep M config 1 = step M config := rfl
+@[simp] lemma zMz (M : Machine zG_ zL_) (config : Cfg zG_ zL_) : multiStep M config 0 = some config
+    := rfl
+@[simp] lemma zMo (M : Machine zG_ zL_) (config : Cfg zG_ zL_) : multiStep M config 1 = step M
+    config := rfl
 @[simp] lemma zMs (M : Machine zG_ zL_) (config : Cfg zG_ zL_) (n : Nat) :
     multiStep M config (n + 1) = Option.bind (multiStep M config n) (step M) := by
   rw [multiStep, Function.iterate_succ', Function.comp_apply, multiStep]
@@ -180,7 +67,8 @@ set_option maxRecDepth 4000000
 @[simp] lemma zCal (x : Fin 2) (xs ys : List (Fin 2)) : (x :: xs) ++ ys = x :: (xs ++ ys) := rfl
 @[simp] lemma zAnl (l : List (Fin 2)) : l ++ [] = l := List.append_nil l
 @[simp] lemma zLan (b : ListBlank (Fin 2)) : ([] : List (Fin 2)) +> b = b := rfl
-@[simp] lemma zLac (x : Fin 2) (xs : List (Fin 2)) (b : ListBlank (Fin 2)) : (x :: xs) +> b = x >> (xs +> b) := rfl
+@[simp] lemma zLac (x : Fin 2) (xs : List (Fin 2)) (b : ListBlank (Fin 2)) : (x :: xs) +> b = x >>
+    (xs +> b) := rfl
 @[simp] lemma zZcd : (0 : Fin 2) >> default = default := by
   apply Turing.ListBlank.ext; intro i; cases i <;> rfl
 @[simp] lemma zDh : (default : ListBlank (Fin 2)).head = 0 := rfl
@@ -188,10 +76,10 @@ set_option maxRecDepth 4000000
 omit [Inhabited zG_] in
 @[simp]
 theorem zLpa (l : List zG_) (n m : Nat) : l^(n + m) = l^n ++ l^m := match m with
-  | 0 => by simp_rw [HPow.hPow, add_zero, list_nat_repeat, List.append_nil]
+  | 0 => by simp_rw [HPow.hPow, add_zero, listNatRepeat, List.append_nil]
   | m + 1 => by
     rw [add_comm m 1, <- add_assoc, add_comm 1 m, zLpa]
-    simp only [HPow.hPow, list_nat_repeat, List.append_eq, List.append_assoc]
+    simp only [HPow.hPow, listNatRepeat, List.append_eq, List.append_assoc]
     rw [<- List.append_assoc, <- List.append_assoc, List.append_cancel_right_eq]
     induction n with
     | zero => simp
@@ -212,7 +100,7 @@ lemma zLaa (s : ListBlank zG_) (l₁ l₂ : List zG_) :
 lemma zLp1 (u : List (Fin 2)) (k : Nat) :
     u^k ++ u = u^(k + 1) := by
   have h := zLpc u k 1
-  dsimp [HPow.hPow, list_nat_repeat] at h ⊢
+  dsimp [HPow.hPow, listNatRepeat] at h ⊢
   rw [List.append_nil] at h
   exact h
 lemma zPar (u : List (Fin 2)) (m n : Nat) (r : ListBlank (Fin 2)) :
@@ -328,13 +216,16 @@ macro "finish" : tactic =>
 macro "step" : tactic =>
   `(tactic| (try refine zPs ?_) <;>
     refine zSsp (by (try simp only [Turing.ListBlank.head_cons, zDh]); rfl) ?_ <;>
-    simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Tape.write, zZcd, zDh, zDt])
+    simp only [Turing.Tape.move, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons,
+            Tape.write, zZcd, zDh, zDt])
 macro "execute5" : tactic =>
-  `(tactic| (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)))
+  `(tactic| (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)) <;>
+          (any_goals (first | finish | step)) <;> (any_goals (first | finish | step)) <;>
+          (any_goals (first | finish | step)))
 macro "execute" : tactic =>
   `(tactic| execute5 <;> execute5 <;> execute5 <;> execute5 <;> execute5 <;> execute5 <;> execute5)
 lemma shift_E_ones_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{E}}> (([1] : List (Fin 2)) ^ k +> r)) [target_tm]⊢*
+    (l {{E}}> (([1] : List (Fin 2)) ^ k +> r)) [target]⊢*
     ((l <+ ([1] : List (Fin 2)) ^ k) {{E}}> r) := by
   induction k generalizing l r with
   | zero =>
@@ -343,7 +234,7 @@ lemma shift_E_ones_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsr]
     have h1 : (l {{E}}> ([1] +> (([1] : List (Fin 2)) ^ k +> r)))
-        [target_tm]⊢*
+        [target]⊢*
         ((l <+ [1]) {{E}}> (([1] : List (Fin 2)) ^ k +> r)) := by
       dsimp [ListBlank.append]
       execute
@@ -351,7 +242,7 @@ lemma shift_E_ones_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPal] at h2
     exact zSt h1 h2
 lemma shift_CB_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [target_tm]⊢*
+    ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [target]⊢*
     (l {{C}}> ([1] +> (([1, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
   | zero =>
@@ -360,7 +251,7 @@ lemma shift_CB_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([0, 1] : List (Fin 2)) ^ k) <+ [0, 1]) {{C}}> ([1] +> r))
-        [target_tm]⊢*
+        [target]⊢*
         ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> ([1] +> ([1, 1] +> r))) := by
       dsimp [ListBlank.append]
       execute
@@ -368,7 +259,7 @@ lemma shift_CB_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPa1] at h2
     exact zSt h1 h2
 lemma shift_D_right_100_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
-    (l {{D}}> ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) [target_tm]⊢*
+    (l {{D}}> ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) [target]⊢*
     ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}> ([1, 0, 0] +> r)) := by
   induction k generalizing l r with
   | zero =>
@@ -377,7 +268,7 @@ lemma shift_D_right_100_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsr]
     have h1 : (l {{D}}> ([1, 0, 0] +> ([1, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))))
-        [target_tm]⊢*
+        [target]⊢*
         ((l <+ [0, 1]) {{D}}> ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) := by
       dsimp [ListBlank.append]
       execute
@@ -385,7 +276,7 @@ lemma shift_D_right_100_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPal] at h2
     exact zSt h1 h2
 lemma shift_FA_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
-    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}> ([0] +> r)) [target_tm]⊢*
+    ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}> ([0] +> r)) [target]⊢*
     (l {{F}}> ([0] +> (([0, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
   | zero =>
@@ -394,7 +285,7 @@ lemma shift_FA_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
   | succ k ih =>
     rw [zPsl, <- zLaa]
     have h1 : (((l <+ ([1, 0] : List (Fin 2)) ^ k) <+ [1, 0]) {{F}}> ([0] +> r))
-        [target_tm]⊢*
+        [target]⊢*
         ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}> ([0] +> ([0, 1] +> r))) := by
       dsimp [ListBlank.append]
       execute
@@ -402,146 +293,175 @@ lemma shift_FA_left_0082 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [zPa1] at h2
     exact zSt h1 h2
 def E_0082 (a b : Nat) : Cfg (Fin 2) (Fin 6) :=
-  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ a) {{E}}> default
+  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ a)
+          {{E}}> default
 def F_R (b k : Nat) (r : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
-  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}>
+  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k)
+          {{F}}>
     ([0, 0] +> r)
-def F_0082 (b k c : Nat) : Cfg (Fin 2) (Fin 6) :=
-  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}>
+def cfg_A (b k c : Nat) : Cfg (Fin 2) (Fin 6) :=
+  (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k)
+          {{F}}>
     ([0, 0] +> (([1] : List (Fin 2)) ^ c +> default))
-lemma F_0082_eq_F_R (b k c : Nat) :
-    F_0082 b k c = F_R b k (([1] : List (Fin 2)) ^ c +> default) := rfl
-def pat_F : TapePattern (Fin 2) (Fin 6) :=
+lemma cfg_A_eq_F_R (b k c : Nat) :
+    cfg_A b k c = F_R b k (([1] : List (Fin 2)) ^ c +> default) := rfl
+def pat_A : TapePattern (Fin 2) (Fin 6) :=
   { left  := .rep [1, 0] 1 (.rep [1] 0 .default)
     head  := some F
     right := .sym 0 (.sym 0 (.rep [1] 2 .default)) }
-def ps_0082 : TapePatternSet (Fin 2) (Fin 6) :=
-  [(pat_F, .true)]
-lemma eval_pat_F (vars : Nat -> Nat) :
-    evalTapePattern pat_F vars = F_0082 (vars 0) (vars 1) (vars 2) := rfl
-lemma in_ps_F (b k c : Nat) : IsInPatternSet ps_0082 (F_0082 b k c) := by
-  refine ⟨(pat_F, .true), List.Mem.head _, fun i => match i with | 0 => b | 1 => k | _ => c, rfl, trivial⟩
+def ps : TapePatternSet (Fin 2) (Fin 6) :=
+  [(pat_A, .true)]
+
+lemma eval_pat_A (vars : Nat → Nat) :
+    evalTapePattern pat_A vars = cfg_A (vars 0) (vars 1) (vars 2) := by
+  dsimp [evalTapePattern, evalTapeExpr, pat_A, cfg_A, F_R, HPow.hPow, instHPowListNat]
+  repeat rw [flatten_replicate_eq_listNatRepeat]
+  unfold Cfg.headRight
+  rfl
+
+lemma in_ps_A (b k c : Nat) : IsInPatternSet ps (cfg_A b k c) := by
+  refine ⟨(pat_A, .true), List.Mem.head _, fun i => match i with | 0 => b | 1 => k | _ => c, ?_,
+          trivial⟩
+  exact (eval_pat_A (fun i => match i with | 0 => b | 1 => k | _ => c)).symm
 def Closes (cfg : Cfg (Fin 2) (Fin 6)) : Prop :=
-  ∃ cfg', (cfg [target_tm]⊢⁺ cfg') /\
-          (IsInPatternSet ps_0082 cfg' \/ (step target_tm cfg').isNone)
+  ∃ cfg', (cfg [target]⊢⁺ cfg') /\
+          (IsInPatternSet ps cfg' \/ (step target cfg').isNone)
 lemma closes_of_in_ps {cfg cfg' : Cfg (Fin 2) (Fin 6)}
-    (h_step : cfg [target_tm]⊢⁺ cfg') (h_in : IsInPatternSet ps_0082 cfg') :
+    (h_step : cfg [target]⊢⁺ cfg') (h_in : IsInPatternSet ps cfg') :
     Closes cfg :=
   ⟨cfg', h_step, Or.inl h_in⟩
 lemma closes_of_halt {cfg cfg' : Cfg (Fin 2) (Fin 6)}
-    (h_step : cfg [target_tm]⊢⁺ cfg') (h_halt : (step target_tm cfg').isNone) :
+    (h_step : cfg [target]⊢⁺ cfg') (h_halt : (step target cfg').isNone) :
     Closes cfg :=
   ⟨cfg', h_step, Or.inr h_halt⟩
 lemma closes_of_stepPlus {cfg₁ cfg₂ : Cfg (Fin 2) (Fin 6)}
-    (h_step : cfg₁ [target_tm]⊢⁺ cfg₂) (h_close : Closes cfg₂) :
+    (h_step : cfg₁ [target]⊢⁺ cfg₂) (h_close : Closes cfg₂) :
     Closes cfg₁ := by
   rcases h_close with ⟨cfg', h_step', h_end⟩
   exact ⟨cfg', zPt h_step h_step', h_end⟩
 lemma closes_of_stepStar {cfg₁ cfg₂ : Cfg (Fin 2) (Fin 6)}
-    (h_step : cfg₁ [target_tm]⊢* cfg₂) (h_close : Closes cfg₂) :
+    (h_step : cfg₁ [target]⊢* cfg₂) (h_close : Closes cfg₂) :
     Closes cfg₁ := by
   rcases h_close with ⟨cfg', h_step', h_end⟩
   exact ⟨cfg', zSpp h_step h_step', h_end⟩
-theorem init_to_E_0082 : (init []) [target_tm]⊢⁺ (E_0082 0 4) := by
+theorem init_to_E_0082 : (init []) [target]⊢⁺ (E_0082 0 4) := by
   unfold init E_0082
   simp only [Tape.mk₁, zPz, zPsl, zCal, zAnl,
     zLan, zLac]
   execute
 theorem step_E_b0_0082 (a : Nat) :
-    (E_0082 a 0) [target_tm]⊢⁺ (E_0082 0 (2 * a + 4)) := by
+    (E_0082 a 0) [target]⊢⁺ (E_0082 0 (2 * a + 4)) := by
   unfold E_0082
   simp only [zPz, zLan]
   have h1 : (((default : ListBlank (Fin 2)) <+ ([1, 0] : List (Fin 2)) ^ a) {{E}}> default)
-      [target_tm]⊢⁺
-      ((((default : ListBlank (Fin 2)) <+ ([1, 0] : List (Fin 2)) ^ a) <+ [0]) {{C}}> ([1] +> ([1] +> default))) := by
+      [target]⊢⁺
+      ((((default : ListBlank (Fin 2)) <+ ([1, 0] : List (Fin 2)) ^ a) <+ [0]) {{C}}> ([1] +> ([1]
+              +> default))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- default_pow_01 a] at h1
   have h2 := shift_CB_left_0082 a default ([1] +> default)
   rw [pow_11_eq_pow_1_mul2 a] at h2
-  have h3 : ((default : ListBlank (Fin 2)) {{C}}> ([1] +> (([1] : List (Fin 2)) ^ (2 * a) +> ([1] +> default))))
-      [target_tm]⊢⁺
+  have h3 : ((default : ListBlank (Fin 2)) {{C}}> ([1] +> (([1] : List (Fin 2)) ^ (2 * a) +> ([1]
+          +> default))))
+      [target]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) {{E}}>
         ((([1] : List (Fin 2)) ^ (2 * a)) +> (([1] : List (Fin 2)) ^ 1 +> default))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- zPar ([1] : List (Fin 2)) (2 * a) 1 default] at h3
-  have h4 := shift_E_ones_0082 (2 * a + 1) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) default
+  have h4 := shift_E_ones_0082 (2 * a + 1) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^
+          3) default
   rw [<- zPl default ([1] : List (Fin 2)) 3 (2 * a + 1)] at h4
   have ha : 3 + (2 * a + 1) = 2 * a + 4 := by omega
   rw [ha] at h4
   exact zPsp (zPt (zPsp h1 h2) h3) h4
 theorem step_E_b1_0082 (a : Nat) :
-    (E_0082 a 1) [target_tm]⊢⁺ (E_0082 0 (2 * a + 6)) := by
+    (E_0082 a 1) [target]⊢⁺ (E_0082 0 (2 * a + 6)) := by
   unfold E_0082
   simp only [zPz, zLan]
-  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ a) {{E}}> default)
-      [target_tm]⊢⁺
-      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^ a) <+ [0]) {{C}}>
+  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin
+          2)) ^ a) {{E}}> default)
+      [target]⊢⁺
+      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ ([1, 0] : List (Fin 2)) ^
+              a) <+ [0]) {{C}}>
         ([1] +> ([1] +> default))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) a] at h1
-  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ [0]) ([1] +> default)
+  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+
+          [0]) ([1] +> default)
   rw [pow_11_eq_pow_1_mul2 a] at h2
   have h3 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ (2 * a) +> ([1] +> default))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) {{E}}>
         ((([1] : List (Fin 2)) ^ (2 * a)) +> (([1] : List (Fin 2)) ^ 1 +> default))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- zPar ([1] : List (Fin 2)) (2 * a) 1 default] at h3
-  have h4 := shift_E_ones_0082 (2 * a + 1) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) default
+  have h4 := shift_E_ones_0082 (2 * a + 1) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^
+          5) default
   rw [<- zPl default ([1] : List (Fin 2)) 5 (2 * a + 1)] at h4
   have ha : 5 + (2 * a + 1) = 2 * a + 6 := by omega
   rw [ha] at h4
   exact zPsp (zPt (zPsp h1 h2) h3) h4
 theorem step_E_b2_to_D_halt_0082 (a : Nat) :
-    (E_0082 a 2) [target_tm]⊢⁺
-    ((default : ListBlank (Fin 2)) {{D}}> ([0, 0] +> (([1] : List (Fin 2)) ^ (2 * a + 4) +> default))) := by
+    (E_0082 a 2) [target]⊢⁺
+    ((default : ListBlank (Fin 2)) {{D}}> ([0, 0] +> (([1] : List (Fin 2)) ^ (2 * a + 4) +>
+            default))) := by
   unfold E_0082
-  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ ([1, 0] : List (Fin 2)) ^ a) {{E}}> default)
-      [target_tm]⊢⁺
-      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ ([1, 0] : List (Fin 2)) ^ a) <+ [0]) {{C}}>
+  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ ([1, 0] : List (Fin
+          2)) ^ a) {{E}}> default)
+      [target]⊢⁺
+      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ ([1, 0] : List (Fin 2)) ^
+              a) <+ [0]) {{C}}>
         ([1] +> ([1] +> default))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) a] at h1
-  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ [0]) ([1] +> default)
+  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+
+          [0]) ([1] +> default)
   rw [pow_11_eq_pow_1_mul2 a] at h2
   have h3 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ (2 * a) +> ([1] +> default))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       ((default : ListBlank (Fin 2)) {{D}}>
-        ([0, 0] +> (([1] : List (Fin 2)) ^ 3 +> (([1] : List (Fin 2)) ^ (2 * a) +> (([1] : List (Fin 2)) ^ 1 +> default))))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+        ([0, 0] +> (([1] : List (Fin 2)) ^ 3 +> (([1] : List (Fin 2)) ^ (2 * a) +> (([1] : List
+                (Fin 2)) ^ 1 +> default))))) := by
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
   rw [<- zPar ([1] : List (Fin 2)) (2 * a) 1 default,
     <- zPar ([1] : List (Fin 2)) 3 (2 * a + 1) default] at h3
   have ha : 3 + (2 * a + 1) = 2 * a + 4 := by omega
   rw [ha] at h3
   exact zPt (zPsp h1 h2) h3
-theorem step_E_b3_to_F_0082 (a b : Nat) :
-    (E_0082 a (b + 3)) [target_tm]⊢⁺ (F_0082 (b + 1) 0 (2 * a + 3)) := by
-  unfold E_0082 F_0082
+theorem step_E_b3_to_cfg_A (a b : Nat) :
+    (E_0082 a (b + 3)) [target]⊢⁺ (cfg_A (b + 1) 0 (2 * a + 3)) := by
+  unfold E_0082 cfg_A
   simp only [zPz, zLan]
-  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) <+ ([1, 0] : List (Fin 2)) ^ a) {{E}}> default)
-      [target_tm]⊢⁺
-      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) <+ ([1, 0] : List (Fin 2)) ^ a) <+ [0]) {{C}}>
+  have h1 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) <+ ([1, 0] : List
+          (Fin 2)) ^ a) {{E}}> default)
+      [target]⊢⁺
+      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) <+ ([1, 0] : List (Fin
+              2)) ^ a) <+ [0]) {{C}}>
         ([1] +> ([1] +> default))) := by
     dsimp [ListBlank.append]
     execute
-  rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) a] at h1
-  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) <+ [0]) ([1] +> default)
+  rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) a]
+      at h1
+  have h2 := shift_CB_left_0082 a (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b +
+          3)) <+ [0]) ([1] +> default)
   rw [pow_11_eq_pow_1_mul2 a] at h2
   have hb : b + 3 = (b + 1) + 2 := by omega
   rw [hb, zPl default ([1] : List (Fin 2)) (b + 1) 2] at h1 h2
-  have h3 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1] : List (Fin 2)) ^ 2) <+ [0]) {{C}}>
+  have h3 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1] : List
+          (Fin 2)) ^ 2) <+ [0]) {{C}}>
       ([1] +> (([1] : List (Fin 2)) ^ (2 * a) +> ([1] +> default))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) {{F}}>
-        ([0, 0] +> (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2 * a) +> (([1] : List (Fin 2)) ^ 1 +> default))))) := by
+        ([0, 0] +> (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2 * a) +> (([1] : List
+                (Fin 2)) ^ 1 +> default))))) := by
     dsimp [ListBlank.append]
     execute
   rw [<- zPar ([1] : List (Fin 2)) (2 * a) 1 default,
@@ -550,19 +470,19 @@ theorem step_E_b3_to_F_0082 (a b : Nat) :
   rw [ha] at h3
   exact zPt (zPsp h1 h2) h3
 theorem step_F_b2_k0_0082 (c : Nat) :
-    (F_0082 2 0 (c + 1)) [target_tm]⊢⁺ (F_0082 5 0 c) := by
-  unfold F_0082
+    (cfg_A 2 0 (c + 1)) [target]⊢⁺ (cfg_A 5 0 c) := by
+  unfold cfg_A
   rw [zPsr ([1] : List (Fin 2)) c default]
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
-theorem init_reaches_F_502 :
-    (init []) [target_tm]⊢* (F_0082 5 0 2) :=
+theorem init_reaches_A_502 :
+    (init []) [target]⊢* (cfg_A 5 0 2) :=
   zPs
     (zPt init_to_E_0082
-      (zPt (step_E_b3_to_F_0082 0 1) (step_F_b2_k0_0082 2)))
+      (zPt (step_E_b3_to_cfg_A 0 1) (step_F_b2_k0_0082 2)))
 lemma isNone_step_D_00 (l r : ListBlank (Fin 2)) :
-    (step target_tm (l {{D}}> ([0, 0] +> r))).isNone = true := by
-  simp only [step, D, target_tm, zLac, zLan,
+    (step target (l {{D}}> ([0, 0] +> r))).isNone = true := by
+  simp only [step, D, target, zLac, zLan,
     Turing.ListBlank.head_cons]
   rfl
 lemma closes_E (a b : Nat) : Closes (E_0082 a b) := by
@@ -570,33 +490,34 @@ lemma closes_E (a b : Nat) : Closes (E_0082 a b) := by
   · have h1 := step_E_b0_0082 a
     have hb : 2 * a + 4 = (2 * a + 1) + 3 := by omega
     rw [hb] at h1
-    exact closes_of_in_ps (zPt h1 (step_E_b3_to_F_0082 0 (2 * a + 1)))
-      (in_ps_F (2 * a + 2) 0 3)
+    exact closes_of_in_ps (zPt h1 (step_E_b3_to_cfg_A 0 (2 * a + 1)))
+      (in_ps_A (2 * a + 2) 0 3)
   · have h1 := step_E_b1_0082 a
     have hb : 2 * a + 6 = (2 * a + 3) + 3 := by omega
     rw [hb] at h1
-    exact closes_of_in_ps (zPt h1 (step_E_b3_to_F_0082 0 (2 * a + 3)))
-      (in_ps_F (2 * a + 4) 0 3)
+    exact closes_of_in_ps (zPt h1 (step_E_b3_to_cfg_A 0 (2 * a + 3)))
+      (in_ps_A (2 * a + 4) 0 3)
   · exact closes_of_halt (step_E_b2_to_D_halt_0082 a) (isNone_step_D_00 _ _)
-  · exact closes_of_in_ps (step_E_b3_to_F_0082 a b') (in_ps_F (b' + 1) 0 (2 * a + 3))
+  · exact closes_of_in_ps (step_E_b3_to_cfg_A a b') (in_ps_A (b' + 1) 0 (2 * a + 3))
 def D100 (b k : Nat) (r : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
-  ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k) <+ [0]) {{D}}>
+  ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k) <+
+          [0]) {{D}}>
     ([1, 0, 0] +> r)
 def C_bounce (b : Nat) (s : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
   (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) {{C}}> ([1] +> s)
 lemma step_F0_sweep_right_0082 (k : Nat) (r : ListBlank (Fin 2)) :
     ((default : ListBlank (Fin 2)) {{F}}> ([0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r)))
-    [target_tm]⊢⁺
+    [target]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}> ([1, 0, 0] +> r)) := by
   have h1 : ((default : ListBlank (Fin 2)) {{F}}> ([0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r)))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       ((default : ListBlank (Fin 2)) {{D}}> ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) := by
     dsimp [ListBlank.append]
     execute
   have h2 := shift_D_right_100_0082 k default r
   exact zPsp h1 h2
 lemma F_R_b0_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
-    (F_R 0 k r) [target_tm]⊢⁺ (D100 0 k r) := by
+    (F_R 0 k r) [target]⊢⁺ (D100 0 k r) := by
   unfold F_R D100
   simp only [zPz, zLan]
   have h1 := shift_FA_left_0082 k default ([0] +> r)
@@ -605,83 +526,96 @@ lemma F_R_b0_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
   rw [default_pow_01 k] at h2
   exact zSpp h1 h2
 lemma F_R_b1_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
-    (F_R 1 k r) [target_tm]⊢⁺ (D100 0 (k + 1) r) := by
+    (F_R 1 k r) [target]⊢⁺ (D100 0 (k + 1) r) := by
   unfold F_R D100
   simp only [zPz, zLan]
-  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) ([0] +> r)
+  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) ([0]
+          +> r)
   rw [pow_01_append_0 k r] at h1
   have h2 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 1) {{F}}>
       ([0] +> ([0] +> (([1, 0] : List (Fin 2)) ^ k +> r))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       ((default : ListBlank (Fin 2)) {{F}}>
         ([0, 0] +> ([1, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r)))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
   rw [<- zPsr ([1, 0] : List (Fin 2)) k r] at h2
   have h3 := step_F0_sweep_right_0082 (k + 1) r
   rw [default_pow_01 (k + 1)] at h3
   exact zPt (zSpp h1 h2) h3
 lemma F_R_b3_to_D100 (b k : Nat) (r : ListBlank (Fin 2)) :
-    (F_R (b + 3) k r) [target_tm]⊢⁺ (D100 (b + 1) k r) := by
+    (F_R (b + 3) k r) [target]⊢⁺ (D100 (b + 1) k r) := by
   unfold F_R D100
-  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3)) ([0] +> r)
+  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3))
+          ([0] +> r)
   rw [pow_01_append_0 k r] at h1
   have hb : b + 3 = (b + 1) + 2 := by omega
   rw [hb, zPl default ([1] : List (Fin 2)) (b + 1) 2] at h1
-  have h2 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1] : List (Fin 2)) ^ 2) {{F}}>
+  have h2 : ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1] : List (Fin
+          2)) ^ 2) {{F}}>
       ([0] +> ([0] +> (([1, 0] : List (Fin 2)) ^ k +> r))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ [0]) {{D}}>
         ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
   have h3 := shift_D_right_100_0082 k
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ [0]) r
   rw [append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) k] at h3
   exact zPsp (zSpp h1 h2) h3
 lemma D100_0_11 (k : Nat) (r : ListBlank (Fin 2)) :
-    (D100 0 k ([1, 1] +> r)) [target_tm]⊢⁺ (F_R 1 (k + 1) r) := by
+    (D100 0 k ([1, 1] +> r)) [target]⊢⁺ (F_R 1 (k + 1) r) := by
   unfold D100 F_R
   simp only [zPz, zLan]
   rw [<- default_pow_01 k]
   have h1 : (((default : ListBlank (Fin 2)) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}>
       ([1, 0, 0] +> ([1, 1] +> r)))
-      [target_tm]⊢⁺
-      (((((default : ListBlank (Fin 2)) <+ ([0, 1] : List (Fin 2)) ^ k) <+ ([0, 1] : List (Fin 2)) ^ 1) <+ [1]) {{F}}>
+      [target]⊢⁺
+      (((((default : ListBlank (Fin 2)) <+ ([0, 1] : List (Fin 2)) ^ k) <+ ([0, 1] : List (Fin 2))
+              ^ 1) <+ [1]) {{F}}>
         ([0, 0] +> r)) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
   rw [<- zPl default ([0, 1] : List (Fin 2)) k 1,
     <- append_one_pow_10 default (k + 1)] at h1
   exact h1
 lemma D100_succ_11 (b k : Nat) (r : ListBlank (Fin 2)) :
-    (D100 (b + 1) k ([1, 1] +> r)) [target_tm]⊢⁺ (F_R (b + 1) (k + 2) r) := by
+    (D100 (b + 1) k ([1, 1] +> r)) [target]⊢⁺ (F_R (b + 1) (k + 2) r) := by
   unfold D100 F_R
-  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1, 0] : List (Fin 2)) ^ k) <+ [0]) {{D}}>
+  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1, 0] : List
+          (Fin 2)) ^ k) <+ [0]) {{D}}>
       ([1, 0, 0] +> ([1, 1] +> r)))
-      [target_tm]⊢⁺
-      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1, 0] : List (Fin 2)) ^ k) <+
+      [target]⊢⁺
+      (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1, 0] : List (Fin
+              2)) ^ k) <+
         ([1, 0] : List (Fin 2)) ^ 2) {{F}}>
         ([0, 0] +> r)) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
-  rw [<- zPl ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) ([1, 0] : List (Fin 2)) k 2] at h1
+  rw [<- zPl ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) ([1,
+    0] : List (Fin 2)) k 2]
+      at h1
   exact h1
 lemma D100_nil_to_C_bounce (b k : Nat) :
-    (D100 b k default) [target_tm]⊢⁺
+    (D100 b k default) [target]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 3) +> default)) := by
   unfold D100 C_bounce
   rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) k]
-  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}>
+  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] :
+          List (Fin 2)) ^ k) {{D}}>
       ([1, 0, 0] +> default))
-      [target_tm]⊢⁺
-      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) <+
+      [target]⊢⁺
+      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List
+              (Fin 2)) ^ k) <+
         ([0, 1] : List (Fin 2)) ^ 1) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 1 +> default))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
-  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0, 1] : List (Fin 2)) k 1] at h1
-  have h2 := shift_CB_left_0082 (k + 1) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0])
+  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0,
+    1] : List (Fin 2)) k 1]
+      at h1
+  have h2 := shift_CB_left_0082 (k + 1) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^
+          b) <+ [0])
     (([1] : List (Fin 2)) ^ 1 +> default)
   rw [pow_11_eq_pow_1_mul2 (k + 1),
     <- zPar ([1] : List (Fin 2)) (2 * (k + 1)) 1 default] at h2
@@ -689,20 +623,25 @@ lemma D100_nil_to_C_bounce (b k : Nat) :
   rw [hk] at h2
   exact zPsp h1 h2
 lemma D100_one_to_C_bounce (b k : Nat) :
-    (D100 b k ([1] +> default)) [target_tm]⊢⁺
+    (D100 b k ([1] +> default)) [target]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 5) +> default)) := by
   unfold D100 C_bounce
   rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) k]
-  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}>
+  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] :
+          List (Fin 2)) ^ k) {{D}}>
       ([1, 0, 0] +> ([1] +> default)))
-      [target_tm]⊢⁺
-      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) <+
+      [target]⊢⁺
+      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List
+              (Fin 2)) ^ k) <+
         ([0, 1] : List (Fin 2)) ^ 2) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 1 +> default))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
-  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0, 1] : List (Fin 2)) k 2] at h1
-  have h2 := shift_CB_left_0082 (k + 2) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0])
+  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0,
+    1] : List (Fin 2)) k 2]
+      at h1
+  have h2 := shift_CB_left_0082 (k + 2) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^
+          b) <+ [0])
     (([1] : List (Fin 2)) ^ 1 +> default)
   rw [pow_11_eq_pow_1_mul2 (k + 2),
     <- zPar ([1] : List (Fin 2)) (2 * (k + 2)) 1 default] at h2
@@ -710,20 +649,25 @@ lemma D100_one_to_C_bounce (b k : Nat) :
   rw [hk] at h2
   exact zPsp h1 h2
 lemma D100_01_to_C_bounce (b k : Nat) (r : ListBlank (Fin 2)) :
-    (D100 b k ([0, 1] +> r)) [target_tm]⊢⁺
+    (D100 b k ([0, 1] +> r)) [target]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 4) +> r)) := by
   unfold D100 C_bounce
   rw [<- append_zero_pow_01 ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) k]
-  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}>
+  have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] :
+          List (Fin 2)) ^ k) {{D}}>
       ([1, 0, 0] +> ([0, 1] +> r)))
-      [target_tm]⊢⁺
-      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List (Fin 2)) ^ k) <+
+      [target]⊢⁺
+      ((((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) <+ ([0, 1] : List
+              (Fin 2)) ^ k) <+
         ([0, 1] : List (Fin 2)) ^ 1) {{C}}>
         ([1] +> (([1] : List (Fin 2)) ^ 2 +> r))) := by
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
-  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0, 1] : List (Fin 2)) k 1] at h1
-  have h2 := shift_CB_left_0082 (k + 1) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0])
+  rw [<- zPl (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) ([0,
+    1] : List (Fin 2)) k 1]
+      at h1
+  have h2 := shift_CB_left_0082 (k + 1) (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^
+          b) <+ [0])
     (([1] : List (Fin 2)) ^ 2 +> r)
   rw [pow_11_eq_pow_1_mul2 (k + 1),
     <- zPar ([1] : List (Fin 2)) (2 * (k + 1)) 2 r] at h2
@@ -731,56 +675,58 @@ lemma D100_01_to_C_bounce (b k : Nat) (r : ListBlank (Fin 2)) :
   rw [hk] at h2
   exact zPsp h1 h2
 lemma C_bounce_0 (s : ListBlank (Fin 2)) :
-    (C_bounce 0 s) [target_tm]⊢⁺
+    (C_bounce 0 s) [target]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) {{E}}> s) := by
   unfold C_bounce
   simp only [zPz, zLan]
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma C_bounce_1 (s : ListBlank (Fin 2)) :
-    (C_bounce 1 s) [target_tm]⊢⁺
+    (C_bounce 1 s) [target]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) {{E}}> s) := by
   unfold C_bounce
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma C_bounce_2 (s : ListBlank (Fin 2)) :
-    (C_bounce 2 s) [target_tm]⊢⁺
+    (C_bounce 2 s) [target]⊢⁺
     ((default : ListBlank (Fin 2)) {{D}}> ([0, 0] +> (([1] : List (Fin 2)) ^ 3 +> s))) := by
   unfold C_bounce
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma C_bounce_3 (b : Nat) (s : ListBlank (Fin 2)) :
-    (C_bounce (b + 3) s) [target_tm]⊢⁺
+    (C_bounce (b + 3) s) [target]⊢⁺
     (F_R (b + 1) 0 (([1] : List (Fin 2)) ^ 2 +> s)) := by
   unfold C_bounce F_R
   simp only [zPz, zLan]
   have hb : b + 3 = (b + 1) + 2 := by omega
   rw [hb, zPl default ([1] : List (Fin 2)) (b + 1) 2]
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma step_F_ksucc_c0 (b k : Nat) :
-    (F_0082 b (k + 1) 0) [target_tm]⊢⁺ (F_0082 b k 1) := by
-  unfold F_0082
+    (cfg_A b (k + 1) 0) [target]⊢⁺ (cfg_A b k 1) := by
+  unfold cfg_A
   rw [zPl ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) ([1, 0] : List (Fin 2)) k 1]
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma step_F_b2_k0_c0 :
-    (F_0082 2 0 0) [target_tm]⊢⁺ (F_0082 3 0 3) := by
-  unfold F_0082
-  dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    (cfg_A 2 0 0) [target]⊢⁺ (cfg_A 3 0 3) := by
+  unfold cfg_A
+  dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
   execute
 lemma closes_C_bounce_ones (b n : Nat) :
     Closes (C_bounce b (([1] : List (Fin 2)) ^ n +> default)) := by
   rcases b with _ | _ | _ | b'
   · have h1 := C_bounce_0 (([1] : List (Fin 2)) ^ n +> default)
-    have h2 := shift_E_ones_0082 n ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) default
+    have h2 := shift_E_ones_0082 n ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3)
+            default
     rw [<- zPl default ([1] : List (Fin 2)) 3 n] at h2
     have h_eq : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (3 + n)) {{E}}> default) =
         E_0082 0 (3 + n) := rfl
     rw [h_eq] at h2
     exact closes_of_stepPlus (zPsp h1 h2) (closes_E 0 (3 + n))
   · have h1 := C_bounce_1 (([1] : List (Fin 2)) ^ n +> default)
-    have h2 := shift_E_ones_0082 n ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) default
+    have h2 := shift_E_ones_0082 n ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5)
+            default
     rw [<- zPl default ([1] : List (Fin 2)) 5 n] at h2
     have h_eq : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (5 + n)) {{E}}> default) =
         E_0082 0 (5 + n) := rfl
@@ -788,22 +734,22 @@ lemma closes_C_bounce_ones (b n : Nat) :
     exact closes_of_stepPlus (zPsp h1 h2) (closes_E 0 (5 + n))
   · exact closes_of_halt (C_bounce_2 (([1] : List (Fin 2)) ^ n +> default)) (isNone_step_D_00 _ _)
   · have h1 := C_bounce_3 b' (([1] : List (Fin 2)) ^ n +> default)
-    rw [<- zPar ([1] : List (Fin 2)) 2 n default, <- F_0082_eq_F_R] at h1
-    exact closes_of_in_ps h1 (in_ps_F (b' + 1) 0 (2 + n))
-lemma closes_F_c0 (b k : Nat) : Closes (F_0082 b k 0) := by
+    rw [<- zPar ([1] : List (Fin 2)) 2 n default, <- cfg_A_eq_F_R] at h1
+    exact closes_of_in_ps h1 (in_ps_A (b' + 1) 0 (2 + n))
+lemma closes_A_c0 (b k : Nat) : Closes (cfg_A b k 0) := by
   rcases k with _ | k'
   · rcases b with _ | _ | _ | b'
     · exact closes_of_stepPlus (zPt (F_R_b0_to_D100 0 default) (D100_nil_to_C_bounce 0 0))
         (closes_C_bounce_ones 0 3)
     · exact closes_of_stepPlus (zPt (F_R_b1_to_D100 0 default) (D100_nil_to_C_bounce 0 1))
         (closes_C_bounce_ones 0 5)
-    · exact closes_of_in_ps step_F_b2_k0_c0 (in_ps_F 3 0 3)
+    · exact closes_of_in_ps step_F_b2_k0_c0 (in_ps_A 3 0 3)
     · exact closes_of_stepPlus (zPt (F_R_b3_to_D100 b' 0 default) (D100_nil_to_C_bounce (b' + 1) 0))
         (closes_C_bounce_ones (b' + 1) 3)
-  · exact closes_of_in_ps (step_F_ksucc_c0 b k') (in_ps_F b k' 1)
-lemma closes_F_b0 (k c : Nat) : Closes (F_0082 0 k c) := by
+  · exact closes_of_in_ps (step_F_ksucc_c0 b k') (in_ps_A b k' 1)
+lemma closes_A_b0 (k c : Nat) : Closes (cfg_A 0 k c) := by
   rcases c with _ | _ | c'
-  · exact closes_F_c0 0 k
+  · exact closes_A_c0 0 k
   · exact closes_of_stepPlus (zPt (F_R_b0_to_D100 k ([1] +> default)) (D100_one_to_C_bounce 0 k))
       (closes_C_bounce_ones 0 (2 * k + 5))
   · have hc : (([1] : List (Fin 2)) ^ (c' + 2) +> (default : ListBlank (Fin 2))) =
@@ -813,11 +759,12 @@ lemma closes_F_b0 (k c : Nat) : Closes (F_0082 0 k c) := by
     have h1 := F_R_b0_to_D100 k (([1] : List (Fin 2)) ^ (c' + 2) +> default)
     rw [hc] at h1
     have h2 := D100_0_11 k (([1] : List (Fin 2)) ^ c' +> default)
-    exact closes_of_in_ps (zPt h1 h2) (in_ps_F 1 (k + 1) c')
-lemma closes_F_b1 (k c : Nat) : Closes (F_0082 1 k c) := by
+    exact closes_of_in_ps (zPt h1 h2) (in_ps_A 1 (k + 1) c')
+lemma closes_A_b1 (k c : Nat) : Closes (cfg_A 1 k c) := by
   rcases c with _ | _ | c'
-  · exact closes_F_c0 1 k
-  · exact closes_of_stepPlus (zPt (F_R_b1_to_D100 k ([1] +> default)) (D100_one_to_C_bounce 0 (k + 1)))
+  · exact closes_A_c0 1 k
+  · exact closes_of_stepPlus (zPt (F_R_b1_to_D100 k ([1] +> default)) (D100_one_to_C_bounce 0 (k +
+          1)))
       (closes_C_bounce_ones 0 (2 * (k + 1) + 5))
   · have hc : (([1] : List (Fin 2)) ^ (c' + 2) +> (default : ListBlank (Fin 2))) =
         [1, 1] +> (([1] : List (Fin 2)) ^ c' +> default) := by
@@ -826,10 +773,10 @@ lemma closes_F_b1 (k c : Nat) : Closes (F_0082 1 k c) := by
     have h1 := F_R_b1_to_D100 k (([1] : List (Fin 2)) ^ (c' + 2) +> default)
     rw [hc] at h1
     have h2 := D100_0_11 (k + 1) (([1] : List (Fin 2)) ^ c' +> default)
-    exact closes_of_in_ps (zPt h1 h2) (in_ps_F 1 (k + 2) c')
-lemma closes_F_b3 (b k c : Nat) : Closes (F_0082 (b + 3) k c) := by
+    exact closes_of_in_ps (zPt h1 h2) (in_ps_A 1 (k + 2) c')
+lemma closes_A_b3 (b k c : Nat) : Closes (cfg_A (b + 3) k c) := by
   rcases c with _ | _ | c'
-  · exact closes_F_c0 (b + 3) k
+  · exact closes_A_c0 (b + 3) k
   · have h1 := F_R_b3_to_D100 b k ([1] +> default)
     have h2 := D100_one_to_C_bounce (b + 1) k
     exact closes_of_stepPlus (zPt h1 h2) (closes_C_bounce_ones (b + 1) (2 * k + 5))
@@ -840,45 +787,50 @@ lemma closes_F_b3 (b k c : Nat) : Closes (F_0082 (b + 3) k c) := by
     have h1 := F_R_b3_to_D100 b k (([1] : List (Fin 2)) ^ (c' + 2) +> default)
     rw [hc] at h1
     have h2 := D100_succ_11 b k (([1] : List (Fin 2)) ^ c' +> default)
-    exact closes_of_in_ps (zPt h1 h2) (in_ps_F (b + 1) (k + 2) c')
+    exact closes_of_in_ps (zPt h1 h2) (in_ps_A (b + 1) (k + 2) c')
 lemma step_F_R_b2_one (k : Nat) (r : ListBlank (Fin 2)) :
-    (F_R 2 k ([1] +> r)) [target_tm]⊢⁺
+    (F_R 2 k ([1] +> r)) [target]⊢⁺
     (F_R 5 0 (([0, 1] : List (Fin 2)) ^ k +> r)) := by
   unfold F_R
   simp only [zPz, zLan]
-  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) ([0, 1] +> r)
+  have h1 := shift_FA_left_0082 k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) ([0,
+          1] +> r)
   have h2 : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 2) {{F}}>
       ([0] +> (([0, 1] : List (Fin 2)) ^ k +> ([0, 1] +> r))))
-      [target_tm]⊢⁺
+      [target]⊢⁺
       (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) {{F}}>
         ([0, 0] +> (([0, 1] : List (Fin 2)) ^ k +> r))) := by
     rw [zPa1 ([0, 1] : List (Fin 2)) k r,
       zPsr ([0, 1] : List (Fin 2)) k r]
-    dsimp [HPow.hPow, list_nat_repeat, ListBlank.append]
+    dsimp [HPow.hPow, listNatRepeat, ListBlank.append]
     execute
   exact zSpp h1 h2
 lemma step_E_01_to_F_R (b : Nat) (r : ListBlank (Fin 2)) :
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) {{E}}> ([0, 1] +> r))
-    [target_tm]⊢⁺
+    [target]⊢⁺
     (F_R b 0 r) := by
   unfold F_R
   simp only [zPz, zLan]
   dsimp [ListBlank.append]
   execute
 lemma closes_E_01_tail (b m c : Nat)
-    (ih : ∀ m' < m + 1, ∀ p k, Closes (F_R (2 * p + 1) k (([0, 1] : List (Fin 2)) ^ m' +> (([1] : List (Fin 2)) ^ c +> default)))) :
+    (ih : ∀ m' < m + 1, ∀ p k, Closes (F_R (2 * p + 1) k (([0, 1] : List (Fin 2)) ^ m' +> (([1] :
+            List (Fin 2)) ^ c +> default)))) :
     Closes (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * b + 1)) {{E}}>
       (([0, 1] : List (Fin 2)) ^ m +> (([1] : List (Fin 2)) ^ c +> default))) := by
   rcases m with _ | m'
   · simp only [zPz, zLan]
-    have h1 := shift_E_ones_0082 c ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * b + 1)) default
+    have h1 := shift_E_ones_0082 c ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * b
+            + 1)) default
     rw [<- zPl default ([1] : List (Fin 2)) (2 * b + 1) c] at h1
-    have h_eq : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * b + 1 + c)) {{E}}> default) =
+    have h_eq : (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * b + 1 + c)) {{E}}>
+            default) =
         E_0082 0 (2 * b + 1 + c) := rfl
     rw [h_eq] at h1
     exact closes_of_stepStar h1 (closes_E 0 (2 * b + 1 + c))
   · rw [zPsr ([0, 1] : List (Fin 2)) m']
-    have h1 := step_E_01_to_F_R (2 * b + 1) (([0, 1] : List (Fin 2)) ^ m' +> (([1] : List (Fin 2)) ^ c +> default))
+    have h1 := step_E_01_to_F_R (2 * b + 1) (([0, 1] : List (Fin 2)) ^ m' +> (([1] : List (Fin 2))
+            ^ c +> default))
     exact closes_of_stepPlus h1 (ih m' (by omega) b 0)
 lemma closes_odd_even_ones (n : Nat) (r : ListBlank (Fin 2))
     (h_base : ∀ p k, Closes (F_R (2 * p + 1) k r)) :
@@ -893,53 +845,55 @@ lemma closes_odd_even_ones (n : Nat) (r : ListBlank (Fin 2))
     have hn : 2 * (n + 1) = 2 + 2 * n := by omega
     rw [hn, zPar ([1] : List (Fin 2)) 2 (2 * n) r]
     rcases p with _ | p'
-    · have h1 := F_R_b1_to_D100 k (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2 * n) +> r))
+    · have h1 := F_R_b1_to_D100 k (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2 * n) +>
+            r))
       have h2 := D100_0_11 (k + 1) (([1] : List (Fin 2)) ^ (2 * n) +> r)
       exact closes_of_stepPlus (zPt h1 h2) (ih 0 (k + 2))
     · have hp : 2 * (p' + 1) + 1 = (2 * p') + 3 := by omega
       rw [hp]
-      have h1 := F_R_b3_to_D100 (2 * p') k (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2 * n) +> r))
+      have h1 := F_R_b3_to_D100 (2 * p') k (([1] : List (Fin 2)) ^ 2 +> (([1] : List (Fin 2)) ^ (2
+              * n) +> r))
       have h2 := D100_succ_11 (2 * p') k (([1] : List (Fin 2)) ^ (2 * n) +> r)
       exact closes_of_stepPlus (zPt h1 h2) (ih p' (k + 2))
 lemma closes_odd_m (m : Nat) (c : Nat) :
-    ∀ p k, Closes (F_R (2 * p + 1) k (([0, 1] : List (Fin 2)) ^ m +> (([1] : List (Fin 2)) ^ c +> default))) := by
+    ∀ p k, Closes (F_R (2 * p + 1) k (([0, 1] : List (Fin 2)) ^ m +> (([1] : List (Fin 2)) ^ c +>
+            default))) := by
   induction m using Nat.strongRecOn with
   | ind m ih =>
     intro p k
     rcases m with _ | m'
-    · simp only [zPz, zLan, <- F_0082_eq_F_R]
+    · simp only [zPz, zLan, <- cfg_A_eq_F_R]
       rcases p with _ | p'
-      · exact closes_F_b1 k c
+      · exact closes_A_b1 k c
       · have hp : 2 * (p' + 1) + 1 = (2 * p') + 3 := by omega
         rw [hp]
-        exact closes_F_b3 (2 * p') k c
+        exact closes_A_b3 (2 * p') k c
     · rw [zPsr ([0, 1] : List (Fin 2)) m']
       set r' := (([0, 1] : List (Fin 2)) ^ m' +> (([1] : List (Fin 2)) ^ c +> default))
       rcases p with _ | _ | p''
-      ·
-        have h1 := F_R_b1_to_D100 k ([0, 1] +> r')
+      · have h1 := F_R_b1_to_D100 k ([0, 1] +> r')
         have h2 := D100_01_to_C_bounce 0 (k + 1) r'
         have h3 := C_bounce_0 (([1] : List (Fin 2)) ^ (2 * (k + 1) + 4) +> r')
-        have h4 := shift_E_ones_0082 (2 * (k + 1) + 4) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) r'
+        have h4 := shift_E_ones_0082 (2 * (k + 1) + 4) ((default : ListBlank (Fin 2)) <+ ([1] :
+                List (Fin 2)) ^ 3) r'
         rw [<- zPl default ([1] : List (Fin 2)) 3 (2 * (k + 1) + 4)] at h4
         have hk : 3 + (2 * (k + 1) + 4) = 2 * (k + 4) + 1 := by omega
         rw [hk] at h4
         exact closes_of_stepPlus
           (zPsp (zPt (zPt h1 h2) h3) h4)
           (closes_E_01_tail (k + 4) m' c ih)
-      ·
-        have h1 := F_R_b3_to_D100 0 k ([0, 1] +> r')
+      · have h1 := F_R_b3_to_D100 0 k ([0, 1] +> r')
         have h2 := D100_01_to_C_bounce 1 k r'
         have h3 := C_bounce_1 (([1] : List (Fin 2)) ^ (2 * k + 4) +> r')
-        have h4 := shift_E_ones_0082 (2 * k + 4) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) r'
+        have h4 := shift_E_ones_0082 (2 * k + 4) ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin
+                2)) ^ 5) r'
         rw [<- zPl default ([1] : List (Fin 2)) 5 (2 * k + 4)] at h4
         have hk : 5 + (2 * k + 4) = 2 * (k + 4) + 1 := by omega
         rw [hk] at h4
         exact closes_of_stepPlus
           (zPsp (zPt (zPt h1 h2) h3) h4)
           (closes_E_01_tail (k + 4) m' c ih)
-      ·
-        have hp : 2 * (p'' + 2) + 1 = (2 * p'' + 2) + 3 := by omega
+      · have hp : 2 * (p'' + 2) + 1 = (2 * p'' + 2) + 3 := by omega
         rw [hp]
         have h1 := F_R_b3_to_D100 (2 * p'' + 2) k ([0, 1] +> r')
         have h2 := D100_01_to_C_bounce (2 * p'' + 3) k r'
@@ -949,142 +903,33 @@ lemma closes_odd_m (m : Nat) (c : Nat) :
         rw [hk] at h3
         exact closes_of_stepPlus (zPt (zPt h1 h2) h3)
           (closes_odd_even_ones (k + 3) r' (ih m' (by omega)) p'' 0)
-lemma closes_F_b2 (k c : Nat) : Closes (F_0082 2 k c) := by
+lemma closes_A_b2 (k c : Nat) : Closes (cfg_A 2 k c) := by
   rcases c with _ | c'
-  · exact closes_F_c0 2 k
-  · rw [F_0082_eq_F_R, zPsr ([1] : List (Fin 2)) c' default]
+  · exact closes_A_c0 2 k
+  · rw [cfg_A_eq_F_R, zPsr ([1] : List (Fin 2)) c' default]
     have h1 := step_F_R_b2_one k (([1] : List (Fin 2)) ^ c' +> default)
     exact closes_of_stepPlus h1 (closes_odd_m k c' 2 0)
-lemma closes_F_all (b k c : Nat) : Closes (F_0082 b k c) := by
+lemma closes_A_all (b k c : Nat) : Closes (cfg_A b k c) := by
   rcases b with _ | _ | _ | b'
-  · exact closes_F_b0 k c
-  · exact closes_F_b1 k c
-  · exact closes_F_b2 k c
-  · exact closes_F_b3 b' k c
+  · exact closes_A_b0 k c
+  · exact closes_A_b1 k c
+  · exact closes_A_b2 k c
+  · exact closes_A_b3 b' k c
 
-end Solution
 
--- END EXPLORATORY DEFINITIONS AND LEMMAS
-
--- BEGIN GOAL STATEMENT (DO NOT MODIFY SIGNATURE)
-
-set_option linter.unusedVariables false
-set_option linter.unusedSimpArgs false
-set_option linter.deprecated false
-set_option linter.dupNamespace false
-set_option linter.unreachableTactic false
-set_option linter.unusedTactic false
-set_option quotPrecheck false
-set_option maxRecDepth 4000000
-set_option maxHeartbeats 8000000
-open Solution in
-theorem is_cryptid_target_tm : IsCryptid target_tm := by
-  refine ⟨ps_0082, ⟨F_0082 5 0 2, init_reaches_F_502, in_ps_F 5 0 2⟩, ?_⟩
-  intro cfg h_in
+lemma closes_A_all_of_in_ps (cfg : Cfg (Fin 2) (Fin 6)) (h_in : IsInPatternSet ps cfg) :
+    Closes cfg := by
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩
-  simp only [ps_0082, List.mem_cons, List.not_mem_nil, or_false] at h_mem
+  simp only [ps, List.mem_cons, List.not_mem_nil, or_false] at h_mem
   subst h_mem
-  rw [eval_pat_F]
-  exact closes_F_all (vars 0) (vars 1) (vars 2)
+  rw [eval_pat_A]
+  exact closes_A_all (vars 0) (vars 1) (vars 2)
 
+theorem is_closed_pattern_set : IsClosedPatternSet target ps := by
+  refine ⟨⟨cfg_A 5 0 2, init_reaches_A_502, in_ps_A 5 0 2⟩, ?_⟩
+  intro cfg h_in
+  exact closes_A_all_of_in_ps cfg h_in
 
-def machine : ConjectureMachines.Machine 6 2 := load_rle_machine% "1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE"
-abbrev target : BusyBeaver.Machine (Fin 2) (Fin 6) := ConjectureMachines.Machine.toBB machine
-def cvt_TapeExpr {Γ} : TapeExpr Γ → BusyBeaver.TapeExpr Γ
-  | .default => .default
-  | .sym a rest => .sym a (cvt_TapeExpr rest)
-  | .rep blk v rest => .rep blk v (cvt_TapeExpr rest)
-
-theorem list_nat_repeat_eq_flatten_replicate {Γ} (l : List Γ) (n : Nat) :
-  list_nat_repeat l n = (List.replicate n l).flatten := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    simp [list_nat_repeat, List.replicate]
-    rw [ih]
-
-theorem cvt_evalTapeExpr {Γ} [Inhabited Γ] (e : TapeExpr Γ) (vars : Nat → Nat) :
-  evalTapeExpr e vars = BusyBeaver.evalTapeExpr (cvt_TapeExpr e) vars := by
-  induction e with
-  | default => rfl
-  | sym a rest ih =>
-    change [a] +> evalTapeExpr rest vars = [a] +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
-    rw [ih]
-  | rep blk v rest ih =>
-    change list_nat_repeat blk (vars v) +> evalTapeExpr rest vars = (List.replicate (vars v) blk).flatten +> BusyBeaver.evalTapeExpr (cvt_TapeExpr rest) vars
-    rw [ih, list_nat_repeat_eq_flatten_replicate]
-
-def cvt_TapePattern {Γ Λ} : TapePattern Γ Λ → BusyBeaver.TapePattern Γ Λ
-  | ⟨l, h, r⟩ => ⟨cvt_TapeExpr l, h, cvt_TapeExpr r⟩
-
-theorem cvt_evalTapePattern {Γ Λ} [Inhabited Γ] [Inhabited Λ] (pat : TapePattern Γ Λ) (vars : Nat → Nat) :
-  evalTapePattern pat vars = BusyBeaver.evalTapePattern (cvt_TapePattern pat) vars := by
-  rcases pat with ⟨l, h, r⟩
-  simp [evalTapePattern, BusyBeaver.evalTapePattern, cvt_TapePattern]
-  rw [cvt_evalTapeExpr, cvt_evalTapeExpr]
-  exact ⟨rfl, rfl, rfl⟩
-
-def cvt_VarCond : VarCond → BusyBeaver.VarCond
-  | .ge_const idx val => .ge_const idx val
-  | .ge_var idx1 idx2 => .ge_var idx1 idx2
-  | .and c1 c2 => .and (cvt_VarCond c1) (cvt_VarCond c2)
-  | .or c1 c2 => .or (cvt_VarCond c1) (cvt_VarCond c2)
-  | .not c => .not (cvt_VarCond c)
-  | .true => .true
-
-theorem cvt_evalVarCond (c : VarCond) (vars : Nat → Nat) :
-  evalVarCond c vars ↔ BusyBeaver.evalVarCond (cvt_VarCond c) vars := by
-  induction c with
-  | ge_const idx val => rfl
-  | ge_var idx1 idx2 => rfl
-  | and c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
-  | or c1 c2 ih1 ih2 => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih1, ih2]
-  | not c ih => simp [evalVarCond, BusyBeaver.evalVarCond, cvt_VarCond, ih]
-  | true => rfl
-
-def cvt_ps {Γ Λ} (ps : TapePatternSet Γ Λ) : BusyBeaver.TapePatternSet Γ Λ :=
-  ps.map (fun pc => ⟨cvt_TapePattern pc.fst, cvt_VarCond pc.snd⟩)
-
-theorem cvt_IsInPatternSet {Γ Λ} [Inhabited Γ] [Inhabited Λ] (ps : TapePatternSet Γ Λ) (cfg : Cfg Γ Λ) :
-  IsInPatternSet ps cfg ↔ BusyBeaver.IsInPatternSet (cvt_ps ps) cfg := by
-  constructor
-  · rintro ⟨⟨p, c⟩, h_in, vars, h_eq, h_cond⟩
-    use ⟨cvt_TapePattern p, cvt_VarCond c⟩
-    refine ⟨?_, ?_⟩
-    · exact List.mem_map_of_mem h_in
-    · use vars
-      rw [← cvt_evalTapePattern]
-      exact ⟨h_eq, (cvt_evalVarCond c vars).mp h_cond⟩
-  · rintro ⟨⟨p_global, c_global⟩, h_in, vars, h_eq, h_cond⟩
-    simp only [cvt_ps, List.mem_map, Prod.exists] at h_in
-    rcases h_in with ⟨p, c, h_in_ps, h_map⟩
-    have h_map' : p_global = cvt_TapePattern p ∧ c_global = cvt_VarCond c := by
-      injection h_map with h1 h2
-      exact ⟨h1.symm, h2.symm⟩
-    rcases h_map' with ⟨rfl, rfl⟩
-    use ⟨p, c⟩
-    refine ⟨h_in_ps, vars, ?_, ?_⟩
-    · rw [h_eq, cvt_evalTapePattern]
-    · change evalVarCond c vars
-      exact (cvt_evalVarCond c vars).mpr h_cond
-
-theorem local_to_global_IsCryptid {Γ Λ} [Inhabited Γ] [Inhabited Λ] {M : Machine Γ Λ} (h : IsCryptid M) : BusyBeaver.IsCryptid M := by
-  rcases h with ⟨ps, ⟨cfg₀, h_reach₀, h_in₀⟩, h_step⟩
-  use cvt_ps ps
-  constructor
-  · use cfg₀
-    exact ⟨h_reach₀, (cvt_IsInPatternSet ps cfg₀).mp h_in₀⟩
-  · intro cfg h_in
-    rcases h_step cfg ((cvt_IsInPatternSet ps cfg).mpr h_in) with ⟨cfg', h_reach, h_cases⟩
-    use cfg'
-    refine ⟨h_reach, ?_⟩
-    cases h_cases with
-    | inl h_in' => exact Or.inl ((cvt_IsInPatternSet ps cfg').mp h_in')
-    | inr h_halt => exact Or.inr h_halt
-
-theorem is_cryptid : BusyBeaver.IsCryptid target := by
-  have h : target = target_tm := by funext q s; fin_cases q <;> fin_cases s <;> rfl
-  rw [h]
-  exact local_to_global_IsCryptid is_cryptid_target_tm
+theorem has_collatz_reduction : HasCollatzReduction target := ⟨ps, is_closed_pattern_set⟩
 
 end BusyBeaver.M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE
