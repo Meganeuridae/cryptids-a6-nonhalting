@@ -799,14 +799,6 @@ theorem default_append_01_pow (c : ℕ) :
   conv_lhs => rw [ListBlank.default_eq_append_zero]
   exact append_01_pow_zero c default
 
-theorem one_pow_four_mul (k : ℕ) :
-    ([1, 1, 1, 1] : List (Fin 2)) ^ k = ([1] : List (Fin 2)) ^ (4 * k) :=
-  (list_pow_mul [1] 4 k).symm
-
-theorem zero_one_pow_two_mul (m : ℕ) :
-    ([0, 1] : List (Fin 2)) ^ (2 * m) = ([0, 1, 0, 1] : List (Fin 2)) ^ m :=
-  list_pow_mul [0, 1] 2 m
-
 theorem IsValidAcceleration.of_step {M : Machine Γ Λ} {S : Type*}
     {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
     (h_init : ReachesStar M (init []) (encode start))

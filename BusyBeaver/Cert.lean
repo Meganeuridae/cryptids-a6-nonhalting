@@ -12,10 +12,11 @@ public import BusyBeaver.Basic
 A small verified certificate checker for `BusyBeaver` machines: symbolic configurations (`SC`)
 over block-repetition variables, rewrite rules (`RDef`) validated by concrete symbolic execution,
 and a `Bool`-valued proof-script interpreter (`run`) whose success is sound for `ReachesStar` /
-`ReachesPlus` and for membership in the hub `TapePatternSet` (`checkHub_sound`,
-`checkInit_sound`). Machines whose closure proofs are produced as certificates (e.g.
-`M_1RB1RF_1LCHHH_1LE1RD_1RA0RC_0LF0LA_0LD0RB` and `M_1RBHHH_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD`)
-import this module; it is not needed by the hand-written machine proofs.
+`ReachesPlus` and for membership in the hub `TapePatternSet` (`checkTrans_sound`,
+`checkHaltTrans_sound`, `checkHub_sound`, `checkInit_sound`). Machines whose closure proofs are
+produced as certificates (e.g. `M_1RB1RF_1LCHHH_1LE1RD_1RA0RC_0LF0LA_0LD0RB` and
+`M_1RBHHH_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD`) import this module; it is not needed by the
+hand-written machine proofs.
 -/
 
 @[expose] public section
@@ -24,10 +25,7 @@ namespace BusyBeaver
 
 open Turing
 
-/-! ## Reflective Symbolic Execution & Certificate Checker (`Cert`) -/
-
 namespace Cert
-
 
 macro "nlin" : tactic => `(tactic| ((try simp only [Nat.add_mul, Nat.mul_add,
   Nat.mul_assoc]) <;> omega))
@@ -36,93 +34,29 @@ abbrev Sym := Fin 2
 abbrev St := Fin 6
 abbrev TM := Machine Sym St
 
--- ---------------------------------------------------------------------------
--- 6.1 Multi-step infrastructure
--- ---------------------------------------------------------------------------
-
-theorem ms_zero (M : TM) (c : Cfg Sym St) : multiStep M c 0 = some c :=
-  multiStep_zero M c
-
-theorem ms_succ (M : TM) (c : Cfg Sym St) (n : ℕ) :
-    multiStep M c (n + 1) = Option.bind (multiStep M c n) (step M) :=
-  multiStep_succ' M c n
-
-theorem ms_add (M : TM) (c : Cfg Sym St) (n m : ℕ) :
-    multiStep M c (n + m) = (multiStep M c n).bind (fun c' => multiStep M c' m) :=
-  multiStep_add M c n m
-
-theorem ms_one (M : TM) (c c' : Cfg Sym St) (h : step M c = some c') :
-    multiStep M c 1 = some c' :=
-  h
-
-def RStar (M : TM) (c c' : Cfg Sym St) : Prop := ReachesStar M c c'
-def RPlus (M : TM) (c c' : Cfg Sym St) : Prop := ReachesPlus M c c'
-
-theorem rstar_refl (M : TM) (c : Cfg Sym St) : RStar M c c := ReachesStar.refl M c
-
-theorem rstar_trans {M : TM} {a b c : Cfg Sym St} (h1 : RStar M a b) (h2 : RStar M b c) :
-    RStar M a c :=
-  h1.trans h2
-
-theorem rplus_rstar {M : TM} {a b : Cfg Sym St} (h : RPlus M a b) : RStar M a b :=
-  h.to_star
-
-theorem rplus_trans_star {M : TM} {a b c : Cfg Sym St} (h1 : RPlus M a b) (h2 : RStar M b c) :
-    RPlus M a c :=
-  h1.trans_star h2
-
-theorem rstar_trans_plus {M : TM} {a b c : Cfg Sym St} (h1 : RStar M a b) (h2 : RPlus M b c) :
-    RPlus M a c :=
-  h1.trans_plus h2
-
-theorem step_rplus {M : TM} {a b : Cfg Sym St} (h : step M a = some b) : RPlus M a b :=
-  ReachesPlus.single h
-
--- ---------------------------------------------------------------------------
--- 6.2 List powers and ListBlank lemmas
--- ---------------------------------------------------------------------------
-
-theorem lpow_zero (l : List Sym) : l ^ (0 : ℕ) = [] := list_pow_zero l
-theorem lpow_succ (l : List Sym) (n : ℕ) : l ^ (n + 1) = l ++ l ^ n := list_pow_succ l n
-theorem lpow_add (l : List Sym) (n m : ℕ) : l ^ (n + m) = l ^ n ++ l ^ m := list_pow_add l n m
-theorem lpow_succ' (l : List Sym) (n : ℕ) : l ^ (n + 1) = l ^ n ++ l := list_pow_succ' l n
-theorem lpow_one (l : List Sym) : l ^ (1 : ℕ) = l := list_pow_one l
-theorem lpow_mul (l : List Sym) (k n : ℕ) : (l ^ k) ^ n = l ^ (k * n) := (list_pow_mul l k n).symm
+/-! ## List Powers and Half-Tape Lemmas -/
 
 theorem lpow_rot (u w : List Sym) (n : ℕ) : (u ++ w) ^ n ++ u = u ++ (w ++ u) ^ n := by
   induction n with
   | zero => simp
   | succ n ih =>
-    rw [lpow_succ, lpow_succ, List.append_assoc, ih]; simp [List.append_assoc]
-
-theorem lb_app_nil (t : ListBlank Sym) : ListBlank.append [] t = t := ListBlank.append_nil t
-theorem lb_app_cons (x : Sym) (l : List Sym) (t : ListBlank Sym) :
-    ListBlank.append (x :: l) t = ListBlank.cons x (ListBlank.append l t) :=
-  ListBlank.append_cons x l t
-theorem lb_app_app (l1 l2 : List Sym) (t : ListBlank Sym) :
-    ListBlank.append (l1 ++ l2) t = ListBlank.append l1 (ListBlank.append l2 t) :=
-  ListBlank.append_assoc l1 l2 t
-
-theorem lb_cons_zero_default : ListBlank.cons (0 : Sym) default = default :=
-  ListBlank.cons_zero_default
+    rw [list_pow_succ, list_pow_succ, List.append_assoc, ih]; simp [List.append_assoc]
 
 theorem lb_zeros_default1 (z : List Sym) (hz : ∀ x ∈ z, x = 0) :
     ListBlank.append z default = default := by
   induction z with
   | nil => rfl
   | cons x z ihz =>
-    rw [lb_app_cons, ihz (fun y hy => hz y (List.mem_cons_of_mem _ hy)),
-      hz x List.mem_cons_self, lb_cons_zero_default]
+    rw [ListBlank.append_cons, ihz (fun y hy => hz y (List.mem_cons_of_mem _ hy)),
+      hz x List.mem_cons_self, ListBlank.cons_zero_default]
 
 theorem lb_zeros_default (z : List Sym) (hz : ∀ x ∈ z, x = 0) (n : ℕ) :
     ListBlank.append (z ^ n) default = default := by
   induction n with
   | zero => rfl
-  | succ n ih => rw [lpow_succ, lb_app_app, ih, lb_zeros_default1 z hz]
+  | succ n ih => rw [list_pow_succ, ListBlank.append_assoc, ih, lb_zeros_default1 z hz]
 
--- ---------------------------------------------------------------------------
--- 6.3 Linear expressions over variables
--- ---------------------------------------------------------------------------
+/-! ## Linear Expressions over Variables -/
 
 structure Lin where
   c : ℕ
@@ -335,7 +269,6 @@ theorem dotv_update (v : ℕ → ℕ) (x : ℕ) : ∀ (as : List ℕ) (j i : ℕ
 def Lin.subst (a : Lin) (i : ℕ) (f : Lin) : Lin :=
   (⟨a.c, setZero a.cs i⟩ : Lin).add (f.scale (getC a.cs i))
 
-
 theorem Lin.eval_subst (a : Lin) (i : ℕ) (f : Lin) (v : ℕ → ℕ) :
     (a.subst i f).eval v = a.eval (Function.update v i (f.eval v)) := by
   have h1 := dotv_setZero (Function.update v i (f.eval v)) a.cs i 0
@@ -418,9 +351,7 @@ theorem Lin.asVar_sound (e : Lin) (k : ℕ) (h : e.asVar = some k) (v : ℕ → 
     simp [Lin.eval, h0, varIdx_sound v e.cs 0 k h]
   · simp at h
 
--- ---------------------------------------------------------------------------
--- 6.4 Symbolic tapes
--- ---------------------------------------------------------------------------
+/-! ## Symbolic Tapes -/
 
 structure Seg where
   b : List Sym
@@ -438,7 +369,7 @@ theorem den_append (v : ℕ → ℕ) : ∀ (A B : List Seg) (t : ListBlank Sym),
 
 theorem den_single (v : ℕ → ℕ) (w : Sym) (r : List Seg) (t : ListBlank Sym) :
     hden v (⟨[w], Lin.const 1⟩ :: r) t = ListBlank.cons w (hden v r t) := by
-  simp only [hden, Lin.eval_const, lpow_one]; rfl
+  simp only [hden, Lin.eval_const, list_pow_one]; rfl
 
 def sideSubst (i : ℕ) (f : Lin) : List Seg → List Seg
   | [] => []
@@ -479,7 +410,7 @@ theorem den_singles (v : ℕ → ℕ) : ∀ (b : List Sym) (r : List Seg) (t : L
     hden v (singles b ++ r) t = ListBlank.append b (hden v r t)
   | [], r, t => rfl
   | x :: xs, r, t => by
-    simp only [singles, List.cons_append, den_single, den_singles v xs r t, lb_app_cons]
+    simp only [singles, List.cons_append, den_single, den_singles v xs r t, ListBlank.append_cons]
 
 def takeSingles : ℕ → List Seg → Option (List Sym × List Seg)
   | 0, A => some ([], A)
@@ -507,14 +438,13 @@ theorem takeSingles_sound (v : ℕ → ℕ) : ∀ (k : ℕ) (A : List Seg) (xs :
           simp only [hk, Option.map_some, Option.some.injEq, Prod.mk.injEq] at h
           rcases p with ⟨p1, p2⟩
           rw [← h.1, ← h.2]
-          simp only [hden, Lin.isConst_eval e 1 he v, lpow_one, lb_app_cons, lb_app_nil]
+          simp only [hden, Lin.isConst_eval e 1 he v, list_pow_one, ListBlank.append_cons,
+            ListBlank.append_nil]
           rw [takeSingles_sound v k A p1 p2 hk t]
       · simp at h
     · simp [takeSingles] at h
 
--- ---------------------------------------------------------------------------
--- 6.5 Local rewrites of half-tapes (denotation preserving for every tail)
--- ---------------------------------------------------------------------------
+/-! ## Local Rewrites of Half-Tapes (Denotation Preserving for Every Tail) -/
 
 inductive RW
   | splitF
@@ -560,8 +490,8 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       split at h
       · rename_i hc
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.eval_const, lpow_one]
-        rw [Lin.eval_dec s.e hc v, lpow_succ, lb_app_app]
+        simp only [hden, Lin.eval_const, list_pow_one]
+        rw [Lin.eval_dec s.e hc v, list_pow_succ, ListBlank.append_assoc]
       · simp at h
   | splitB =>
     rcases A with _ | ⟨s, r⟩
@@ -570,8 +500,8 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       split at h
       · rename_i hc
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.eval_const, lpow_one]
-        rw [Lin.eval_dec s.e hc v, lpow_succ', lb_app_app]
+        simp only [hden, Lin.eval_const, list_pow_one]
+        rw [Lin.eval_dec s.e hc v, list_pow_succ', ListBlank.append_assoc]
       · simp at h
   | merge =>
     rcases A with _ | ⟨s1, _ | ⟨s2, r⟩⟩
@@ -582,7 +512,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · rename_i hb
         simp only [beq_iff_eq] at hb
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.eval_add, lpow_add, lb_app_app, hb]
+        simp only [hden, Lin.eval_add, list_pow_add, ListBlank.append_assoc, hb]
       · simp at h
   | unpack =>
     rcases A with _ | ⟨s, r⟩
@@ -592,7 +522,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · rename_i hc
         simp only [Option.some.injEq] at h; subst h
         rw [den_singles]
-        simp only [hden, Lin.isConst_eval s.e 1 hc v, lpow_one]
+        simp only [hden, Lin.isConst_eval s.e 1 hc v, list_pow_one]
       · simp at h
   | pack k =>
     simp only [rwLocal] at h
@@ -601,7 +531,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
     | some p =>
       simp only [hk, Option.map_some, Option.some.injEq] at h; subst h
       rw [takeSingles_sound v k A p.1 p.2 hk t]
-      simp only [hden, Lin.eval_const, lpow_one]
+      simp only [hden, Lin.eval_const, list_pow_one]
   | zdrop =>
     rcases A with _ | ⟨s, r⟩
     · simp [rwLocal] at h
@@ -609,7 +539,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       split at h
       · rename_i hc
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.isConst_eval s.e 0 hc v, lpow_zero, lb_app_nil]
+        simp only [hden, Lin.isConst_eval s.e 0 hc v, list_pow_zero, ListBlank.append_nil]
       · simp at h
   | group k =>
     rcases A with _ | ⟨s, r⟩
@@ -619,7 +549,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       | none => simp [hd] at h
       | some e' =>
         simp only [hd, Option.map_some, Option.some.injEq] at h; subst h
-        simp only [hden, Lin.div_sound k s.e e' hd v, lpow_mul]
+        simp only [hden, Lin.div_sound k s.e e' hd v, ← list_pow_mul]
   | ungroup k b0 =>
     rcases A with _ | ⟨s, r⟩
     · simp [rwLocal] at h
@@ -628,7 +558,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · rename_i hb
         simp only [beq_iff_eq] at hb
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, hb, lpow_mul, Lin.eval_scale]
+        simp only [hden, hb, ← list_pow_mul, Lin.eval_scale]
       · simp at h
   | rot j =>
     rcases A with _ | ⟨s1, _ | ⟨s2, r⟩⟩
@@ -639,8 +569,8 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · rename_i hc
         simp only [Bool.and_eq_true, beq_iff_eq] at hc
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.isConst_eval s2.e 1 hc.2 v, lpow_one, hc.1]
-        rw [← lb_app_app, ← lb_app_app]
+        simp only [hden, Lin.isConst_eval s2.e 1 hc.2 v, list_pow_one, hc.1]
+        rw [← ListBlank.append_assoc, ← ListBlank.append_assoc]
         have key := lpow_rot (List.take j s1.b) (List.drop j s1.b) (s1.e.eval v)
         rw [List.take_append_drop] at key
         rw [key]
@@ -654,8 +584,8 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · rename_i hc
         simp only [Bool.and_eq_true, beq_iff_eq] at hc
         simp only [Option.some.injEq] at h; subst h
-        simp only [hden, Lin.isConst_eval s1.e 1 hc.1.1 v, lpow_one]
-        rw [← lb_app_app, ← lb_app_app]
+        simp only [hden, Lin.isConst_eval s1.e 1 hc.1.1 v, list_pow_one]
+        rw [← ListBlank.append_assoc, ← ListBlank.append_assoc]
         have hb : s2.b = s2.b.take (s2.b.length - j) ++ s1.b := by
           conv_lhs => rw [← List.take_append_drop (s2.b.length - j) s2.b]
           rw [hc.2]
@@ -663,7 +593,7 @@ theorem rwLocal_sound (v : ℕ → ℕ) (rw : RW) (A A' : List Seg) (h : rwLocal
       · simp at h
   | zins b =>
     simp only [rwLocal, Option.some.injEq] at h; subst h
-    simp only [hden, Lin.eval_const, lpow_zero, lb_app_nil]
+    simp only [hden, Lin.eval_const, list_pow_zero, ListBlank.append_nil]
 
 def rwAt (rw : RW) : ℕ → List Seg → Option (List Seg)
   | 0, A => rwLocal rw A
@@ -711,9 +641,7 @@ theorem dropTail_sound (v : ℕ → ℕ) (A A' : List Seg) (h : dropTail A = som
       simpa using this
     · simp at h
 
--- ---------------------------------------------------------------------------
--- 6.6 Symbolic configurations, concrete steps and block shifts
--- ---------------------------------------------------------------------------
+/-! ## Symbolic Configurations, Concrete Steps and Block Shifts -/
 
 structure SC where
   q : St
@@ -766,7 +694,7 @@ theorem popHead_sound (dflt : Bool) (A : List Seg) (x : Sym) (r : List Seg)
     · rename_i hd
       simp only [Option.some.injEq, Prod.mk.injEq] at h
       rw [← h.1, ← h.2]
-      simp only [hden, ht hd, lb_cons_zero_default]
+      simp only [hden, ht hd, ListBlank.cons_zero_default]
     · simp at h
   · rcases b with _ | ⟨y, _ | ⟨z, b⟩⟩
     · simp [popHead] at h
@@ -775,7 +703,8 @@ theorem popHead_sound (dflt : Bool) (A : List Seg) (x : Sym) (r : List Seg)
       · rename_i he
         simp only [Option.some.injEq, Prod.mk.injEq] at h
         rw [← h.1, ← h.2]
-        simp only [hden, Lin.isConst_eval e 1 he v, lpow_one, lb_app_cons, lb_app_nil]
+        simp only [hden, Lin.isConst_eval e 1 he v, list_pow_one, ListBlank.append_cons,
+          ListBlank.append_nil]
       · simp at h
     · simp [popHead] at h
 
@@ -871,11 +800,11 @@ def runR (M : TM) : ℕ → St → List Sym → List Sym → Option (St × List 
 
 theorem runR_sound (M : TM) : ∀ (f : ℕ) (q : St) (lw rw : List Sym) (q' : St) (lw' : List Sym),
     runR M f q lw rw = some (q', lw') → ∀ (L R : ListBlank Sym),
-    RStar M (cfgOf q true (ListBlank.append lw L) (ListBlank.append rw R))
+    ReachesStar M (cfgOf q true (ListBlank.append lw L) (ListBlank.append rw R))
       (cfgOf q' true (ListBlank.append lw' L) R)
   | f, q, lw, [], q', lw', h, L, R => by
     have h' : q = q' ∧ lw = lw' := by cases f <;> simpa [runR] using h
-    rw [← h'.1, ← h'.2]; exact rstar_refl M _
+    rw [← h'.1, ← h'.2]; exact ReachesStar.refl M _
   | 0, q, lw, s :: rw, q', lw', h, L, R => by simp [runR] at h
   | f + 1, q, lw, s :: rw, q', lw', h, L, R => by
     simp only [runR] at h
@@ -887,15 +816,16 @@ theorem runR_sound (M : TM) : ∀ (f : ℕ) (q : St) (lw rw : List Sym) (q' : St
       · cases d with
         | right =>
           simp only [hM] at h
-          refine rstar_trans ⟨1, ms_one M _ _ ?_⟩ (runR_sound M f q2 (w :: lw) rw q' lw' h L R)
+          refine ReachesStar.trans (ReachesStar.single ?_)
+            (runR_sound M f q2 (w :: lw) rw q' lw' h L R)
           simp [cfgOf, step, hM, Tape.write, Tape.move]
         | left =>
           simp only [hM] at h
           rcases lw with _ | ⟨x, lw2⟩
           · simp at h
           · simp only at h
-            refine rstar_trans ⟨1,
-              ms_one M _ _ ?_⟩ (runR_sound M f q2 lw2 (x :: w :: rw) q' lw' h L R)
+            refine ReachesStar.trans (ReachesStar.single ?_)
+              (runR_sound M f q2 lw2 (x :: w :: rw) q' lw' h L R)
             simp [cfgOf, step, hM, Tape.write, Tape.move]
 
 -- local simulation inside one block, head entering from the right (moving left)
@@ -913,11 +843,11 @@ def runL (M : TM) : ℕ → St → List Sym → List Sym → Option (St × List 
 
 theorem runL_sound (M : TM) : ∀ (f : ℕ) (q : St) (rw lw : List Sym) (q' : St) (rw' : List Sym),
     runL M f q rw lw = some (q', rw') → ∀ (L R : ListBlank Sym),
-    RStar M (cfgOf q false (ListBlank.append lw L) (ListBlank.append rw R))
+    ReachesStar M (cfgOf q false (ListBlank.append lw L) (ListBlank.append rw R))
       (cfgOf q' false L (ListBlank.append rw' R))
   | f, q, rw, [], q', rw', h, L, R => by
     have h' : q = q' ∧ rw = rw' := by cases f <;> simpa [runL] using h
-    rw [← h'.1, ← h'.2]; exact rstar_refl M _
+    rw [← h'.1, ← h'.2]; exact ReachesStar.refl M _
   | 0, q, rw, s :: lw, q', rw', h, L, R => by simp [runL] at h
   | f + 1, q, rw, s :: lw, q', rw', h, L, R => by
     simp only [runL] at h
@@ -929,42 +859,43 @@ theorem runL_sound (M : TM) : ∀ (f : ℕ) (q : St) (rw lw : List Sym) (q' : St
       · cases d with
         | left =>
           simp only [hM] at h
-          refine rstar_trans ⟨1, ms_one M _ _ ?_⟩ (runL_sound M f q2 (w :: rw) lw q' rw' h L R)
+          refine ReachesStar.trans (ReachesStar.single ?_)
+            (runL_sound M f q2 (w :: rw) lw q' rw' h L R)
           simp [cfgOf, step, hM, Tape.write, Tape.move]
         | right =>
           simp only [hM] at h
           rcases rw with _ | ⟨x, rw2⟩
           · simp at h
           · simp only at h
-            refine rstar_trans ⟨1,
-              ms_one M _ _ ?_⟩ (runL_sound M f q2 rw2 (x :: w :: lw) q' rw' h L R)
+            refine ReachesStar.trans (ReachesStar.single ?_)
+              (runL_sound M f q2 rw2 (x :: w :: lw) q' rw' h L R)
             simp [cfgOf, step, hM, Tape.write, Tape.move]
 
 theorem shiftR_sound (M : TM) (f : ℕ) (q : St) (b lw' : List Sym)
     (h : runR M f q [] b = some (q, lw')) :
     ∀ (n : ℕ) (L R : ListBlank Sym),
-    RStar M (cfgOf q true L (ListBlank.append (b ^ n) R)) (cfgOf q true (ListBlank.append (lw' ^ n)
-      L) R)
-  | 0, L, R => rstar_refl M _
+    ReachesStar M (cfgOf q true L (ListBlank.append (b ^ n) R))
+      (cfgOf q true (ListBlank.append (lw' ^ n) L) R)
+  | 0, L, R => ReachesStar.refl M _
   | n + 1, L, R => by
     have h1 := runR_sound M f q [] b q lw' h L (ListBlank.append (b ^ n) R)
     have h2 := shiftR_sound M f q b lw' h n (ListBlank.append lw' L) R
-    rw [lpow_succ, lb_app_app]
-    rw [lpow_succ', lb_app_app]
-    exact rstar_trans h1 h2
+    rw [list_pow_succ, ListBlank.append_assoc]
+    rw [list_pow_succ', ListBlank.append_assoc]
+    exact ReachesStar.trans h1 h2
 
 theorem shiftL_sound (M : TM) (f : ℕ) (q : St) (b rw' : List Sym)
     (h : runL M f q [] b = some (q, rw')) :
     ∀ (n : ℕ) (L R : ListBlank Sym),
-    RStar M (cfgOf q false (ListBlank.append (b ^ n) L) R) (cfgOf q false L (ListBlank.append (rw'
-      ^ n) R))
-  | 0, L, R => rstar_refl M _
+    ReachesStar M (cfgOf q false (ListBlank.append (b ^ n) L) R)
+      (cfgOf q false L (ListBlank.append (rw' ^ n) R))
+  | 0, L, R => ReachesStar.refl M _
   | n + 1, L, R => by
     have h1 := runL_sound M f q [] b q rw' h (ListBlank.append (b ^ n) L) R
     have h2 := shiftL_sound M f q b rw' h n L (ListBlank.append rw' R)
-    rw [lpow_succ, lb_app_app]
-    rw [lpow_succ', lb_app_app]
-    exact rstar_trans h1 h2
+    rw [list_pow_succ, ListBlank.append_assoc]
+    rw [list_pow_succ', ListBlank.append_assoc]
+    exact ReachesStar.trans h1 h2
 
 def shiftFuel : ℕ := 512
 
@@ -985,7 +916,7 @@ def shiftOp (M : TM) (c : SC) : Option SC :=
     | [] => none
 
 theorem shiftOp_sound (M : TM) (c c' : SC) (h : shiftOp M c = some c') (v : ℕ → ℕ)
-    (tl tr : ListBlank Sym) : RStar M (c.den v tl tr) (c'.den v tl tr) := by
+    (tl tr : ListBlank Sym) : ReachesStar M (c.den v tl tr) (c'.den v tl tr) := by
   rcases c with ⟨q, dr, L, R⟩
   cases dr with
   | true =>
@@ -1023,9 +954,7 @@ theorem shiftOp_sound (M : TM) (c c' : SC) (h : shiftOp M c = some c') (v : ℕ 
           exact shiftL_sound M shiftFuel q' s.b rw' hr (s.e.eval v) (hden v l tl) (hden v R tr)
         · simp at h
 
--- ---------------------------------------------------------------------------
--- 6.7 Macro rules (proved by sub-certificates) and their application
--- ---------------------------------------------------------------------------
+/-! ## Macro Rules (Proved by Sub-Certificates) and Their Application -/
 
 structure Rule where
   lhs : SC
@@ -1038,8 +967,8 @@ structure Rule where
 def RuleOK (M : TM) (r : Rule) : Prop :=
   ∀ v tl tr,
     (r.dflt = true → tl = default
-    ∧ tr = default) → RStar M (r.lhs.den v tl tr) (r.rhs.den v tl tr) ∧
-    (r.plus = true → RPlus M (r.lhs.den v tl tr) (r.rhs.den v tl tr))
+    ∧ tr = default) → ReachesStar M (r.lhs.den v tl tr) (r.rhs.den v tl tr) ∧
+    (r.plus = true → ReachesPlus M (r.lhs.den v tl tr) (r.rhs.den v tl tr))
 
 def matchPre (σ : List Lin) : List Seg → List Seg → Option (List Seg)
   | [], A => some A
@@ -1073,8 +1002,8 @@ def applyRule (r : Rule) (σ : List Lin) (c : SC) : Option SC :=
 theorem applyRule_sound (M : TM) (r : Rule) (hr : RuleOK M r) (σ : List Lin) (c c' : SC)
     (h : applyRule r σ c = some c') (v : ℕ → ℕ) (tl tr : ListBlank Sym)
     (ht : r.dflt = true → tl = default ∧ tr = default) :
-    RStar M (c.den v tl tr) (c'.den v tl tr) ∧
-      (r.plus = true → RPlus M (c.den v tl tr) (c'.den v tl tr)) := by
+    ReachesStar M (c.den v tl tr) (c'.den v tl tr) ∧
+      (r.plus = true → ReachesPlus M (c.den v tl tr) (c'.den v tl tr)) := by
   simp only [applyRule] at h
   split at h
   · rename_i hq
@@ -1106,9 +1035,7 @@ theorem applyRule_sound (M : TM) (r : Rule) (hr : RuleOK M r) (σ : List Lin) (c
         · simp at h
   · simp at h
 
--- ---------------------------------------------------------------------------
--- 6.8 Hub patterns
--- ---------------------------------------------------------------------------
+/-! ## Hub Patterns -/
 
 def segsExpr : List Seg → TapeExpr Sym
   | [] => .default
@@ -1125,7 +1052,7 @@ theorem evalTapeExpr_foldr (b : List Sym) (rest : TapeExpr Sym) (v : ℕ → ℕ
     evalTapeExpr (b.foldr TapeExpr.sym rest) v = ListBlank.append b (evalTapeExpr rest v) := by
   induction b with
   | nil => rfl
-  | cons x b ih => simp only [List.foldr_cons, evalTapeExpr, ih, lb_app_cons]
+  | cons x b ih => simp only [List.foldr_cons, evalTapeExpr, ih, ListBlank.append_cons]
 
 theorem segsExpr_eval : ∀ (A : List Seg), segsOK A = true → ∀ v,
     evalTapeExpr (segsExpr A) v = hden v A default
@@ -1141,7 +1068,7 @@ theorem segsExpr_eval : ∀ (A : List Seg), segsOK A = true → ∀ v,
         rcases h.1 with h1 | h1
         · simp [hv] at h1
         · exact h1
-      simp only [evalTapeExpr_foldr, hden, Lin.isConst_eval s.e 1 hc v, lpow_one,
+      simp only [evalTapeExpr_foldr, hden, Lin.isConst_eval s.e 1 hc v, list_pow_one,
         segsExpr_eval A h.2 v]
 
 def hubOK (h : SC) : Bool := h.dr && segsOK h.L && segsOK h.R
@@ -1164,9 +1091,7 @@ theorem in_hubsPS (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = true) (h : SC
   ⟨(toPat h, VarCond.true), List.mem_map.mpr ⟨h, hm, rfl⟩, v, (toPat_eval h (hh h hm) v).symm,
     trivial⟩
 
--- ---------------------------------------------------------------------------
--- 6.9 Goals, instructions and the checker
--- ---------------------------------------------------------------------------
+/-! ## Goals, Instructions and the Checker -/
 
 inductive Tgt
   | hubs
@@ -1255,8 +1180,8 @@ def Final (M : TM) (ps : TapePatternSet Sym St) (t : Tgt) (v : ℕ → ℕ) (tl 
 
 def Good (M : TM) (ps : TapePatternSet Sym St) (dflt : Bool) (g : Goal) : Prop :=
   ∀ v tl tr, (dflt = true → tl = default ∧ tr = default) →
-    ∃ c', RStar M (g.cur.den v tl tr) c' ∧ (g.np = true → RPlus M (g.cur.den v tl tr) c') ∧
-      Final M ps g.tgt v tl tr c'
+    ∃ c', ReachesStar M (g.cur.den v tl tr) c' ∧
+      (g.np = true → ReachesPlus M (g.cur.den v tl tr) c') ∧ Final M ps g.tgt v tl tr c'
 
 theorem Final_subst (M : TM) (ps : TapePatternSet Sym St) (t : Tgt) (i : ℕ) (f : Lin)
     (v : ℕ → ℕ) (tl tr : ListBlank Sym) (c' : Cfg Sym St) :
@@ -1273,8 +1198,8 @@ theorem Good_subst_at (M : TM) (ps : TapePatternSet Sym St) (dflt : Bool) (g : G
     (f : Lin) (hg : Good M ps dflt (g.subst i f)) (v : ℕ → ℕ) (k : ℕ)
     (hk : f.eval (Function.update v i k) = v i) (tl tr : ListBlank Sym)
     (ht : dflt = true → tl = default ∧ tr = default) :
-    ∃ c', RStar M (g.cur.den v tl tr) c' ∧ (g.np = true → RPlus M (g.cur.den v tl tr) c') ∧
-      Final M ps g.tgt v tl tr c' := by
+    ∃ c', ReachesStar M (g.cur.den v tl tr) c' ∧
+      (g.np = true → ReachesPlus M (g.cur.den v tl tr) c') ∧ Final M ps g.tgt v tl tr c' := by
   obtain ⟨c', h1, h2, h3⟩ := hg (Function.update v i k) tl tr ht
   have hv : Function.update (Function.update v i k) i (f.eval (Function.update v i k)) = v := by
     rw [hk, Function.update_idem, Function.update_eq_self]
@@ -1285,22 +1210,22 @@ theorem Good_subst_at (M : TM) (ps : TapePatternSet Sym St) (dflt : Bool) (g : G
 theorem Good_of_star (M : TM) (ps : TapePatternSet Sym St) (dflt : Bool) (g g' : Goal)
     (htg : g'.tgt = g.tgt) (hnp : g'.np = g.np)
     (hs : ∀ v tl tr, (dflt = true → tl = default ∧ tr = default) →
-      RStar M (g.cur.den v tl tr) (g'.cur.den v tl tr))
+      ReachesStar M (g.cur.den v tl tr) (g'.cur.den v tl tr))
     (hg : Good M ps dflt g') : Good M ps dflt g := by
   intro v tl tr ht
   obtain ⟨c', h1, h2, h3⟩ := hg v tl tr ht
-  refine ⟨c', rstar_trans (hs v tl tr ht) h1, fun hn => ?_, htg ▸ h3⟩
-  exact rstar_trans_plus (hs v tl tr ht) (h2 (hnp ▸ hn))
+  refine ⟨c', ReachesStar.trans (hs v tl tr ht) h1, fun hn => ?_, htg ▸ h3⟩
+  exact ReachesStar.trans_plus (hs v tl tr ht) (h2 (hnp ▸ hn))
 
 theorem Good_of_plus (M : TM) (ps : TapePatternSet Sym St) (dflt : Bool) (g g' : Goal)
     (htg : g'.tgt = g.tgt)
     (hs : ∀ v tl tr, (dflt = true → tl = default ∧ tr = default) →
-      RPlus M (g.cur.den v tl tr) (g'.cur.den v tl tr))
+      ReachesPlus M (g.cur.den v tl tr) (g'.cur.den v tl tr))
     (hg : Good M ps dflt g') : Good M ps dflt g := by
   intro v tl tr ht
   obtain ⟨c', h1, h2, h3⟩ := hg v tl tr ht
-  have hp := rplus_trans_star (hs v tl tr ht) h1
-  exact ⟨c', rplus_rstar hp, fun _ => hp, htg ▸ h3⟩
+  have hp := ReachesPlus.trans_star (hs v tl tr ht) h1
+  exact ⟨c', ReachesPlus.to_star hp, fun _ => hp, htg ▸ h3⟩
 
 theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = true)
     (rules : List Rule) (hr : ∀ r ∈ rules, RuleOK M r) (dflt : Bool) (g : Goal) (i : Ins)
@@ -1315,7 +1240,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
       simp only [hs, Option.map_some, Option.some.injEq] at he
       subst he
       refine Good_of_plus M _ dflt g ⟨c', false, g.tgt⟩ rfl (fun v tl tr ht => ?_) (hn _ (by simp))
-      exact step_rplus (symStep_sound M dflt g.cur c' hs v tl tr ht)
+      exact ReachesPlus.single (symStep_sound M dflt g.cur c' hs v tl tr ht)
   | shift =>
     simp only [exec] at he
     cases hs : shiftOp M g.cur with
@@ -1338,7 +1263,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
         refine Good_of_star M _ dflt g ⟨⟨g.cur.q, g.cur.dr, L', g.cur.R⟩, g.np, g.tgt⟩ rfl rfl
           (fun v tl tr _ => ?_) (hn _ (by simp))
         simp only [SC.den, rwAt_sound v r p g.cur.L L' hs tl]
-        exact rstar_refl M _
+        exact ReachesStar.refl M _
     | false =>
       simp only [Bool.false_eq_true, ite_false] at he
       cases hs : rwAt r p g.cur.R with
@@ -1349,7 +1274,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
         refine Good_of_star M _ dflt g ⟨⟨g.cur.q, g.cur.dr, g.cur.L, R'⟩, g.np, g.tgt⟩ rfl rfl
           (fun v tl tr _ => ?_) (hn _ (by simp))
         simp only [SC.den, rwAt_sound v r p g.cur.R R' hs tr]
-        exact rstar_refl M _
+        exact ReachesStar.refl M _
   | dropTail left =>
     simp only [exec] at he
     cases hd : dflt with
@@ -1369,7 +1294,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
           obtain ⟨h1, h2⟩ := ht rfl
           subst h1; subst h2
           simp only [SC.den, dropTail_sound v g.cur.L L' hs]
-          exact rstar_refl M _
+          exact ReachesStar.refl M _
       | false =>
         simp only [Bool.false_eq_true, ite_false] at he
         cases hs : dropTail g.cur.R with
@@ -1382,7 +1307,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
           obtain ⟨h1, h2⟩ := ht rfl
           subst h1; subst h2
           simp only [SC.den, dropTail_sound v g.cur.R R' hs]
-          exact rstar_refl M _
+          exact ReachesStar.refl M _
   | app j σ =>
     simp only [exec] at he
     cases hj : rules[j]? with
@@ -1453,7 +1378,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
         intro v tl tr htl
         obtain ⟨h1, h2⟩ := htl hd
         subst h1; subst h2
-        refine ⟨g.cur.den v default default, rstar_refl M _, fun h => by simp [hnp] at h, ?_⟩
+        refine ⟨g.cur.den v default default, ReachesStar.refl M _, fun h => by simp [hnp] at h, ?_⟩
         have hin := in_hubsPS hubs hh h (List.mem_of_getElem? hj) (sem σ v)
         rw [← SC.den_substAll, SC.beq_sound _ _ hb] at hin
         cases htg : g.tgt with
@@ -1470,7 +1395,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
       · rename_i hc
         simp only [Bool.and_eq_true, Bool.not_eq_true'] at hc
         intro v tl tr ht
-        refine ⟨g.cur.den v tl tr, rstar_refl M _, fun h => by simp [hc.1] at h, ?_⟩
+        refine ⟨g.cur.den v tl tr, ReachesStar.refl M _, fun h => by simp [hc.1] at h, ?_⟩
         rw [htg]
         exact Or.inr (isHalt_sound M dflt g.cur hc.2 v tl tr ht)
       · simp at he
@@ -1485,7 +1410,7 @@ theorem exec_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = tru
       · rename_i hc
         simp only [Bool.and_eq_true, Bool.not_eq_true'] at hc
         intro v tl tr ht
-        refine ⟨g.cur.den v tl tr, rstar_refl M _, fun h => by simp [hc.1] at h, ?_⟩
+        refine ⟨g.cur.den v tl tr, ReachesStar.refl M _, fun h => by simp [hc.1] at h, ?_⟩
         rw [htg]
         exact SC.beq_sound _ _ hc.2 v tl tr
       · simp at he
@@ -1510,9 +1435,7 @@ theorem run_sound (M : TM) (hubs : List SC) (hh : ∀ h ∈ hubs, hubOK h = true
       · exact exec_sound M hubs hh rules hr dflt g i new he (fun g' hg' => ih g' (by simp [hg']))
       · exact ih g (by simp [hg'])
 
--- ---------------------------------------------------------------------------
--- 6.10 Rule definitions: proved rules and iterated (inductive) rules
--- ---------------------------------------------------------------------------
+/-! ## Rule Definitions: Proved Rules and Iterated (Inductive) Rules -/
 
 inductive RDef
   | prove (r : Rule) (pf : List Ins)
@@ -1562,7 +1485,7 @@ theorem iter_sound (M : TM) (S : SC) (k : ℕ) (ds : List ℕ) (hk : k < ds.leng
   simp only [SC.den_substAll]
   -- induction on the counter value
   suffices H : ∀ n (v : ℕ → ℕ), v k = n →
-      RStar M (S.den v tl tr) (S.den (sem (iterR k ds) v) tl tr) from H (v k) v rfl
+      ReachesStar M (S.den v tl tr) (S.den (sem (iterR k ds) v) tl tr) from H (v k) v rfl
   intro n
   induction n with
   | zero =>
@@ -1575,7 +1498,7 @@ theorem iter_sound (M : TM) (S : SC) (k : ℕ) (ds : List ℕ) (hk : k < ds.leng
         · simp [h2, hv]
         · simp [h1, h2, hv]
       · simp [h1]
-    rw [this]; exact rstar_refl M _
+    rw [this]
   | succ n ih =>
     intro v hv
     let u := Function.update v k n
@@ -1611,7 +1534,7 @@ theorem iter_sound (M : TM) (S : SC) (k : ℕ) (ds : List ℕ) (hk : k < ds.leng
     rw [← e1, e2] at h1
     have h2 := ih w hw
     rw [e3] at h2
-    exact rstar_trans h1 h2
+    exact ReachesStar.trans h1 h2
 
 def buildRules (M : TM) : List Rule → List RDef → Option (List Rule)
   | done, [] => some done
@@ -1664,109 +1587,9 @@ theorem buildRules_sound (M : TM) : ∀ (ds : List RDef) (done rs : List Rule),
           exact iter_sound M S k dl hc.1.1 r (hd r (List.mem_of_getElem? hj)) hc.1.2 hc.2
       · simp at h
 
--- ---------------------------------------------------------------------------
--- 6.11 Certificates and the main soundness theorem
--- ---------------------------------------------------------------------------
-
-structure Certificate where
-  hubs : List SC
-  rules : List RDef
-  pf : List Ins
+/-! ## Certificate Checks and Their Soundness -/
 
 def initSC : SC := ⟨0, true, [], []⟩
-
-def checkCert (M : TM) (c : Certificate) : Bool :=
-  c.hubs.all hubOK &&
-  match buildRules M [] c.rules with
-  | some rs => run M c.hubs rs true c.pf (⟨initSC, false, .ps⟩ :: c.hubs.map (fun h => ⟨h, true,
-    .hubs⟩))
-  | none => false
-
-theorem checkCert_sound (M : TM) (c : Certificate) (h : checkCert M c
-  = true) : HasCollatzReduction M := by
-  simp only [checkCert, Bool.and_eq_true, List.all_eq_true] at h
-  obtain ⟨hh, hb⟩ := h
-  cases hrs : buildRules M [] c.rules with
-  | none => simp [hrs] at hb
-  | some rs =>
-    simp only [hrs] at hb
-    have hr := buildRules_sound M c.rules [] rs (by simp) hrs
-    have hg := run_sound M c.hubs hh rs hr true c.pf _ hb
-    refine ⟨hubsPS c.hubs, ?_, ?_⟩
-    · obtain ⟨c', h1, _, h3⟩ := hg ⟨initSC, false, .ps⟩ (by simp) (fun _ => 0) default default
-        (fun _ => ⟨rfl, rfl⟩)
-      exact ⟨c', h1, h3⟩
-    · intro cfg hcfg
-      obtain ⟨entry, hmem, vars, hcv, _⟩ := hcfg
-      obtain ⟨hub, hhub, rfl⟩ := List.mem_map.mp hmem
-      rw [toPat_eval hub (hh hub hhub) vars] at hcv
-      subst hcv
-      obtain ⟨c', _, h2, h3⟩ := hg ⟨hub, true, .hubs⟩ (by simp [hhub]) vars default default
-        (fun _ => ⟨rfl, rfl⟩)
-      exact ⟨c', h2 rfl, h3⟩
-
-theorem step_isSome_of_ms_pos {M : TM} {a b : Cfg Sym St} {n : ℕ} (hn : n > 0)
-    (h : multiStep M a n = some b) : (step M a).isSome = true := by
-  have hk : n = 1 + (n - 1) := by omega
-  rw [hk, ms_add, ms_succ, ms_zero] at h
-  cases hs : step M a with
-  | none => simp [hs] at h
-  | some c => rfl
-
-theorem step_isSome_of_ms_lt {M : TM} {c₀ a b : Cfg Sym St} {n k : ℕ} (hlt : n < k)
-    (hn : multiStep M c₀ n = some a) (hk : multiStep M c₀ k = some b) :
-    (step M a).isSome = true := by
-  have h1 : k = n + (k - n) := by omega
-  rw [h1, ms_add, hn] at hk
-  exact step_isSome_of_ms_pos (by omega) hk
-
-theorem closed_ps_arb_long {M : TM} {ps : TapePatternSet Sym St}
-    (h0 : ∃ cfg₀, RStar M (init []) cfg₀ ∧ IsInPatternSet ps cfg₀)
-    (hstep : ∀ cfg, IsInPatternSet ps cfg → ∃ cfg', RPlus M cfg cfg' ∧ IsInPatternSet ps cfg') :
-    ∀ m : ℕ, ∃ k ≥ m, ∃ cfg', multiStep M (init []) k = some cfg' ∧ IsInPatternSet ps cfg'
-  | 0 => by
-    obtain ⟨cfg₀, ⟨n, hn⟩, hin⟩ := h0
-    exact ⟨n, by omega, cfg₀, hn, hin⟩
-  | m + 1 => by
-    obtain ⟨k, hkm, cfg₁, hk, hin₁⟩ := closed_ps_arb_long h0 hstep m
-    obtain ⟨cfg₂, ⟨d, hd0, hd⟩, hin₂⟩ := hstep cfg₁ hin₁
-    refine ⟨k + d, by omega, cfg₂, ?_, hin₂⟩
-    rw [ms_add, hk]; simpa using hd
-
-def checkNonHalt (M : TM) (c : Certificate) : Bool :=
-  c.hubs.all hubOK &&
-  match buildRules M [] c.rules with
-  | some rs => run M c.hubs rs true c.pf (⟨initSC, false, .ps⟩ :: c.hubs.map (fun h => ⟨h, true,
-    .ps⟩))
-  | none => false
-
-theorem checkNonHalt_sound (M : TM) (c : Certificate) (h : checkNonHalt M c = true) :
-    (∀ (cfg : Cfg (Fin 2) (Fin 6)), ((init []) [M]⊢* cfg) → (step M cfg).isSome) := by
-  simp only [checkNonHalt, Bool.and_eq_true, List.all_eq_true] at h
-  obtain ⟨hh, hb⟩ := h
-  cases hrs : buildRules M [] c.rules with
-  | none => simp [hrs] at hb
-  | some rs =>
-    simp only [hrs] at hb
-    have hr := buildRules_sound M c.rules [] rs (by simp) hrs
-    have hg := run_sound M c.hubs hh rs hr true c.pf _ hb
-    have h0 : ∃ cfg₀, RStar M (init []) cfg₀ ∧ IsInPatternSet (hubsPS c.hubs) cfg₀ := by
-      obtain ⟨c', h1, _, h3⟩ := hg ⟨initSC, false, .ps⟩ (by simp) (fun _ => 0) default default
-        (fun _ => ⟨rfl, rfl⟩)
-      exact ⟨c', h1, h3⟩
-    have hstep : ∀ cfg, IsInPatternSet (hubsPS c.hubs) cfg →
-        ∃ cfg', RPlus M cfg cfg' ∧ IsInPatternSet (hubsPS c.hubs) cfg' := by
-      intro cfg hcfg
-      obtain ⟨entry, hmem, vars, hcv, _⟩ := hcfg
-      obtain ⟨hub, hhub, rfl⟩ := List.mem_map.mp hmem
-      rw [toPat_eval hub (hh hub hhub) vars] at hcv
-      subst hcv
-      obtain ⟨c', _, h2, h3⟩ := hg ⟨hub, true, .ps⟩ (by simp [hhub]) vars default default
-        (fun _ => ⟨rfl, rfl⟩)
-      exact ⟨c', h2 rfl, h3⟩
-    intro cfg ⟨n, hn⟩
-    obtain ⟨k, hkn, c', hk, _⟩ := closed_ps_arb_long h0 hstep (n + 1)
-    exact step_isSome_of_ms_lt (by omega) hn hk
 
 def checkTrans (M : TM) (rules : List RDef) (lhs rhs : SC) (pf : List Ins) : Bool :=
   match buildRules M [] rules with
@@ -1842,64 +1665,5 @@ theorem checkInit_sound (M : TM) (rules : List RDef) (rhs : SC) (pf : List Ins)
     exact h1
 
 end Cert
-
-def env3 (a b c : Nat) : Nat → Nat
-  | 0 => a
-  | 1 => b
-  | 2 => c
-  | _ => 0
-
-theorem env3_0 (a b c : Nat) : env3 a b c 0 = a := rfl
-theorem env3_1 (a b c : Nat) : env3 a b c 1 = b := rfl
-theorem env3_2 (a b c : Nat) : env3 a b c 2 = c := rfl
-
-
-def env6 (a b c d e f : Nat) : Nat → Nat
-  | 0 => a
-  | 1 => b
-  | 2 => c
-  | 3 => d
-  | 4 => e
-  | 5 => f
-  | _ => 0
-
-theorem env6_0 (a b c d e f : Nat) : env6 a b c d e f 0 = a := rfl
-theorem env6_1 (a b c d e f : Nat) : env6 a b c d e f 1 = b := rfl
-theorem env6_2 (a b c d e f : Nat) : env6 a b c d e f 2 = c := rfl
-theorem env6_3 (a b c d e f : Nat) : env6 a b c d e f 3 = d := rfl
-theorem env6_4 (a b c d e f : Nat) : env6 a b c d e f 4 = e := rfl
-theorem env6_5 (a b c d e f : Nat) : env6 a b c d e f 5 = f := rfl
-
-lemma congr_cfg1 (f : Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 : Nat} (ha : a1 = a2) :
-    f a1 = f a2 := by
-  subst ha; rfl
-
-lemma congr_cfg2 (f : Nat → Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 b1 b2 : Nat} (ha : a1 = a2) (hb : b1 = b2) :
-    f a1 b1 = f a2 b2 := by
-  subst ha hb; rfl
-
-lemma congr_cfg3 (f : Nat → Nat → Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 b1 b2 c1 c2 : Nat} (ha : a1 = a2) (hb : b1 = b2) (hc : c1 = c2) :
-    f a1 b1 c1 = f a2 b2 c2 := by
-  subst ha hb hc; rfl
-
-lemma congr_cfg4 (f : Nat → Nat → Nat → Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 b1 b2 c1 c2 d1 d2 : Nat} (ha : a1 = a2) (hb : b1 = b2) (hc : c1 = c2) (hd : d1 = d2) :
-    f a1 b1 c1 d1 = f a2 b2 c2 d2 := by
-  subst ha hb hc hd; rfl
-
-lemma congr_cfg5 (f : Nat → Nat → Nat → Nat → Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 b1 b2 c1 c2 d1 d2 e1 e2 : Nat} (ha : a1 = a2) (hb : b1 = b2) (hc : c1
-      = c2) (hd : d1 = d2) (he : e1 = e2) :
-    f a1 b1 c1 d1 e1 = f a2 b2 c2 d2 e2 := by
-  subst ha hb hc hd he; rfl
-
-lemma congr_cfg6 (f : Nat → Nat → Nat → Nat → Nat → Nat → Cfg (Fin 2) (Fin 6))
-    {a1 a2 b1 b2 c1 c2 d1 d2 e1 e2 f1 f2 : Nat} (ha : a1 = a2) (hb : b1 = b2) (hc : c1
-      = c2) (hd : d1 = d2) (he : e1 = e2) (hf : f1 = f2) :
-    f a1 b1 c1 d1 e1 f1 = f a2 b2 c2 d2 e2 f2 := by
-  subst ha hb hc hd he hf; rfl
 
 end BusyBeaver

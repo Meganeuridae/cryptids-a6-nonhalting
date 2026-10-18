@@ -54,7 +54,7 @@ abbrev target : Machine (Fin 2) (Fin 6) :=
 
 /-! ## Shift Lemmas -/
 
-lemma shift_C_right (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_C_right (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{C}}> (([0, 1] : List (Fin 2)) ^ k +> r)) [target]⊢*
     ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> r) := by
   induction k generalizing l r with
@@ -71,7 +71,7 @@ lemma shift_C_right (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ'] at h2
     exact ReachesStar.trans h1 h2
 
-lemma shift_DC_left (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_DC_left (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{D}}> ([0] +> r)) [target]⊢*
     (l {{D}}> ([0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
@@ -88,7 +88,7 @@ lemma shift_DC_left (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ'] at h2
     exact ReachesStar.trans h1 h2
 
-lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [target]⊢*
     (l {{C}}> ([1] +> (([1, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
@@ -105,7 +105,7 @@ lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ'] at h2
     exact ReachesStar.trans h1 h2
 
-lemma shift_E_0101 (m : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_E_0101 (m : Nat) (l r : ListBlank (Fin 2)) :
     (l {{E}}> (([0, 1, 0, 1] : List (Fin 2)) ^ m +> r)) [target]⊢*
     ((l <+ ([1, 1, 1, 1] : List (Fin 2)) ^ m) {{E}}> r) := by
   induction m generalizing l r with
@@ -122,9 +122,17 @@ lemma shift_E_0101 (m : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ'] at h2
     exact ReachesStar.trans h1 h2
 
+private theorem one_pow_four_mul (k : ℕ) :
+    ([1, 1, 1, 1] : List (Fin 2)) ^ k = ([1] : List (Fin 2)) ^ (4 * k) :=
+  (list_pow_mul [1] 4 k).symm
+
+private theorem zero_one_pow_two_mul (m : ℕ) :
+    ([0, 1] : List (Fin 2)) ^ (2 * m) = ([0, 1, 0, 1] : List (Fin 2)) ^ m :=
+  list_pow_mul [0, 1] 2 m
+
 /-! ## Canonical Pattern Set -/
 
-def cfg_D (a b : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_D (a b : Nat) : Cfg (Fin 2) (Fin 6) :=
   (default : ListBlank (Fin 2)) {{D}}> (([0, 1] : List (Fin 2)) ^ a +> (([1] : List (Fin 2)) ^ b +>
       default))
 
@@ -149,21 +157,21 @@ def pat_A : TapePattern (Fin 2) (Fin 6) :=
 def ps : TapePatternSet (Fin 2) (Fin 6) :=
   [(pat_A, .not (.ge_const 1 2))]
 
-lemma eval_pat_A (vars : Nat -> Nat) :
+private theorem eval_pat_A (vars : Nat -> Nat) :
     evalTapePattern pat_A vars =
     cfg_A (default <+ ([0, 1, 1, 1] : List (Fin 2)) ^ (vars 1)) (vars 0) (vars 2) (vars 3) := rfl
 
-lemma in_ps_S_def (k j c : Nat) : IsInPatternSet ps (cfg_A default k j c) := by
+private theorem in_ps_S_def (k j c : Nat) : IsInPatternSet ps (cfg_A default k j c) := by
   refine ⟨(pat_A, .not (.ge_const 1 2)), List.Mem.head _,
     fun i => match i with | 0 => k | 1 => 0 | 2 => j | 3 => c | _ => 0, rfl, ?_⟩
   simp [evalVarCond]
 
-lemma in_ps_S_hat (k j c : Nat) : IsInPatternSet ps (cfg_A l_hat k j c) := by
+private theorem in_ps_S_hat (k j c : Nat) : IsInPatternSet ps (cfg_A l_hat k j c) := by
   refine ⟨(pat_A, .not (.ge_const 1 2)), List.Mem.head _,
     fun i => match i with | 0 => k | 1 => 1 | 2 => j | 3 => c | _ => 0, rfl, ?_⟩
   simp [evalVarCond]
 
-lemma in_ps_S_ones3 (k j c : Nat) :
+private theorem in_ps_S_ones3 (k j c : Nat) :
     IsInPatternSet ps (cfg_A (default <+ ([1] : List (Fin 2)) ^ 3) k j c) := by
   unfold cfg_A
   rw [← ListBlank.append_pow_add_rev default ([1] : List (Fin 2)) 3 k]
@@ -171,7 +179,7 @@ lemma in_ps_S_ones3 (k j c : Nat) :
 
 /-! ## Accelerated Transition Rules -/
 
-lemma step_C001_even_to_E (l : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_C001_even_to_E (l : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)) :
     (l {{C}}> ([0, 0, 1] +> (([0, 1] : List (Fin 2)) ^ (2 * m) +> r))) [target]⊢⁺
     ((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) {{E}}> r) := by
   rw [zero_one_pow_two_mul m]
@@ -186,7 +194,7 @@ lemma step_C001_even_to_E (l : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 
   rw [hm] at h2
   exact ReachesPlus.trans_star h1 h2
 
-theorem step_C001_even_b0_halt (l : ListBlank (Fin 2)) (m : Nat) :
+private theorem step_C001_even_b0_halt (l : ListBlank (Fin 2)) (m : Nat) :
     ∃ cfg', ((cfg_C001 l (2 * m) 0) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   refine ⟨(((l <+ ([1] : List (Fin 2)) ^ (4 * m + 3)) <+ [1]) {{F}}> default), ?_,
     by rfl⟩
@@ -199,7 +207,7 @@ theorem step_C001_even_b0_halt (l : ListBlank (Fin 2)) (m : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_even_b1 (l : ListBlank (Fin 2)) (m : Nat) :
+private theorem step_C001_even_b1 (l : ListBlank (Fin 2)) (m : Nat) :
     (cfg_C001 l (2 * m) 1) [target]⊢⁺ (cfg_A l (4 * m + 2) 0 0) := by
   unfold cfg_C001 cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -214,7 +222,7 @@ theorem step_C001_even_b1 (l : ListBlank (Fin 2)) (m : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_even_b2 (l : ListBlank (Fin 2)) (m : Nat) :
+private theorem step_C001_even_b2 (l : ListBlank (Fin 2)) (m : Nat) :
     (cfg_C001 l (2 * m) 2) [target]⊢⁺ (cfg_A l (4 * m + 2) 0 3) := by
   unfold cfg_C001 cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -230,7 +238,7 @@ theorem step_C001_even_b2 (l : ListBlank (Fin 2)) (m : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_even_b3 (l : ListBlank (Fin 2)) (m c : Nat) :
+private theorem step_C001_even_b3 (l : ListBlank (Fin 2)) (m c : Nat) :
     (cfg_C001 l (2 * m) (c + 3)) [target]⊢⁺ (cfg_A l (4 * m + 4) 0 c) := by
   unfold cfg_C001 cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -250,7 +258,7 @@ theorem step_C001_even_b3 (l : ListBlank (Fin 2)) (m c : Nat) :
   rw [hm] at h2
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_odd_b0 (l : ListBlank (Fin 2)) (m : Nat) :
+private theorem step_C001_odd_b0 (l : ListBlank (Fin 2)) (m : Nat) :
     (cfg_C001 l (2 * m + 1) 0) [target]⊢⁺ (cfg_A l (4 * m + 4) 0 1) := by
   unfold cfg_C001 cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -268,7 +276,7 @@ theorem step_C001_odd_b0 (l : ListBlank (Fin 2)) (m : Nat) :
   rw [hm] at h2
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_odd_b1 (l : ListBlank (Fin 2)) (m c : Nat) :
+private theorem step_C001_odd_b1 (l : ListBlank (Fin 2)) (m c : Nat) :
     (cfg_C001 l (2 * m + 1) (c + 1)) [target]⊢⁺ (cfg_A l (4 * m + 3) 0 (c + 1)) := by
   unfold cfg_C001 cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -286,7 +294,7 @@ theorem step_C001_odd_b1 (l : ListBlank (Fin 2)) (m c : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 h2
 
-theorem step_C001_all (l : ListBlank (Fin 2))
+private theorem step_C001_all (l : ListBlank (Fin 2))
     (hl : ∀ k j c, IsInPatternSet ps (cfg_A l k j c)) (a b : Nat) :
     ∃ cfg', ((cfg_C001 l a b) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
@@ -302,13 +310,13 @@ theorem step_C001_all (l : ListBlank (Fin 2))
     · exact ⟨_, step_C001_odd_b0 l m, Or.inl (hl (4 * m + 4) 0 1)⟩
     · exact ⟨_, step_C001_odd_b1 l m c, Or.inl (hl (4 * m + 3) 0 (c + 1))⟩
 
-theorem step_D_succ_to_cfg_C001 (a b : Nat) :
+private theorem step_D_succ_to_cfg_C001 (a b : Nat) :
     (cfg_D (a + 1) b) [target]⊢⁺ (cfg_C001 default a b) := by
   unfold cfg_D cfg_C001
   rw [ListBlank.append_pow_succ ([0, 1] : List (Fin 2)) a (([1] : List (Fin 2)) ^ b +> default)]
   bb_steps
 
-theorem step_S_def_k0_jsucc_to_cfg_C001 (j c : Nat) :
+private theorem step_S_def_k0_jsucc_to_cfg_C001 (j c : Nat) :
     (cfg_A default 0 (j + 1) c) [target]⊢⁺ (cfg_C001 l_hat j c) := by
   unfold cfg_A cfg_C001 l_hat
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -316,7 +324,7 @@ theorem step_S_def_k0_jsucc_to_cfg_C001 (j c : Nat) :
   dsimp [ListBlank.append, list_pow_succ]
   bb_steps
 
-theorem step_S_hat_k0_jsucc (j c : Nat) :
+private theorem step_S_hat_k0_jsucc (j c : Nat) :
     (cfg_A l_hat 0 (j + 1) c) [target]⊢⁺ (cfg_A default 6 (j + 1) c) := by
   unfold cfg_A l_hat
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -324,7 +332,7 @@ theorem step_S_hat_k0_jsucc (j c : Nat) :
   dsimp [ListBlank.append, list_pow_succ]
   bb_steps
 
-theorem step_S_hat_k1_c0 (j : Nat) :
+private theorem step_S_hat_k1_c0 (j : Nat) :
     (cfg_A l_hat 1 j 0) [target]⊢⁺ (cfg_A default 1 1 (2 * j + 5)) := by
   unfold cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -358,7 +366,7 @@ theorem step_S_hat_k1_c0 (j : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_S_hat_k1_csucc_to_cfg_C001 (j c : Nat) :
+private theorem step_S_hat_k1_csucc_to_cfg_C001 (j c : Nat) :
     (cfg_A l_hat 1 j (c + 1)) [target]⊢⁺
     (cfg_C001 (default <+ ([1] : List (Fin 2)) ^ 3) (j + 1) c) := by
   unfold cfg_A cfg_C001
@@ -396,7 +404,7 @@ theorem step_S_hat_k1_csucc_to_cfg_C001 (j c : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_SL_stride3 (l : ListBlank (Fin 2)) (k j c : Nat) :
+private theorem step_SL_stride3 (l : ListBlank (Fin 2)) (k j c : Nat) :
     (cfg_A l (k + 3) j (c + 1)) [target]⊢⁺ (cfg_A l k (j + 2) c) := by
   unfold cfg_A
   have hk : k + 3 = (k + 2) + 1 := by omega
@@ -440,7 +448,7 @@ theorem step_SL_stride3 (l : ListBlank (Fin 2)) (k j c : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_SL_c0_k2 (l : ListBlank (Fin 2)) (k j : Nat) :
+private theorem step_SL_c0_k2 (l : ListBlank (Fin 2)) (k j : Nat) :
     (cfg_A l (k + 2) j 0) [target]⊢⁺ (cfg_A l k 0 (2 * j + 5)) := by
   unfold cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -479,7 +487,7 @@ theorem step_SL_c0_k2 (l : ListBlank (Fin 2)) (k j : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_S_k1_c0 (j : Nat) :
+private theorem step_S_k1_c0 (j : Nat) :
     (cfg_A default 1 j 0) [target]⊢⁺ (cfg_A default 0 0 (2 * j + 3)) := by
   unfold cfg_A
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -519,7 +527,7 @@ theorem step_S_k1_c0 (j : Nat) :
     bb_steps
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans h12 h3) h4) h5
 
-theorem step_S_k1_csucc (j c : Nat) :
+private theorem step_S_k1_csucc (j c : Nat) :
     (cfg_A default 1 j (c + 1)) [target]⊢⁺ (cfg_D (j + 2) c) := by
   unfold cfg_A cfg_D
   rw [ListBlank.append_pow_succ ([1] : List (Fin 2)) c default]
@@ -551,7 +559,7 @@ theorem step_S_k1_csucc (j c : Nat) :
   rw [h5] at h4
   exact ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3) h4
 
-theorem step_S_k2_csucc (j c : Nat) :
+private theorem step_S_k2_csucc (j c : Nat) :
     (cfg_A default 2 j (c + 1)) [target]⊢⁺ (cfg_D (j + 3) c) := by
   unfold cfg_A cfg_D
   rw [ListBlank.append_pow_succ ([1] : List (Fin 2)) c default]
@@ -596,14 +604,14 @@ theorem step_S_k2_csucc (j c : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_S_k0_j0 (c : Nat) :
+private theorem step_S_k0_j0 (c : Nat) :
     (cfg_A default 0 0 c) [target]⊢⁺ (cfg_D 1 (c + 2)) := by
   unfold cfg_A cfg_D
   rw [Nat.add_comm c 2, ListBlank.append_pow_add ([1] : List (Fin 2)) 2 c default]
   dsimp [ListBlank.append, list_pow_succ]
   bb_steps
 
-theorem step_SL_hat_k2_csucc (j c : Nat) :
+private theorem step_SL_hat_k2_csucc (j c : Nat) :
     (cfg_A l_hat 2 j (c + 1)) [target]⊢⁺ (cfg_A default 1 (j + 3) c) := by
   unfold cfg_A l_hat
   rw [ListBlank.append_pow_succ ([1] : List (Fin 2)) c default]
@@ -656,7 +664,7 @@ theorem step_SL_hat_k2_csucc (j c : Nat) :
   exact ReachesPlus.trans (ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star
     h1 h2) h3) h4) h5
 
-theorem step_SL_hat_k0_j0 (c : Nat) :
+private theorem step_SL_hat_k0_j0 (c : Nat) :
     (cfg_A l_hat 0 0 c) [target]⊢⁺ (cfg_A default 2 0 (c + 2)) := by
   unfold cfg_A l_hat
   rw [Nat.add_comm c 2, ListBlank.append_pow_add ([1] : List (Fin 2)) 2 c default]
@@ -665,17 +673,17 @@ theorem step_SL_hat_k0_j0 (c : Nat) :
 
 /-! ## Blank-Tape Entry and Closure -/
 
-theorem init_to_cfg_D : (init []) [target]⊢⁺ (cfg_D 1 1) := by
+private theorem init_to_cfg_D : (init []) [target]⊢⁺ (cfg_D 1 1) := by
   unfold init cfg_D
   simp only [Tape.mk₁]
   bb_steps
 
-theorem init_reaches_S : (init []) [target]⊢* (cfg_A default 2 0 0) :=
+private theorem init_reaches_S : (init []) [target]⊢* (cfg_A default 2 0 0) :=
   ReachesPlus.to_star
     (ReachesPlus.trans (ReachesPlus.trans init_to_cfg_D (step_D_succ_to_cfg_C001 0 1))
       (step_C001_even_b1 default 0))
 
-theorem step_S_def_all (k j c : Nat) :
+private theorem step_S_def_all (k j c : Nat) :
     ∃ cfg', ((cfg_A default k j c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases k with _ | _ | _ | k'
@@ -700,7 +708,7 @@ theorem step_S_def_all (k j c : Nat) :
     · exact ⟨_, step_SL_c0_k2 default (k' + 1) j, Or.inl (in_ps_S_def (k' + 1) 0 (2 * j + 5))⟩
     · exact ⟨_, step_SL_stride3 default k' j c', Or.inl (in_ps_S_def k' (j + 2) c')⟩
 
-theorem step_S_hat_all (k j c : Nat) :
+private theorem step_S_hat_all (k j c : Nat) :
     ∃ cfg', ((cfg_A l_hat k j c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases k with _ | _ | _ | k'
@@ -742,7 +750,7 @@ theorem has_collatz_reduction : HasCollatzReduction target :=
 
 /-! ## Collatz-Like Acceleration (Level B) -/
 
-lemma cfg_A_ones3_eq (k j c : Nat) :
+private theorem cfg_A_ones3_eq (k j c : Nat) :
     cfg_A l_ones3 k j c = cfg_A default (3 + k) j c := by
   unfold cfg_A l_ones3
   rw [← ListBlank.append_pow_add_rev default ([1] : List (Fin 2)) 3 k]

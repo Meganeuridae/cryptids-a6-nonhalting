@@ -64,7 +64,7 @@ abbrev target : Machine (Fin 2) (Fin 6) :=
 /-- The left-right mirror image of `target`, with control states relabelled by `π`, so that
 `step target (mirrorCfg c) = (step mirrorMachine c).map mirrorCfg` (`step_mirror`); all sweeps
 are analysed on this machine. -/
-def mirrorMachine : Machine (Fin 2) (Fin 6)
+private def mirrorMachine : Machine (Fin 2) (Fin 6)
   | 0, 0 => some (some 1, Stmt.write 1 Dir.right)
   | 0, 1 => some (some 5, Stmt.write 0 Dir.left)
   | 1, 0 => some (some 2, Stmt.write 1 Dir.left)
@@ -80,7 +80,7 @@ def mirrorMachine : Machine (Fin 2) (Fin 6)
 
 /-! ## Shift Lemmas -/
 
-theorem shift_E_ones (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_E_ones (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{E}}> (([1] : List (Fin 2)) ^ k +> r)) [mirrorMachine]⊢*
     ((l <+ ([1] : List (Fin 2)) ^ k) {{E}}> r) := by
   induction k generalizing l r with
@@ -97,7 +97,7 @@ theorem shift_E_ones (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([1] : List (Fin 2)) k l] at h2
     exact ReachesStar.trans h1 h2
 
-theorem shift_CB_left (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_CB_left (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{C}}> ([1] +> r)) [mirrorMachine]⊢*
     (l {{C}}> ([1] +> (([1, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
@@ -114,7 +114,7 @@ theorem shift_CB_left (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([1, 1] : List (Fin 2)) k r] at h2
     exact ReachesStar.trans h1 h2
 
-theorem shift_D_right_100 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_D_right_100 (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{D}}> ([1, 0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r))) [mirrorMachine]⊢*
     ((l <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}> ([1, 0, 0] +> r)) := by
   induction k generalizing l r with
@@ -131,7 +131,7 @@ theorem shift_D_right_100 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([0, 1] : List (Fin 2)) k l] at h2
     exact ReachesStar.trans h1 h2
 
-theorem shift_FA_left (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_FA_left (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 0] : List (Fin 2)) ^ k) {{F}}> ([0] +> r)) [mirrorMachine]⊢*
     (l {{F}}> ([0] +> (([0, 1] : List (Fin 2)) ^ k +> r))) := by
   induction k generalizing l r with
@@ -150,7 +150,7 @@ theorem shift_FA_left (k : Nat) (l r : ListBlank (Fin 2)) :
 
 /-! ## Canonical Configurations of `mirrorMachine` -/
 
-def cfg_E (a b : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_E (a b : Nat) : Cfg (Fin 2) (Fin 6) :=
   (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ a)
           {{E}}> default
 
@@ -164,31 +164,31 @@ def cfg_F (b k c : Nat) : Cfg (Fin 2) (Fin 6) :=
           {{F}}>
     ([0, 0] +> (([1] : List (Fin 2)) ^ c +> default))
 
-theorem cfg_F_eq_F_R (b k c : Nat) :
+private theorem cfg_F_eq_F_R (b k c : Nat) :
     cfg_F b k c = F_R b k (([1] : List (Fin 2)) ^ c +> default) := rfl
 
 /-- Tape pattern of `mirrorMachine` describing the configurations `cfg_F b k c`. -/
-def mirrorPat : TapePattern (Fin 2) (Fin 6) :=
+private def mirrorPat : TapePattern (Fin 2) (Fin 6) :=
   { left  := .rep [1, 0] 1 (.rep [1] 0 .default)
     head  := some F
     right := .sym 0 (.sym 0 (.rep [1] 2 .default)) }
 
 /-- Pattern set of `mirrorMachine`; its closure is transported to `ps` on `target` below. -/
-def mirrorPs : TapePatternSet (Fin 2) (Fin 6) :=
+private def mirrorPs : TapePatternSet (Fin 2) (Fin 6) :=
   [(mirrorPat, .true)]
 
-theorem eval_mirrorPat (vars : Nat → Nat) :
+private theorem eval_mirrorPat (vars : Nat → Nat) :
     evalTapePattern mirrorPat vars = cfg_F (vars 0) (vars 1) (vars 2) :=
   rfl
 
-theorem in_ps_F (b k c : Nat) : IsInPatternSet mirrorPs (cfg_F b k c) := by
+private theorem in_ps_F (b k c : Nat) : IsInPatternSet mirrorPs (cfg_F b k c) := by
   refine ⟨(mirrorPat, .true), List.Mem.head _, fun i => match i with | 0 => b | 1 => k | _ => c,
     ?_, trivial⟩
   exact (eval_mirrorPat (fun i => match i with | 0 => b | 1 => k | _ => c)).symm
 
 /-! ## Accelerated Transition Rules -/
 
-theorem step_E_b0 (a : Nat) :
+private theorem step_E_b0 (a : Nat) :
     (cfg_E a 0) [mirrorMachine]⊢⁺ (cfg_E 0 (2 * a + 4)) := by
   unfold cfg_E
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -216,7 +216,7 @@ theorem step_E_b0 (a : Nat) :
   rw [ha] at h4
   exact ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3) h4
 
-theorem step_E_b1 (a : Nat) :
+private theorem step_E_b1 (a : Nat) :
     (cfg_E a 1) [mirrorMachine]⊢⁺ (cfg_E 0 (2 * a + 6)) := by
   unfold cfg_E
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -249,7 +249,7 @@ theorem step_E_b1 (a : Nat) :
   rw [ha] at h4
   exact ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3) h4
 
-theorem step_E_b2_to_D_halt (a : Nat) :
+private theorem step_E_b2_to_D_halt (a : Nat) :
     (cfg_E a 2) [mirrorMachine]⊢⁺
     ((default : ListBlank (Fin 2)) {{D}}> ([0, 0] +> (([1] : List (Fin 2)) ^ (2 * a + 4) +>
             default))) := by
@@ -282,7 +282,7 @@ theorem step_E_b2_to_D_halt (a : Nat) :
   rw [ha] at h3
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3
 
-theorem step_E_b3_to_F (a b : Nat) :
+private theorem step_E_b3_to_F (a b : Nat) :
     (cfg_E a (b + 3)) [mirrorMachine]⊢⁺ (cfg_F (b + 1) 0 (2 * a + 3)) := by
   unfold cfg_E cfg_F
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -318,7 +318,7 @@ theorem step_E_b3_to_F (a b : Nat) :
   rw [ha] at h3
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3
 
-theorem step_F_b2_k0 (c : Nat) :
+private theorem step_F_b2_k0 (c : Nat) :
     (cfg_F 2 0 (c + 1)) [mirrorMachine]⊢⁺ (cfg_F 5 0 c) := by
   unfold cfg_F
   rw [ListBlank.append_pow_succ ([1] : List (Fin 2)) c default]
@@ -326,11 +326,11 @@ theorem step_F_b2_k0 (c : Nat) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem isNone_step_D_00 (l r : ListBlank (Fin 2)) :
+private theorem isNone_step_D_00 (l r : ListBlank (Fin 2)) :
     (step mirrorMachine (l {{D}}> ([0, 0] +> r))).isNone = true := by
   bb_halt
 
-theorem closes_E (a b : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_E a b) := by
+private theorem closes_E (a b : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_E a b) := by
   rcases b with _ | _ | _ | b'
   · have h1 := step_E_b0 a
     have hb : 2 * a + 4 = (2 * a + 1) + 3 := by omega
@@ -345,15 +345,15 @@ theorem closes_E (a b : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_E a b) 
   · exact StepsToClosed.of_halting (step_E_b2_to_D_halt a) (isNone_step_D_00 _ _)
   · exact StepsToClosed.of_isInPatternSet (step_E_b3_to_F a b') (in_ps_F (b' + 1) 0 (2 * a + 3))
 
-def D100 (b k : Nat) (r : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
+private def D100 (b k : Nat) (r : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
   ((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ ([1, 0] : List (Fin 2)) ^ k) <+
           [0]) {{D}}>
     ([1, 0, 0] +> r)
 
-def C_bounce (b : Nat) (s : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
+private def C_bounce (b : Nat) (s : ListBlank (Fin 2)) : Cfg (Fin 2) (Fin 6) :=
   (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) <+ [0]) {{C}}> ([1] +> s)
 
-theorem step_F0_sweep_right (k : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_F0_sweep_right (k : Nat) (r : ListBlank (Fin 2)) :
     ((default : ListBlank (Fin 2)) {{F}}> ([0, 0] +> (([1, 0] : List (Fin 2)) ^ k +> r)))
     [mirrorMachine]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([0, 1] : List (Fin 2)) ^ k) {{D}}> ([1, 0, 0] +> r)) := by
@@ -364,7 +364,7 @@ theorem step_F0_sweep_right (k : Nat) (r : ListBlank (Fin 2)) :
   have h2 := shift_D_right_100 k default r
   exact ReachesPlus.trans_star h1 h2
 
-theorem F_R_b0_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
+private theorem F_R_b0_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
     (F_R 0 k r) [mirrorMachine]⊢⁺ (D100 0 k r) := by
   unfold F_R D100
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -374,7 +374,7 @@ theorem F_R_b0_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
   rw [default_append_01_pow k] at h2
   exact ReachesStar.trans_plus h1 h2
 
-theorem F_R_b1_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
+private theorem F_R_b1_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
     (F_R 1 k r) [mirrorMachine]⊢⁺ (D100 0 (k + 1) r) := by
   unfold F_R D100
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -394,7 +394,7 @@ theorem F_R_b1_to_D100 (k : Nat) (r : ListBlank (Fin 2)) :
   rw [default_append_01_pow (k + 1)] at h3
   exact ReachesPlus.trans (ReachesStar.trans_plus h1 h2) h3
 
-theorem F_R_b3_to_D100 (b k : Nat) (r : ListBlank (Fin 2)) :
+private theorem F_R_b3_to_D100 (b k : Nat) (r : ListBlank (Fin 2)) :
     (F_R (b + 3) k r) [mirrorMachine]⊢⁺ (D100 (b + 1) k r) := by
   unfold F_R D100
   have h1 := shift_FA_left k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 3))
@@ -416,7 +416,7 @@ theorem F_R_b3_to_D100 (b k : Nat) (r : ListBlank (Fin 2)) :
   rw [append_01_pow_zero k ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1))] at h3
   exact ReachesPlus.trans_star (ReachesStar.trans_plus h1 h2) h3
 
-theorem D100_0_11 (k : Nat) (r : ListBlank (Fin 2)) :
+private theorem D100_0_11 (k : Nat) (r : ListBlank (Fin 2)) :
     (D100 0 k ([1, 1] +> r)) [mirrorMachine]⊢⁺ (F_R 1 (k + 1) r) := by
   unfold D100 F_R
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -434,7 +434,7 @@ theorem D100_0_11 (k : Nat) (r : ListBlank (Fin 2)) :
     <- append_10_pow_one (k + 1) default] at h1
   exact h1
 
-theorem D100_succ_11 (b k : Nat) (r : ListBlank (Fin 2)) :
+private theorem D100_succ_11 (b k : Nat) (r : ListBlank (Fin 2)) :
     (D100 (b + 1) k ([1, 1] +> r)) [mirrorMachine]⊢⁺ (F_R (b + 1) (k + 2) r) := by
   unfold D100 F_R
   have h1 : (((((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (b + 1)) <+ ([1, 0] : List
@@ -453,7 +453,7 @@ theorem D100_succ_11 (b k : Nat) (r : ListBlank (Fin 2)) :
     ([1, 0] : List (Fin 2)) k 2] at h1
   exact h1
 
-theorem D100_nil_to_C_bounce (b k : Nat) :
+private theorem D100_nil_to_C_bounce (b k : Nat) :
     (D100 b k default) [mirrorMachine]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 3) +> default)) := by
   unfold D100 C_bounce
@@ -481,7 +481,7 @@ theorem D100_nil_to_C_bounce (b k : Nat) :
   rw [hk] at h2
   exact ReachesPlus.trans_star h1 h2
 
-theorem D100_one_to_C_bounce (b k : Nat) :
+private theorem D100_one_to_C_bounce (b k : Nat) :
     (D100 b k ([1] +> default)) [mirrorMachine]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 5) +> default)) := by
   unfold D100 C_bounce
@@ -509,7 +509,7 @@ theorem D100_one_to_C_bounce (b k : Nat) :
   rw [hk] at h2
   exact ReachesPlus.trans_star h1 h2
 
-theorem D100_01_to_C_bounce (b k : Nat) (r : ListBlank (Fin 2)) :
+private theorem D100_01_to_C_bounce (b k : Nat) (r : ListBlank (Fin 2)) :
     (D100 b k ([0, 1] +> r)) [mirrorMachine]⊢⁺
     (C_bounce b (([1] : List (Fin 2)) ^ (2 * k + 4) +> r)) := by
   unfold D100 C_bounce
@@ -537,7 +537,7 @@ theorem D100_01_to_C_bounce (b k : Nat) (r : ListBlank (Fin 2)) :
   rw [hk] at h2
   exact ReachesPlus.trans_star h1 h2
 
-theorem C_bounce_0 (s : ListBlank (Fin 2)) :
+private theorem C_bounce_0 (s : ListBlank (Fin 2)) :
     (C_bounce 0 s) [mirrorMachine]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) {{E}}> s) := by
   unfold C_bounce
@@ -546,7 +546,7 @@ theorem C_bounce_0 (s : ListBlank (Fin 2)) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem C_bounce_1 (s : ListBlank (Fin 2)) :
+private theorem C_bounce_1 (s : ListBlank (Fin 2)) :
     (C_bounce 1 s) [mirrorMachine]⊢⁺
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 5) {{E}}> s) := by
   unfold C_bounce
@@ -554,7 +554,7 @@ theorem C_bounce_1 (s : ListBlank (Fin 2)) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem C_bounce_2 (s : ListBlank (Fin 2)) :
+private theorem C_bounce_2 (s : ListBlank (Fin 2)) :
     (C_bounce 2 s) [mirrorMachine]⊢⁺
     ((default : ListBlank (Fin 2)) {{D}}> ([0, 0] +> (([1] : List (Fin 2)) ^ 3 +> s))) := by
   unfold C_bounce
@@ -562,7 +562,7 @@ theorem C_bounce_2 (s : ListBlank (Fin 2)) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem C_bounce_3 (b : Nat) (s : ListBlank (Fin 2)) :
+private theorem C_bounce_3 (b : Nat) (s : ListBlank (Fin 2)) :
     (C_bounce (b + 3) s) [mirrorMachine]⊢⁺
     (F_R (b + 1) 0 (([1] : List (Fin 2)) ^ 2 +> s)) := by
   unfold C_bounce F_R
@@ -573,7 +573,7 @@ theorem C_bounce_3 (b : Nat) (s : ListBlank (Fin 2)) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem step_F_ksucc_c0 (b k : Nat) :
+private theorem step_F_ksucc_c0 (b k : Nat) :
     (cfg_F b (k + 1) 0) [mirrorMachine]⊢⁺ (cfg_F b k 1) := by
   unfold cfg_F
   rw [ListBlank.append_pow_add_rev ((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b)
@@ -582,14 +582,14 @@ theorem step_F_ksucc_c0 (b k : Nat) :
     ListBlank.append_nil]
   bb_steps
 
-theorem step_F_b2_k0_c0 :
+private theorem step_F_b2_k0_c0 :
     (cfg_F 2 0 0) [mirrorMachine]⊢⁺ (cfg_F 3 0 3) := by
   unfold cfg_F
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-theorem C_bounce_0_ones (n : Nat) :
+private theorem C_bounce_0_ones (n : Nat) :
     (C_bounce 0 (([1] : List (Fin 2)) ^ n +> default)) [mirrorMachine]⊢⁺
     (cfg_F (n + 1) 0 3) := by
   have h1 := C_bounce_0 (([1] : List (Fin 2)) ^ n +> default)
@@ -602,7 +602,7 @@ theorem C_bounce_0_ones (n : Nat) :
   rw [h_eq] at h2
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) (step_E_b3_to_F 0 n)
 
-theorem C_bounce_1_ones (n : Nat) :
+private theorem C_bounce_1_ones (n : Nat) :
     (C_bounce 1 (([1] : List (Fin 2)) ^ n +> default)) [mirrorMachine]⊢⁺
     (cfg_F (n + 3) 0 3) := by
   have h1 := C_bounce_1 (([1] : List (Fin 2)) ^ n +> default)
@@ -619,12 +619,12 @@ theorem C_bounce_1_ones (n : Nat) :
   rw [hn2] at h3
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3
 
-theorem C_bounce_2_ones_halt (n : Nat) :
+private theorem C_bounce_2_ones_halt (n : Nat) :
     ∃ cfg', ((C_bounce 2 (([1] : List (Fin 2)) ^ n +> default)) [mirrorMachine]⊢⁺ cfg') ∧
             (step mirrorMachine cfg').isNone :=
   ⟨_, C_bounce_2 (([1] : List (Fin 2)) ^ n +> default), isNone_step_D_00 _ _⟩
 
-theorem C_bounce_3_ones (b n : Nat) :
+private theorem C_bounce_3_ones (b n : Nat) :
     (C_bounce (b + 3) (([1] : List (Fin 2)) ^ n +> default)) [mirrorMachine]⊢⁺
     (cfg_F (b + 1) 0 (n + 2)) := by
   have h1 := C_bounce_3 b (([1] : List (Fin 2)) ^ n +> default)
@@ -632,36 +632,36 @@ theorem C_bounce_3_ones (b n : Nat) :
   have hn : 2 + n = n + 2 := by omega
   rwa [hn] at h1
 
-theorem rule_F_ksucc_c0 (b k : Nat) :
+private theorem rule_F_ksucc_c0 (b k : Nat) :
     (cfg_F b (k + 1) 0) [mirrorMachine]⊢⁺ (cfg_F b k 1) :=
   step_F_ksucc_c0 b k
 
-theorem rule_F_b0_k0_c0 :
+private theorem rule_F_b0_k0_c0 :
     (cfg_F 0 0 0) [mirrorMachine]⊢⁺ (cfg_F 4 0 3) :=
   ReachesPlus.trans (ReachesPlus.trans (F_R_b0_to_D100 0 default) (D100_nil_to_C_bounce 0 0))
     (C_bounce_0_ones 3)
 
-theorem rule_F_b1_k0_c0 :
+private theorem rule_F_b1_k0_c0 :
     (cfg_F 1 0 0) [mirrorMachine]⊢⁺ (cfg_F 6 0 3) :=
   ReachesPlus.trans (ReachesPlus.trans (F_R_b1_to_D100 0 default) (D100_nil_to_C_bounce 0 1))
     (C_bounce_0_ones 5)
 
-theorem rule_F_b2_k0_c0 :
+private theorem rule_F_b2_k0_c0 :
     (cfg_F 2 0 0) [mirrorMachine]⊢⁺ (cfg_F 3 0 3) :=
   step_F_b2_k0_c0
 
-theorem rule_F_b3_k0_c0 :
+private theorem rule_F_b3_k0_c0 :
     (cfg_F 3 0 0) [mirrorMachine]⊢⁺ (cfg_F 6 0 3) :=
   ReachesPlus.trans (ReachesPlus.trans (F_R_b3_to_D100 0 0 default) (D100_nil_to_C_bounce 1 0))
     (C_bounce_1_ones 3)
 
-theorem rule_F_b4_k0_c0_halt :
+private theorem rule_F_b4_k0_c0_halt :
     ∃ cfg', ((cfg_F 4 0 0) [mirrorMachine]⊢⁺ cfg') ∧ (step mirrorMachine cfg').isNone := by
   obtain ⟨cfg', h_step, h_halt⟩ := C_bounce_2_ones_halt 3
   exact ⟨cfg', ReachesPlus.trans
     (ReachesPlus.trans (F_R_b3_to_D100 1 0 default) (D100_nil_to_C_bounce 2 0)) h_step, h_halt⟩
 
-theorem rule_F_b5_k0_c0 (b : Nat) :
+private theorem rule_F_b5_k0_c0 (b : Nat) :
     (cfg_F (b + 5) 0 0) [mirrorMachine]⊢⁺ (cfg_F (b + 1) 0 5) := by
   have hb : b + 5 = (b + 2) + 3 := by omega
   rw [hb]
@@ -669,13 +669,13 @@ theorem rule_F_b5_k0_c0 (b : Nat) :
     (ReachesPlus.trans (F_R_b3_to_D100 (b + 2) 0 default) (D100_nil_to_C_bounce (b + 3) 0))
     (C_bounce_3_ones b 3)
 
-theorem rule_F_b0_c1 (k : Nat) :
+private theorem rule_F_b0_c1 (k : Nat) :
     (cfg_F 0 k 1) [mirrorMachine]⊢⁺ (cfg_F (2 * k + 6) 0 3) :=
   ReachesPlus.trans
     (ReachesPlus.trans (F_R_b0_to_D100 k ([1] +> default)) (D100_one_to_C_bounce 0 k))
     (C_bounce_0_ones (2 * k + 5))
 
-theorem rule_F_b1_c1 (k : Nat) :
+private theorem rule_F_b1_c1 (k : Nat) :
     (cfg_F 1 k 1) [mirrorMachine]⊢⁺ (cfg_F (2 * k + 8) 0 3) := by
   have h := ReachesPlus.trans
     (ReachesPlus.trans (F_R_b1_to_D100 k ([1] +> default)) (D100_one_to_C_bounce 0 (k + 1)))
@@ -683,11 +683,11 @@ theorem rule_F_b1_c1 (k : Nat) :
   have hk : (2 * (k + 1) + 5) + 1 = 2 * k + 8 := by omega
   rwa [hk] at h
 
-theorem rule_F_b2_k0_c1 (c : Nat) :
+private theorem rule_F_b2_k0_c1 (c : Nat) :
     (cfg_F 2 0 (c + 1)) [mirrorMachine]⊢⁺ (cfg_F 5 0 c) :=
   step_F_b2_k0 c
 
-theorem rule_F_b3_c1 (k : Nat) :
+private theorem rule_F_b3_c1 (k : Nat) :
     (cfg_F 3 k 1) [mirrorMachine]⊢⁺ (cfg_F (2 * k + 8) 0 3) := by
   have h := ReachesPlus.trans
     (ReachesPlus.trans (F_R_b3_to_D100 0 k ([1] +> default)) (D100_one_to_C_bounce 1 k))
@@ -695,14 +695,14 @@ theorem rule_F_b3_c1 (k : Nat) :
   have hk : (2 * k + 5) + 3 = 2 * k + 8 := by omega
   rwa [hk] at h
 
-theorem rule_F_b4_c1_halt (k : Nat) :
+private theorem rule_F_b4_c1_halt (k : Nat) :
     ∃ cfg', ((cfg_F 4 k 1) [mirrorMachine]⊢⁺ cfg') ∧ (step mirrorMachine cfg').isNone := by
   obtain ⟨cfg', h_step, h_halt⟩ := C_bounce_2_ones_halt (2 * k + 5)
   exact ⟨cfg', ReachesPlus.trans
     (ReachesPlus.trans (F_R_b3_to_D100 1 k ([1] +> default)) (D100_one_to_C_bounce 2 k)) h_step,
     h_halt⟩
 
-theorem rule_F_b5_c1 (b k : Nat) :
+private theorem rule_F_b5_c1 (b k : Nat) :
     (cfg_F (b + 5) k 1) [mirrorMachine]⊢⁺ (cfg_F (b + 1) 0 (2 * k + 7)) := by
   have hb : b + 5 = (b + 2) + 3 := by omega
   rw [hb]
@@ -712,7 +712,7 @@ theorem rule_F_b5_c1 (b k : Nat) :
   have hk : (2 * k + 5) + 2 = 2 * k + 7 := by omega
   rwa [hk] at h
 
-theorem rule_F_b0_c2 (k c : Nat) :
+private theorem rule_F_b0_c2 (k c : Nat) :
     (cfg_F 0 k (c + 2)) [mirrorMachine]⊢⁺ (cfg_F 1 (k + 1) c) := by
   have hc : (([1] : List (Fin 2)) ^ (c + 2) +> (default : ListBlank (Fin 2))) =
       [1, 1] +> (([1] : List (Fin 2)) ^ c +> default) := by
@@ -723,7 +723,7 @@ theorem rule_F_b0_c2 (k c : Nat) :
   have h2 := D100_0_11 k (([1] : List (Fin 2)) ^ c +> default)
   exact ReachesPlus.trans h1 h2
 
-theorem rule_F_b1_c2 (k c : Nat) :
+private theorem rule_F_b1_c2 (k c : Nat) :
     (cfg_F 1 k (c + 2)) [mirrorMachine]⊢⁺ (cfg_F 1 (k + 2) c) := by
   have hc : (([1] : List (Fin 2)) ^ (c + 2) +> (default : ListBlank (Fin 2))) =
       [1, 1] +> (([1] : List (Fin 2)) ^ c +> default) := by
@@ -734,7 +734,7 @@ theorem rule_F_b1_c2 (k c : Nat) :
   have h2 := D100_0_11 (k + 1) (([1] : List (Fin 2)) ^ c +> default)
   exact ReachesPlus.trans h1 h2
 
-theorem rule_F_b3_c2 (b k c : Nat) :
+private theorem rule_F_b3_c2 (b k c : Nat) :
     (cfg_F (b + 3) k (c + 2)) [mirrorMachine]⊢⁺ (cfg_F (b + 1) (k + 2) c) := by
   have hc : (([1] : List (Fin 2)) ^ (c + 2) +> (default : ListBlank (Fin 2))) =
       [1, 1] +> (([1] : List (Fin 2)) ^ c +> default) := by
@@ -747,16 +747,7 @@ theorem rule_F_b3_c2 (b k c : Nat) :
 
 /-! ## Closure on `mirrorMachine` -/
 
-theorem closes_C_bounce_ones (b n : Nat) :
-    StepsToClosed mirrorMachine mirrorPs (C_bounce b (([1] : List (Fin 2)) ^ n +> default)) := by
-  rcases b with _ | _ | _ | b'
-  · exact StepsToClosed.of_isInPatternSet (C_bounce_0_ones n) (in_ps_F (n + 1) 0 3)
-  · exact StepsToClosed.of_isInPatternSet (C_bounce_1_ones n) (in_ps_F (n + 3) 0 3)
-  · obtain ⟨cfg', h_step, h_halt⟩ := C_bounce_2_ones_halt n
-    exact StepsToClosed.of_halting h_step h_halt
-  · exact StepsToClosed.of_isInPatternSet (C_bounce_3_ones b' n) (in_ps_F (b' + 1) 0 (n + 2))
-
-theorem closes_F_c0 (b k : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F b k 0) := by
+private theorem closes_F_c0 (b k : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F b k 0) := by
   rcases k with _ | k'
   · rcases b with _ | _ | _ | _ | _ | b'
     · exact StepsToClosed.of_isInPatternSet rule_F_b0_k0_c0 (in_ps_F 4 0 3)
@@ -768,19 +759,20 @@ theorem closes_F_c0 (b k : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F b 
     · exact StepsToClosed.of_isInPatternSet (rule_F_b5_k0_c0 b') (in_ps_F (b' + 1) 0 5)
   · exact StepsToClosed.of_isInPatternSet (rule_F_ksucc_c0 b k') (in_ps_F b k' 1)
 
-theorem closes_F_b0 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 0 k c) := by
+private theorem closes_F_b0 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 0 k c) := by
   rcases c with _ | _ | c'
   · exact closes_F_c0 0 k
   · exact StepsToClosed.of_isInPatternSet (rule_F_b0_c1 k) (in_ps_F (2 * k + 6) 0 3)
   · exact StepsToClosed.of_isInPatternSet (rule_F_b0_c2 k c') (in_ps_F 1 (k + 1) c')
 
-theorem closes_F_b1 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 1 k c) := by
+private theorem closes_F_b1 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 1 k c) := by
   rcases c with _ | _ | c'
   · exact closes_F_c0 1 k
   · exact StepsToClosed.of_isInPatternSet (rule_F_b1_c1 k) (in_ps_F (2 * k + 8) 0 3)
   · exact StepsToClosed.of_isInPatternSet (rule_F_b1_c2 k c') (in_ps_F 1 (k + 2) c')
 
-theorem closes_F_b3 (b k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F (b + 3) k c) := by
+private theorem closes_F_b3 (b k c : Nat) :
+    StepsToClosed mirrorMachine mirrorPs (cfg_F (b + 3) k c) := by
   rcases c with _ | _ | c'
   · exact closes_F_c0 (b + 3) k
   · rcases b with _ | _ | b'
@@ -790,7 +782,7 @@ theorem closes_F_b3 (b k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 
     · exact StepsToClosed.of_isInPatternSet (rule_F_b5_c1 b' k) (in_ps_F (b' + 1) 0 (2 * k + 7))
   · exact StepsToClosed.of_isInPatternSet (rule_F_b3_c2 b k c') (in_ps_F (b + 1) (k + 2) c')
 
-theorem step_F_R_b2_one (k : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_F_R_b2_one (k : Nat) (r : ListBlank (Fin 2)) :
     (F_R 2 k ([1] +> r)) [mirrorMachine]⊢⁺
     (F_R 5 0 (([0, 1] : List (Fin 2)) ^ k +> r)) := by
   unfold F_R
@@ -809,7 +801,7 @@ theorem step_F_R_b2_one (k : Nat) (r : ListBlank (Fin 2)) :
     bb_steps
   exact ReachesStar.trans_plus h1 h2
 
-theorem step_E_01_to_F_R (b : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_E_01_to_F_R (b : Nat) (r : ListBlank (Fin 2)) :
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ b) {{E}}> ([0, 1] +> r))
     [mirrorMachine]⊢⁺
     (F_R b 0 r) := by
@@ -826,14 +818,14 @@ def ETail_cfg (k m c : Nat) : Cfg (Fin 2) (Fin 6) :=
   (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ (2 * (k + 4) + 1)) {{E}}>
     (([0, 1] : List (Fin 2)) ^ m +> (([1] : List (Fin 2)) ^ c +> default)))
 
-theorem rule_F_b2_ksucc_c1 (k c : Nat) :
+private theorem rule_F_b2_ksucc_c1 (k c : Nat) :
     (cfg_F 2 (k + 1) (c + 1)) [mirrorMachine]⊢⁺ (Odd_cfg 2 0 0 k c) := by
   unfold Odd_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
   rw [cfg_F_eq_F_R, ListBlank.append_pow_succ ([1] : List (Fin 2)) c default]
   exact step_F_R_b2_one (k + 1) (([1] : List (Fin 2)) ^ c +> default)
 
-theorem step_Odd_nsucc_p0 (k n m c : Nat) :
+private theorem step_Odd_nsucc_p0 (k n m c : Nat) :
     (Odd_cfg 0 k (n + 1) m c) [mirrorMachine]⊢⁺ (Odd_cfg 0 (k + 2) n m c) := by
   unfold Odd_cfg
   set r := (([0, 1] : List (Fin 2)) ^ (m + 1) +> (([1] : List (Fin 2)) ^ c +> default))
@@ -843,7 +835,7 @@ theorem step_Odd_nsucc_p0 (k n m c : Nat) :
   have h2 := D100_0_11 (k + 1) (([1] : List (Fin 2)) ^ (2 * n) +> r)
   exact ReachesPlus.trans h1 h2
 
-theorem step_Odd_nsucc_psucc (p k n m c : Nat) :
+private theorem step_Odd_nsucc_psucc (p k n m c : Nat) :
     (Odd_cfg (p + 1) k (n + 1) m c) [mirrorMachine]⊢⁺ (Odd_cfg p (k + 2) n m c) := by
   unfold Odd_cfg
   set r := (([0, 1] : List (Fin 2)) ^ (m + 1) +> (([1] : List (Fin 2)) ^ c +> default))
@@ -855,7 +847,7 @@ theorem step_Odd_nsucc_psucc (p k n m c : Nat) :
   have h2 := D100_succ_11 (2 * p) k (([1] : List (Fin 2)) ^ (2 * n) +> r)
   exact ReachesPlus.trans h1 h2
 
-theorem step_Odd_n0_p0 (k m c : Nat) :
+private theorem step_Odd_n0_p0 (k m c : Nat) :
     (Odd_cfg 0 k 0 m c) [mirrorMachine]⊢⁺ (ETail_cfg k m c) := by
   unfold Odd_cfg ETail_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
@@ -871,7 +863,7 @@ theorem step_Odd_n0_p0 (k m c : Nat) :
   rw [hk] at h4
   exact ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans h1 h2) h3) h4
 
-theorem step_Odd_n0_p1 (k m c : Nat) :
+private theorem step_Odd_n0_p1 (k m c : Nat) :
     (Odd_cfg 1 k 0 m c) [mirrorMachine]⊢⁺ (ETail_cfg k m c) := by
   unfold Odd_cfg ETail_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
@@ -887,7 +879,7 @@ theorem step_Odd_n0_p1 (k m c : Nat) :
   rw [hk] at h4
   exact ReachesPlus.trans_star (ReachesPlus.trans (ReachesPlus.trans h1 h2) h3) h4
 
-theorem step_Odd_n0_p2_m0 (p k c : Nat) :
+private theorem step_Odd_n0_p2_m0 (p k c : Nat) :
     (Odd_cfg (p + 2) k 0 0 c) [mirrorMachine]⊢⁺ (cfg_F (2 * p + 1) 0 (2 * (k + 3) + c)) := by
   unfold Odd_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
@@ -905,7 +897,7 @@ theorem step_Odd_n0_p2_m0 (p k c : Nat) :
     <- cfg_F_eq_F_R] at h3
   exact ReachesPlus.trans (ReachesPlus.trans h1 h2) h3
 
-theorem step_Odd_n0_p2_msucc (p k m c : Nat) :
+private theorem step_Odd_n0_p2_msucc (p k m c : Nat) :
     (Odd_cfg (p + 2) k 0 (m + 1) c) [mirrorMachine]⊢⁺ (Odd_cfg p 0 (k + 3) m c) := by
   unfold Odd_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
@@ -921,7 +913,7 @@ theorem step_Odd_n0_p2_msucc (p k m c : Nat) :
   rw [hk] at h3
   exact ReachesPlus.trans (ReachesPlus.trans h1 h2) h3
 
-theorem step_ETail_m0 (k c : Nat) :
+private theorem step_ETail_m0 (k c : Nat) :
     (ETail_cfg k 0 c) [mirrorMachine]⊢⁺ (cfg_F (2 * k + c + 7) 0 3) := by
   unfold ETail_cfg
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -935,14 +927,14 @@ theorem step_ETail_m0 (k c : Nat) :
   rw [hk2] at h2
   exact ReachesStar.trans_plus h1 h2
 
-theorem step_ETail_m1 (k c : Nat) :
+private theorem step_ETail_m1 (k c : Nat) :
     (ETail_cfg k 1 c) [mirrorMachine]⊢⁺ (cfg_F (2 * (k + 4) + 1) 0 c) := by
   unfold ETail_cfg
   rw [ListBlank.append_pow_succ ([0, 1] : List (Fin 2)) 0]
   simp only [list_pow_zero, ListBlank.append_nil]
   exact step_E_01_to_F_R (2 * (k + 4) + 1) (([1] : List (Fin 2)) ^ c +> default)
 
-theorem step_ETail_m2 (k m c : Nat) :
+private theorem step_ETail_m2 (k m c : Nat) :
     (ETail_cfg k (m + 2) c) [mirrorMachine]⊢⁺ (Odd_cfg (k + 4) 0 0 m c) := by
   unfold ETail_cfg Odd_cfg
   simp only [Nat.mul_zero, list_pow_zero, ListBlank.append_nil]
@@ -950,7 +942,7 @@ theorem step_ETail_m2 (k m c : Nat) :
   exact step_E_01_to_F_R (2 * (k + 4) + 1)
     (([0, 1] : List (Fin 2)) ^ (m + 1) +> (([1] : List (Fin 2)) ^ c +> default))
 
-theorem closes_E_01_tail (b m c : Nat)
+private theorem closes_E_01_tail (b m c : Nat)
     (ih : ∀ m' < m + 1, ∀ p k, StepsToClosed mirrorMachine mirrorPs (F_R (2 * p + 1) k
       (([0, 1] : List (Fin 2)) ^ m' +> (([1] : List (Fin 2)) ^ c +> default)))) :
     StepsToClosed mirrorMachine mirrorPs
@@ -971,7 +963,7 @@ theorem closes_E_01_tail (b m c : Nat)
             ^ c +> default))
     exact StepsToClosed.of_reachesPlus h1 (ih m' (by omega) b 0)
 
-theorem closes_odd_even_ones (n : Nat) (r : ListBlank (Fin 2))
+private theorem closes_odd_even_ones (n : Nat) (r : ListBlank (Fin 2))
     (h_base : ∀ p k, StepsToClosed mirrorMachine mirrorPs (F_R (2 * p + 1) k r)) :
     ∀ p k, StepsToClosed mirrorMachine mirrorPs
       (F_R (2 * p + 1) k (([1] : List (Fin 2)) ^ (2 * n) +> r)) := by
@@ -996,7 +988,7 @@ theorem closes_odd_even_ones (n : Nat) (r : ListBlank (Fin 2))
       have h2 := D100_succ_11 (2 * p') k (([1] : List (Fin 2)) ^ (2 * n) +> r)
       exact StepsToClosed.of_reachesPlus (ReachesPlus.trans h1 h2) (ih p' (k + 2))
 
-theorem closes_odd_m (m : Nat) (c : Nat) :
+private theorem closes_odd_m (m : Nat) (c : Nat) :
     ∀ p k, StepsToClosed mirrorMachine mirrorPs (F_R (2 * p + 1) k
       (([0, 1] : List (Fin 2)) ^ m +> (([1] : List (Fin 2)) ^ c +> default))) := by
   induction m using Nat.strongRecOn with
@@ -1045,14 +1037,15 @@ theorem closes_odd_m (m : Nat) (c : Nat) :
         exact StepsToClosed.of_reachesPlus (ReachesPlus.trans (ReachesPlus.trans h1 h2) h3)
           (closes_odd_even_ones (k + 3) r' (ih m' (by omega)) p'' 0)
 
-theorem closes_F_b2 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 2 k c) := by
+private theorem closes_F_b2 (k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F 2 k c) := by
   rcases c with _ | c'
   · exact closes_F_c0 2 k
   · rw [cfg_F_eq_F_R, ListBlank.append_pow_succ ([1] : List (Fin 2)) c' default]
     have h1 := step_F_R_b2_one k (([1] : List (Fin 2)) ^ c' +> default)
     exact StepsToClosed.of_reachesPlus h1 (closes_odd_m k c' 2 0)
 
-theorem closes_F_all (b k c : Nat) : StepsToClosed mirrorMachine mirrorPs (cfg_F b k c) := by
+private theorem closes_F_all (b k c : Nat) :
+    StepsToClosed mirrorMachine mirrorPs (cfg_F b k c) := by
   rcases b with _ | _ | _ | b'
   · exact closes_F_b0 k c
   · exact closes_F_b1 k c
@@ -1078,7 +1071,7 @@ def mirrorTape : Tape (Fin 2) -> Tape (Fin 2)
 def mirrorCfg (c : Cfg (Fin 2) (Fin 6)) : Cfg (Fin 2) (Fin 6) :=
   ⟨c.q.map π, mirrorTape c.tape⟩
 
-theorem step_mirror (c : Cfg (Fin 2) (Fin 6)) :
+private theorem step_mirror (c : Cfg (Fin 2) (Fin 6)) :
     step target (mirrorCfg c) = (step mirrorMachine c).map mirrorCfg := by
   rcases c with ⟨_ | q, ⟨head, l, r⟩⟩
   · rfl
@@ -1086,7 +1079,7 @@ theorem step_mirror (c : Cfg (Fin 2) (Fin 6)) :
     rcases head with ⟨_ | _ | head, hhead⟩ <;>
     first | rfl | omega
 
-theorem multiStep_mirror (n : Nat) (c : Cfg (Fin 2) (Fin 6)) :
+private theorem multiStep_mirror (n : Nat) (c : Cfg (Fin 2) (Fin 6)) :
     multiStep target (mirrorCfg c) n = (multiStep mirrorMachine c n).map mirrorCfg := by
   induction n generalizing c with
   | zero => rfl
@@ -1098,7 +1091,7 @@ theorem multiStep_mirror (n : Nat) (c : Cfg (Fin 2) (Fin 6)) :
       simp only [Option.map_some, Option.bind_some]
       exact step_mirror c'
 
-theorem reachesPlus_mirror {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
+private theorem reachesPlus_mirror {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
     (h : c_1 [mirrorMachine]⊢⁺ c_2) :
     (mirrorCfg c_1) [target]⊢⁺ (mirrorCfg c_2) := by
   rcases h with ⟨n, hn, hstep⟩
@@ -1106,15 +1099,12 @@ theorem reachesPlus_mirror {c_1 c_2 : Cfg (Fin 2) (Fin 6)}
   rw [multiStep_mirror, hstep]
   rfl
 
-theorem isNone_step_mirror {c : Cfg (Fin 2) (Fin 6)}
+private theorem isNone_step_mirror {c : Cfg (Fin 2) (Fin 6)}
     (h : (step mirrorMachine c).isNone) :
     (step target (mirrorCfg c)).isNone := by
   rw [step_mirror]
   revert h
   cases step mirrorMachine c <;> intro h <;> first | rfl | cases h
-
-def cfg_A (b k c : Nat) : Cfg (Fin 2) (Fin 6) :=
-  mirrorCfg (cfg_F b k c)
 
 /-- Canonical tape pattern
 $A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty$,
@@ -1128,23 +1118,23 @@ def pat_A : TapePattern (Fin 2) (Fin 6) :=
 def ps : TapePatternSet (Fin 2) (Fin 6) :=
   [(pat_A, .true)]
 
-theorem eval_pat_A (vars : Nat -> Nat) :
+private theorem eval_pat_A (vars : Nat -> Nat) :
     evalTapePattern pat_A vars = mirrorCfg (cfg_F (vars 0) (vars 1) (vars 2)) := by
   unfold evalTapePattern pat_A mirrorCfg mirrorTape cfg_F Cfg.headRight evalTapeExpr π A F
   simp only [evalTapeExpr, ListBlank.append_cons, ListBlank.append_nil,
     Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons, Option.map_some]
 
-theorem in_ps_A (b k c : Nat) : IsInPatternSet ps (mirrorCfg (cfg_F b k c)) := by
+private theorem in_ps_A (b k c : Nat) : IsInPatternSet ps (mirrorCfg (cfg_F b k c)) := by
   refine ⟨(pat_A, .true), List.Mem.head _, fun i => match i with | 0 => b | 1 => k | _ => c, ?_,
     trivial⟩
   exact (eval_pat_A (fun i => match i with | 0 => b | 1 => k | _ => c)).symm
 
-theorem mirrorCfg_F_403_eq :
+private theorem mirrorCfg_F_403_eq :
     mirrorCfg (cfg_F 4 0 3) =
     (((default : ListBlank (Fin 2)) <+ ([1] : List (Fin 2)) ^ 3) <+ [0]) {{A}}>
       ([0] +> (([1] : List (Fin 2)) ^ 4 +> default)) := rfl
 
-theorem init_reaches_A_403 :
+private theorem init_reaches_A_403 :
     (init []) [target]⊢* mirrorCfg (cfg_F 4 0 3) := by
   rw [mirrorCfg_F_403_eq]
   refine ReachesPlus.to_star ?_
@@ -1153,7 +1143,8 @@ theorem init_reaches_A_403 :
     List.append_nil, ListBlank.append_nil, ListBlank.append_cons]
   bb_steps
 
-theorem in_ps_A_of_in_mirrorPs {cfg : Cfg (Fin 2) (Fin 6)} (h : IsInPatternSet mirrorPs cfg) :
+private theorem in_ps_A_of_in_mirrorPs {cfg : Cfg (Fin 2) (Fin 6)}
+    (h : IsInPatternSet mirrorPs cfg) :
     IsInPatternSet ps (mirrorCfg cfg) := by
   rcases h with ⟨entry, h_mem, vars, rfl, _⟩
   simp only [mirrorPs, List.mem_cons, List.not_mem_nil, or_false] at h_mem
@@ -1161,7 +1152,7 @@ theorem in_ps_A_of_in_mirrorPs {cfg : Cfg (Fin 2) (Fin 6)} (h : IsInPatternSet m
   rw [eval_mirrorPat]
   exact in_ps_A (vars 0) (vars 1) (vars 2)
 
-theorem stepsToClosed_mirror {cfg : Cfg (Fin 2) (Fin 6)}
+private theorem stepsToClosed_mirror {cfg : Cfg (Fin 2) (Fin 6)}
     (h : StepsToClosed mirrorMachine mirrorPs cfg) :
     StepsToClosed target ps (mirrorCfg cfg) := by
   rcases h with ⟨cfg', h_step, h_end⟩
@@ -1244,7 +1235,7 @@ def next : State → Option State
   | .ETail k 1 c => some (.A (2 * (k + 4) + 1) 0 c)
   | .ETail k (m + 2) c => some (.Odd (k + 4) 0 0 m c)
 
-theorem step_F (s : State) :
+private theorem step_F (s : State) :
     match next s with
     | some s' => (encode_F s) [mirrorMachine]⊢⁺ (encode_F s')
     | none => ∃ cfg', ((encode_F s) [mirrorMachine]⊢⁺ cfg') ∧ (step mirrorMachine cfg').isNone := by

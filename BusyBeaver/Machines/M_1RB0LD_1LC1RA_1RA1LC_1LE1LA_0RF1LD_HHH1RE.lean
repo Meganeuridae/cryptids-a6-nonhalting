@@ -8,7 +8,12 @@ public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
 
 /-!
-# Collatz Reduction for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE`
+# Collatz Reduction for `1RB0LD_1LC1RA_1RA1LC_1LE1LA_0RF1LD_---1RE` (Resolved Non-Halting)
+
+**Resolution Status (Resolved Non-Halting)**: This machine has been **proved non-halting** in
+[`busycoq`](https://github.com/ccz181078/busycoq/blob/BB6/verify/CubicCapLoop_v2.v)
+(`CubicCapLoop_v2.v`, module `TM1`); this file provides its closed pattern set and Collatz-like
+acceleration in the common `BusyBeaver` format.
 
 We analyze canonical configurations in state `A` parametrized by `(a, g, h)`:
 `Config_gen a g h` with left tape `1^g (10)^a` and right tape `1^h` (head on the first symbol of
@@ -45,43 +50,9 @@ def Config_gen (a g h : Nat) : Cfg (Fin 2) (Fin 6) :=
   let right := (([1] : List (Fin 2))^h +> default)
   ⟨some A, ⟨right.head, left, right.tail⟩⟩
 
-def Config_1 (g h : Nat) : Cfg (Fin 2) (Fin 6) := Config_gen 0 g h
+private def Config_1 (g h : Nat) : Cfg (Fin 2) (Fin 6) := Config_gen 0 g h
 
-lemma Config_1_eq (g h : Nat) :
-    Config_1 g h = ⟨some A, ⟨((([1] : List (Fin 2))^h +> default) : ListBlank (Fin 2)).head,
-      ([1] : List (Fin 2))^g +> default,
-      ((([1] : List (Fin 2))^h +> default) : ListBlank (Fin 2)).tail⟩⟩ := by
-  unfold Config_1 Config_gen
-  simp [list_pow_zero]
-
-lemma s_succ (a : Nat) :
-    (([1, 0] : List (Fin 2))^(a+1) +> default) = (1 : Fin 2) >> (0 : Fin 2) >> ((([1,
-      0] : List (Fin 2))^a +> default)) := by
-  rw [show a+1 = 1 + a by omega, list_pow_add, ListBlank.append_assoc]
-  rfl
-
-lemma head_s (a : Nat) (ha : a ≥ 1) : ((([1,
-  0] : List (Fin 2))^a +> default) : ListBlank (Fin 2)).head = 1 := by
-  have heq : a = a - 1 + 1 := by omega
-  conv => lhs; rw [heq]
-  rw [s_succ (a-1)]
-  rw [Turing.ListBlank.head_cons]
-
-lemma tail_s (a : Nat) (ha : a ≥ 1) :
-    ((([1, 0] : List (Fin 2))^a +> default) : ListBlank (Fin 2)).tail =
-    (0 : Fin 2) >> ((([1, 0] : List (Fin 2))^(a-1) +> default)) := by
-  have heq : a = a - 1 + 1 := by omega
-  conv => lhs; rw [heq]
-  rw [s_succ (a-1)]
-  rw [Turing.ListBlank.tail_cons]
-
-lemma tail_tail_s (a : Nat) (ha : a ≥ 1) :
-    ((([1, 0] : List (Fin 2))^a +> default) : ListBlank (Fin 2)).tail.tail =
-    ((([1, 0] : List (Fin 2))^(a-1) +> default)) := by
-  rw [tail_s a ha]
-  rw [Turing.ListBlank.tail_cons]
-
-lemma unfold_pow_1 (n : Nat) (hn : n ≥ 1) :
+private theorem unfold_pow_1 (n : Nat) (hn : n ≥ 1) :
     (([1] : List (Fin 2))^n +> default) = (1 : Fin 2) >> ((([1] : List (Fin 2))^(n-1)
       +> default)) := by
   have h1 : ([1] : List (Fin 2))^n = [1] ++ ([1] : List (Fin 2))^(n-1) := by
@@ -90,7 +61,7 @@ lemma unfold_pow_1 (n : Nat) (hn : n ≥ 1) :
   rw [h1, Turing.ListBlank.append_assoc]
   rfl
 
-lemma unfold_pow_1_gen (n : Nat) (hn : n ≥ 1) (xs : ListBlank (Fin 2)) :
+private theorem unfold_pow_1_gen (n : Nat) (hn : n ≥ 1) (xs : ListBlank (Fin 2)) :
     (([1] : List (Fin 2))^n +> xs) = (1 : Fin 2) >> ((([1] : List (Fin 2))^(n-1) +> xs)) := by
   have h1 : ([1] : List (Fin 2))^n = [1] ++ ([1] : List (Fin 2))^(n-1) := by
     rw [show n = 1 + (n-1) by omega, list_pow_add]
@@ -116,7 +87,7 @@ def ps : TapePatternSet (Fin 2) (Fin 6) := [
    .and (.ge_const 1 1) (.and (.ge_const 2 1) (.not (.ge_const 2 2))))
 ]
 
-lemma IsInPatternSet_ps (cfg : Cfg (Fin 2) (Fin 6)) :
+private theorem IsInPatternSet_ps (cfg : Cfg (Fin 2) (Fin 6)) :
     IsInPatternSet ps cfg ↔
       (∃ a g, cfg = Config_gen a g 0 ∧ g ≥ 1) ∨
       (∃ a g h, cfg = Config_gen a g h ∧ g ≥ 1 ∧ h ≥ 3) ∨
@@ -237,25 +208,7 @@ lemma IsInPatternSet_ps (cfg : Cfg (Fin 2) (Fin 6)) :
           and_true]
           exact hk
 
-lemma step_C1_1C (l r : ListBlank (Fin 2)) (n : Nat) :
-    ((l <+ ([1] : List (Fin 2))^n) <{{C}} r) [target]⊢* (l <{{C}} (([1] : List (Fin 2))^n
-      +> r)) := by
-  induction n generalizing l r with
-  | zero => bb_refl
-  | succ n ih =>
-    have hL : (l <+ ([1] : List (Fin 2))^(n + 1)) = ((l <+ ([1] : List (Fin 2))^n)
-      <+ ([1] : List (Fin 2))^1) := by
-      rw [show n + 1 = 1 + n by omega, list_pow_add, ListBlank.append_assoc]
-    have hR : (([1] : List (Fin 2))^(n + 1) +> r) = (([1] : List (Fin 2))^n
-      +> ([1] : List (Fin 2))^1 +> r) := by
-      rw [list_pow_add, ListBlank.append_assoc]
-    rw [hL, hR]
-    simp only [list_pow_succ, list_pow_zero, List.append_nil, Fin.isValue, ListBlank.append_cons,
-      ListBlank.append]
-    bb_step
-    refine ih _ _
-
-lemma step_B10_11B (l r : ListBlank (Fin 2)) (n : Nat) :
+private theorem step_B10_11B (l r : ListBlank (Fin 2)) (n : Nat) :
     (l {{B}}> (([1,  0] : List (Fin 2))^n +> r)) [target]⊢* ((l <+ ([1,
       1] : List (Fin 2))^n) {{B}}> r) := by
   induction n generalizing l r with
@@ -271,81 +224,7 @@ lemma step_B10_11B (l r : ListBlank (Fin 2)) (n : Nat) :
       ListBlank.append]
     bb_steps
 
-lemma bounce_loop (n : Nat) (r : ListBlank (Fin 2)) :
-    ((([1, 0] : List (Fin 2))^n +> default) {{D}}> ((0 : Fin 2) >> r))
-    [target]⊢*
-    (default {{D}}> ((0 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r)) := by
-  induction n generalizing r with
-  | zero =>
-    simp only [Fin.isValue, list_pow_zero, ListBlank.append.eq_1]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_unfold : (([1,
-      0] : List (Fin 2))^(n+1) +> default) = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^n +> default := by
-      rw [show n+1 = 1 + n by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_unfold]
-    have h_step1 : (((1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^n +> default) {{D}}> (0 : Fin 2) >> r)
-      [target]⊢⁺ ((0 : Fin 2) >> ([1,
-        0] : List (Fin 2))^n +> default) {{E}}> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-      bb_steps
-    have h_step2 : (((0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^n +> default) {{E}}> (1 : Fin 2) >> (1 : Fin 2) >> r)
-      [target]⊢⁺ (([1,
-        0] : List (Fin 2))^n +> default) {{D}}> (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> r := by
-      bb_steps
-    have h_step1_star := h_step1.to_star
-    have h_step12_star := ReachesStar.trans h_step1_star (h_step2.to_star)
-    have h_ih := ih ((1 : Fin 2) >> (1 : Fin 2) >> r)
-    have h_final := ReachesStar.trans h_step12_star h_ih
-    have h_eq : (0 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> (1 : Fin 2) >> (1 : Fin 2) >> r =
-                (0 : Fin 2) >> ([1, 1] : List (Fin 2))^(n+1) +> r := by
-      rw [show n+1 = n + 1 by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_eq] at h_final
-    exact h_final
-
-lemma loop_E (m n : Nat) (r : ListBlank (Fin 2)) :
-    ((([1, 0] : List (Fin 2))^m +> default) {{E}}> (([0, 1] : List (Fin 2))^n +> r))
-    [target]⊢*
-    ((([1, 0] : List (Fin 2))^(m+n) +> default) {{E}}> r) := by
-  induction n generalizing m r with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append.eq_1, Fin.isValue, add_zero]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_unfold : (([0, 1] : List (Fin 2))^(n+1) +> r) = (0 : Fin 2) >> (1 : Fin 2) >> ([0,
-      1] : List (Fin 2))^n +> r := by
-      rw [show n+1 = 1 + n by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_unfold]
-    have h_step1 : ((([1,
-      0] : List (Fin 2))^m +> default) {{E}}> (0 : Fin 2) >> (1 : Fin 2) >> ([0,
-      1] : List (Fin 2))^n +> r)
-      [target]⊢⁺ ((0 : Fin 2) >> ([1,
-        0] : List (Fin 2))^m +> default) {{F}}> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r := by
-      bb_steps
-    have h_step2 : (((0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^m +> default) {{F}}> (1 : Fin 2) >> ([0, 1] : List (Fin 2))^n +> r)
-      [target]⊢⁺ (((1 : Fin 2) >> (0 : Fin 2) >> ([1,
-        0] : List (Fin 2))^m +> default) {{E}}> ([0, 1] : List (Fin 2))^n +> r) := by
-      bb_steps
-    have h_step1_star := h_step1.to_star
-    have h_step12_star := ReachesStar.trans h_step1_star (h_step2.to_star)
-    have h_eq_lhs : ((1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^m +> default) =
-                     (([1, 0] : List (Fin 2))^(m+1) +> default) := by
-      rw [show m+1 = 1 + m by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_eq_lhs] at h_step12_star
-    have h_ih := ih (m+1) r
-    have h_final := ReachesStar.trans h_step12_star h_ih
-    have h_eq_target : m + 1 + n = m + (n + 1) := by omega
-    rw [h_eq_target] at h_final
-    exact h_final
-
-lemma sweep_step (l : ListBlank (Fin 2)) (g : Nat) (r : ListBlank (Fin 2)) :
+private theorem sweep_step (l : ListBlank (Fin 2)) (g : Nat) (r : ListBlank (Fin 2)) :
     ((l <+ ([1] : List (Fin 2))^(2 + g)) <{{D}} r)
     [target]⊢*
     ((l <+ ([1] : List (Fin 2))^g) <{{D}} (([0, 1] : List (Fin 2))^1 +> r)) := by
@@ -354,7 +233,7 @@ lemma sweep_step (l : ListBlank (Fin 2)) (g : Nat) (r : ListBlank (Fin 2)) :
     Fin.isValue, ListBlank.append_cons, ListBlank.append]
   bb_steps
 
-lemma sweep_loop_gen (l : ListBlank (Fin 2)) (g k : Nat) (r : ListBlank (Fin 2)) :
+private theorem sweep_loop_gen (l : ListBlank (Fin 2)) (g k : Nat) (r : ListBlank (Fin 2)) :
     ((l <+ ([1] : List (Fin 2))^(2 * k + g)) <{{D}} r)
     [target]⊢*
     ((l <+ ([1] : List (Fin 2))^g) <{{D}} ((([0, 1] : List (Fin 2))^k +> r))) := by
@@ -372,263 +251,12 @@ lemma sweep_loop_gen (l : ListBlank (Fin 2)) (g k : Nat) (r : ListBlank (Fin 2))
     rw [h_pow]
     exact h_step
 
-lemma helper_commute (s : ListBlank (Fin 2)) (k : Nat) :
-    ((1 : Fin 2) >> (s <+ ([1, 1] : List (Fin 2))^k)) =
-    (((1 : Fin 2) >> s) <+ ([1, 1] : List (Fin 2))^k) :=
-  (swap_1_11_pow k s).symm
-
-lemma helper_L_tape_gen_s (s : ListBlank (Fin 2)) (a b : Nat) :
-    ((([1] : List (Fin 2))^a +> s) <+ ([1, 1] : List (Fin 2))^b) =
-    (([1] : List (Fin 2))^(2*b + a) +> s) := by
-  rw [one_pow_two_mul, ← ListBlank.append_pow_add]
-
-lemma helper_L_tape_gen (a b : Nat) :
-    ((([1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^b) =
-    (([1] : List (Fin 2))^(2*b + a) +> default) := helper_L_tape_gen_s default a b
-
-lemma helper_L_tape_s (s : ListBlank (Fin 2)) (k : Nat) :
-    ((1 : Fin 2) >> ((([1] : List (Fin 2)) +> s) <+ ([1, 1] : List (Fin 2))^(k+1))) =
-    (([1] : List (Fin 2))^(2*k+4) +> s) := by
-  rw [helper_commute (([1] : List (Fin 2)) +> s) (k+1)]
-  rw [show (1 : Fin 2) >> ((([1] : List (Fin 2)) +> s)) = ((([1] : List (Fin 2))^2 +> s)) by rfl]
-  rw [helper_L_tape_gen_s s 2 (k+1)]
-  rw [show 2 * (k + 1) + 2 = 2 * k + 4 by omega]
-
-lemma helper_L_tape_s2 (s : ListBlank (Fin 2)) (k : Nat) :
-    ((1 : Fin 2) >> ((([1] : List (Fin 2))^2 +> s) <+ ([1, 1] : List (Fin 2))^(k+1))) =
-    (([1] : List (Fin 2))^(2*k+5) +> s) := by
-  rw [helper_commute (([1] : List (Fin 2))^2 +> s) (k+1)]
-  rw [show (1 : Fin 2) >> ((([1] : List (Fin 2))^2 +> s)) = ((([1] : List (Fin 2))^3 +> s)) by rfl]
-  rw [helper_L_tape_gen_s s 3 (k+1)]
-  rw [show 2 * (k + 1) + 3 = 2 * k + 5 by omega]
-
-lemma helper_L_tape (k : Nat) :
-    ((1 : Fin 2) >> ((([1] : List (Fin 2)) +> default) <+ ([1, 1] : List (Fin 2))^(k+1))) =
-    (([1] : List (Fin 2))^(2*k+4) +> default) := helper_L_tape_s default k
-
-lemma helper_1_0_1 (n : Nat) (r : ListBlank (Fin 2)) :
-    (([1] : List (Fin 2))^1 +> ([0, 1] : List (Fin 2))^n +> r) = ((([1,
-      0] : List (Fin 2))^n +> ([1] : List (Fin 2))^1 +> r)) :=
-  (append_10_pow_one n r).symm
-
-lemma helper_g_1 (g : Nat) :
-    (([1] : List (Fin 2))^g +> ([1] : List (Fin 2))^1
-      +> default) = (([1] : List (Fin 2))^(g+1) +> default) := by
-  rw [list_pow_one, ListBlank.append_pow_succ']
-
-lemma helper_EF_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
+private theorem helper_EF_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
     ((([1, 0] : List (Fin 2)) +> l) <+ ([1, 0] : List (Fin 2))^n) =
     (l <+ ([1, 0] : List (Fin 2))^(n+1)) :=
   ListBlank.append_pow_succ' [1, 0] n l
 
-lemma step_D01_11D (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> l) <{{D}} r) [target]⊢*
-    (((0 : Fin 2) >> l) <{{D}} (([1, 1] : List (Fin 2))^n +> r)) := by
-  induction n generalizing l r with
-  | zero =>
-    simp only [Fin.isValue, list_pow_zero, ListBlank.append.eq_1]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_pow_L : (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(n+1) +> l)) =
-                   ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> ([1, 0] : List (Fin 2)) +> l) := by
-      congr 1
-      exact (helper_EF_sweep_assoc l n).symm
-    rw [h_pow_L]
-    have h_ih := ih (([1, 0] : List (Fin 2)) +> l) r
-    have h_step : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1,
-      1] : List (Fin 2))^n +> r) [target]⊢*
-                  (((0 : Fin 2) >> l) <{{D}} ([1, 1] : List (Fin 2))^(n+1) +> r) := by
-      have h_pow_R : ((([1, 1] : List (Fin 2))^(n+1) +> r)) =
-                     ((1 : Fin 2) >> (1 : Fin 2) >> ([1, 1] : List (Fin 2))^n +> r) := by
-        rw [show n+1 = 1 + n by omega]
-        rw [list_pow_add, Turing.ListBlank.append_assoc]
-        rfl
-      rw [h_pow_R]
-      have h_s1 : (((0 : Fin 2) >> ([1, 0] : List (Fin 2)) +> l) <{{D}} ([1,
-        1] : List (Fin 2))^n +> r) [target]⊢⁺
-                  (((1 : Fin 2) >> (0 : Fin 2) >> l) <{{E}} (1 : Fin 2) >> ([1,
-                    1] : List (Fin 2))^n +> r) := by
-        bb_steps
-      have h_s2 : (((1 : Fin 2) >> (0 : Fin 2) >> l) <{{E}} (1 : Fin 2) >> ([1,
-        1] : List (Fin 2))^n +> r) [target]⊢⁺
-                  (((0 : Fin 2) >> l) <{{D}} (1 : Fin 2) >> (1 : Fin 2) >> ([1,
-                    1] : List (Fin 2))^n +> r) := by
-        bb_steps
-      have h_s12 := h_s1.to_star
-      have h_s23 := h_s2.to_star
-      exact ReachesStar.trans h_s12 h_s23
-    exact ReachesStar.trans h_ih h_step
-
-lemma rule_odd (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
-    (Config_1 g h) [target]⊢⁺ (Config_1 (g + 3) (h - 2)) := by
-  have hg_eq : g = 2 * (g / 2) + 1 := by omega
-  rw [hg_eq]
-  have h_arith : 2 * (g / 2) + 1 + 3 = 2 * (g / 2) + 4 := by omega
-  rw [h_arith]
-  let k := g / 2
-  have h_h_step : (([1] : List (Fin 2))^(h-1) +> default) = (([1] : List (Fin 2))^1
-    +> ([1] : List (Fin 2))^(h-2) +> default) := by
-    rw [show h-1 = 1 + (h-2) by omega, list_pow_add, ← ListBlank.append_assoc]
-  let cfg_D_start : Cfg (Fin 2) (Fin 6) :=
-    ⟨some D, ⟨1, ([1] : List (Fin 2))^(2*k) +> default,
-      (0 : Fin 2) >> ([1] : List (Fin 2))^(h-1) +> default⟩⟩
-  have h_step : (Config_1 (2 * k + 1) h) [target]⊢⁺ cfg_D_start := by
-    rw [Config_1_eq]; unfold cfg_D_start
-    have h_h : (([1] : List (Fin 2))^h +> default) = (([1] : List (Fin 2))^1
-      +> ([1] : List (Fin 2))^(h-1) +> default) := by
-      rw [show (([1] : List (Fin 2))^h) = (([1] : List (Fin 2))^(1 + (h-1))) by (congr 1; omega)]
-      rw [list_pow_add, ← ListBlank.append_assoc]
-    have h_g : (([1] : List (Fin 2))^(2*k+1) +> default) = (([1] : List (Fin 2))^1
-      +> ([1] : List (Fin 2))^(2*k) +> default) := by
-      rw [show (([1] : List (Fin 2))^(2*k+1))
-        = (([1] : List (Fin 2))^(1 + 2*k)) by (congr 1; omega)]
-      rw [list_pow_add, ← ListBlank.append_assoc]
-    rw [h_h, h_g, list_pow_one]
-    bb_steps
-  have h_D_start_eq : cfg_D_start = ((default <+ ([1] : List (Fin 2))^(2 * k + 1)) <{{D}} ((([0,
-    1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-2) +> default))) := by
-    unfold cfg_D_start
-    rw [h_h_step]
-    simp [Cfg.headLeft, list_pow_succ, list_pow_zero, List.cons_append, List.nil_append,
-      List.append_nil, ListBlank.append, Turing.ListBlank.head_cons, Turing.ListBlank.tail_cons]
-  let cfg_D_end : Cfg (Fin 2) (Fin 6) :=
-    ((default <+ ([1] : List (Fin 2))^1) <{{D}} ((([0,
-      1] : List (Fin 2))^(k + 1) +> ([1] : List (Fin 2))^(h-2) +> default)))
-  have h_D_sweep : cfg_D_start [target]⊢* cfg_D_end := by
-    rw [h_D_start_eq]
-    have h_pow : cfg_D_end = ((default <+ ([1] : List (Fin 2))^1) <{{D}} ((([0,
-      1] : List (Fin 2))^k +> ([0,
-      1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-2) +> default))) := by
-      unfold cfg_D_end
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-    rw [h_pow]
-    exact sweep_loop_gen default 1 k (([0,
-      1] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(h-2) +> default)
-  let cfg_A_zero : Cfg (Fin 2) (Fin 6) :=
-    ⟨some A, ⟨0, default, (1 : Fin 2) >> ([0,
-      1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default⟩⟩
-  have h_D_end_A : cfg_D_end [target]⊢⁺ cfg_A_zero := by
-    unfold cfg_D_end cfg_A_zero
-    bb_steps
-  let cfg_B_start : Cfg (Fin 2) (Fin 6) :=
-    ⟨some B, ⟨1, ([1] : List (Fin 2))^1 +> default, ([0,
-      1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default⟩⟩
-  have h_A_B : cfg_A_zero [target]⊢⁺ cfg_B_start := by
-    unfold cfg_A_zero cfg_B_start
-    bb_steps
-  have h_helper := helper_1_0_1 (k+1) (([1] : List (Fin 2))^(h-2) +> default)
-  rw [← h_h_step] at h_helper
-  change ((1 : Fin 2) >> ([0, 1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default) =
-         (([1, 0] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-1) +> default) at h_helper
-  have h_eq_tail : ([0, 1] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-2) +> default =
-                   (([1, 0] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-1)
-                     +> default).tail := by
-    rw [← h_helper]
-    rw [Turing.ListBlank.tail_cons]
-  have h_eq_head : ((([1,
-    0] : List (Fin 2))^(k+1) +> ([1] : List (Fin 2))^(h-1) +> default).head = 1) := by
-    rw [← h_helper]
-    rw [Turing.ListBlank.head_cons]
-  have h_B_start_eq : cfg_B_start = ((([1] : List (Fin 2))^1 +> default)) {{B}}> (([1,
-    0] : List (Fin 2))^(k+1) +> (([1] : List (Fin 2))^(h-1) +> default)) := by
-    unfold cfg_B_start
-    rw [Cfg.headRight, h_eq_head, ← h_eq_tail]
-  let cfg_B_end : Cfg (Fin 2) (Fin 6) :=
-    (((([1] : List (Fin 2))^1 +> default) <+ ([1,
-      1] : List (Fin 2))^(k+1)) {{B}}> (([1] : List (Fin 2))^(h-1) +> default))
-  have h_B_sweep : cfg_B_start [target]⊢* cfg_B_end := by
-    rw [h_B_start_eq]
-    exact step_B10_11B (([1] : List (Fin 2))^1 +> default) (([1] : List (Fin 2))^(h-1)
-      +> default) (k+1)
-  have h_B_end_A : cfg_B_end [target]⊢⁺ Config_1 (2*k+4) (h-2) := by
-    have h_cfg_B_end_eq : cfg_B_end = (((([1] : List (Fin 2)) +> default) <+ ([1,
-      1] : List (Fin 2))^(k+1)) {{B}}> (([1] : List (Fin 2))^(h-1) +> default)) := by rfl
-    rw [h_cfg_B_end_eq, Config_1_eq, h_h_step, ← helper_L_tape k]
-    have h_1_1 : (([1] : List (Fin 2))^1) = [1] := by rfl
-    rw [h_1_1]
-    bb_steps
-  have h_step_star := h_step.to_star
-  have h_D_sweep_star := ReachesStar.trans h_step_star h_D_sweep
-  have h_D_end_A_star := h_D_end_A.to_star
-  have h_D_A_star := ReachesStar.trans h_D_sweep_star h_D_end_A_star
-  have h_A_B_star := h_A_B.to_star
-  have h_D_B_star := ReachesStar.trans h_D_A_star h_A_B_star
-  have h_B_sweep_star := ReachesStar.trans h_D_B_star h_B_sweep
-  exact h_B_sweep_star.trans_plus h_B_end_A
-
-lemma sweep_D_10_step (n : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(n+1) +> default) <{{D}} r) [target]⊢*
-    (((0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^n +> default) <{{D}} (1 : Fin 2) >> (1 : Fin 2) >> r) := by
-  rw [s_succ]
-  simp only [Cfg.headLeft, ListBlank.head_cons, ListBlank.tail_cons]
-  bb_steps
-
-lemma sweep_D_10_gen (n : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> default) <{{D}} r) [target]⊢*
-    (((0 : Fin 2) >> default) <{{D}} ([1, 1] : List (Fin 2))^n +> r) := by
-  induction n generalizing r with
-  | zero =>
-    simp only [Fin.isValue, list_pow_zero, ListBlank.append.eq_1, ListBlank.cons_zero_default]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_step := sweep_D_10_step n r
-    refine ReachesStar.trans h_step ?_
-    have h_ih := ih ((1 : Fin 2) >> (1 : Fin 2) >> r)
-    have h_pow : (([1, 1] : List (Fin 2))^(n+1) +> r) = (([1,
-      1] : List (Fin 2))^n +> (1 : Fin 2) >> (1 : Fin 2) >> r) := by
-      rw [show n+1 = n + 1 by omega]
-      rw [list_pow_add, ListBlank.append_assoc]
-      have h11 : (([1, 1] : List (Fin 2))^1) = [1, 1] := by rfl
-      rw [h11]
-      simp [ListBlank.append]
-    rw [h_pow]
-    exact h_ih
-
-lemma step_bounce_A_gen (s : ListBlank (Fin 2)) (m : Nat) (r : ListBlank (Fin 2)) :
-    (((0 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^(m+2) +> r) [target]⊢*
-    (((1 : Fin 2) >> s) <{{A}} ([1, 0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^m +> r) := by
-  let cfg_start : Cfg (Fin 2) (Fin 6) := (((0 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^(m+2) +> r)
-  let cfg_1 : Cfg (Fin 2) (Fin 6) := (((1 : Fin 2) >> s) {{B}}> ([1] : List (Fin 2))^(m+2) +> r)
-  let cfg_2 : Cfg (Fin 2) (Fin 6) :=
-    (((1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> s) <{{A}} ([1] : List (Fin 2))^m +> r)
-  let cfg_3 : Cfg (Fin 2) (Fin 6) :=
-    (((1 : Fin 2) >> (1 : Fin 2) >> s) <{{D}} (0 : Fin 2) >> ([1] : List (Fin 2))^m +> r)
-  let cfg_end : Cfg (Fin 2) (Fin 6) := (((1 : Fin 2) >> s) <{{A}} ([1,
-    0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^m +> r)
-  have h_step1 : cfg_start [target]⊢⁺ cfg_1 := by
-    unfold cfg_start cfg_1
-    have h_pow1 : (([1] : List (Fin 2))^(m+2)
-      +> r) = ((1 : Fin 2) >> ([1] : List (Fin 2))^(m+1) +> r) := by
-      rw [show m+2 = 1 + (m+1) by omega]
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_pow1]
-    bb_steps
-  have h_step2 : cfg_1 [target]⊢⁺ cfg_2 := by
-    unfold cfg_1 cfg_2
-    have h_pow12 : (([1] : List (Fin 2))^(m+2)
-      +> r) = ((1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^m +> r) := by
-      rw [show m+2 = 2 + m by omega]
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_pow12]
-    bb_steps
-  have h_step3 : cfg_2 [target]⊢⁺ cfg_3 := by
-    unfold cfg_2 cfg_3
-    bb_steps
-  have h_step4 : cfg_3 [target]⊢⁺ cfg_end := by
-    unfold cfg_3 cfg_end
-    bb_steps
-  have h_s1 := h_step1.to_star
-  have h_s2 := h_step2.to_star
-  have h_s3 := h_step3.to_star
-  have h_s4 := h_step4.to_star
-  have h_13 := ReachesStar.trans h_s1 h_s2
-  have h_14 := ReachesStar.trans h_13 h_s3
-  exact ReachesStar.trans h_14 h_s4
-
-lemma sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
+private theorem sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target]⊢*
     ((([0, 1] : List (Fin 2))^n +> l) {{F}}> r) := by
   induction n generalizing l with
@@ -669,15 +297,12 @@ lemma sweep_EF (n : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     rw [h_pow_ih]
     exact ReachesStar.trans h_2steps h_ih
 
-lemma rule_g1_h2 :
-    (Config_gen 0 1 2) [target]⊢⁺ (Config_gen 0 1 6) := by bb_steps
-
-lemma helper_sweep_even_R (k : Nat) (X : ListBlank (Fin 2)) :
+private theorem helper_sweep_even_R (k : Nat) (X : ListBlank (Fin 2)) :
     (1 : Fin 2) >> (([0, 1] : List (Fin 2))^k +> X) = (([1,
       0] : List (Fin 2))^k +> (1 : Fin 2) >> X) :=
   (append_10_pow_one k X).symm
 
-lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) :
+private theorem rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) :
     (Config_gen 0 g h) [target]⊢⁺ (Config_gen (g / 2 + 1) 2 (h - 2)) := by
   set k := g / 2
   have hk : g = 2 * k := by omega
@@ -836,12 +461,12 @@ lemma rule_even_0 (g h : Nat) (hg : g % 2 = 0) (hg_ge : g ≥ 2) (hh : h ≥ 3) 
   rw [← h_end_eq] at h_plus
   exact h_plus
 
-lemma helper_F_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
+private theorem helper_F_sweep_assoc (l : ListBlank (Fin 2)) (n : Nat) :
     ((([0, 1] : List (Fin 2)) +> l) <+ ([0, 1] : List (Fin 2))^n) =
     (l <+ ([0, 1] : List (Fin 2))^(n+1)) :=
   ListBlank.append_pow_succ' [0, 1] n l
 
-lemma step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
+private theorem step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> l, r⟩⟩) [target]⊢*
     (⟨some A, ⟨1, l, ([1, 0] : List (Fin 2))^k +> r⟩⟩) := by
   induction k generalizing l r with
@@ -881,7 +506,7 @@ lemma step_A_sweep_h2 (k : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) 
     have h_ih := ih l (([1, 0] : List (Fin 2)) +> r)
     exact ReachesStar.trans h_step h_ih
 
-lemma step_F_sweep_halt (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
+private theorem step_F_sweep_halt (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat) :
     (l {{F}}> ([1, 0] : List (Fin 2))^n +> r) [target]⊢*
     ⟨some F, ⟨r.head, ([0, 1] : List (Fin 2))^n +> l, r.tail⟩⟩ := by
   induction n generalizing l r with
@@ -915,12 +540,12 @@ lemma step_F_sweep_halt (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) (n : Nat
     rw [h_eq] at h_ih
     exact ReachesStar.trans h_s12 h_ih
 
-lemma tape_eq_F_halt (k : Nat) :
+private theorem tape_eq_F_halt (k : Nat) :
     (([0, 1] : List (Fin 2))^(k+2) +> default) =
     ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default) :=
   (append_zero_10_pow_one_succ (k+1) default).symm
 
-lemma rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
+private theorem rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
     (Config_gen 0 (2 * k) 2) [target]⊢⁺ ⟨some F, ⟨0, (0 : Fin 2) >> ([1,
       0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> (default : ListBlank (Fin 2)),
       (default : ListBlank (Fin 2))⟩⟩ := by
@@ -984,7 +609,7 @@ lemma rule_even_0_h2 (k : Nat) (hk : k ≥ 1) :
   refine h_phase3.trans_star ?_
   rw [h_left]
 
-lemma rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
+private theorem rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> xs,
       ys⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢* ⟨some A, ⟨1, xs, ([1,
       0] : List (Fin 2))^k +> ys⟩⟩ := by
@@ -1025,7 +650,7 @@ lemma rule_even_phase1 (k : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2
     rw [h_pow1]
     exact h_final
 
-lemma rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 1) :
+private theorem rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 1) :
     (⟨some A, ⟨0, xs, ([1,
       0] : List (Fin 2))^m +> ([1] : List (Fin 2))^n
       +> default⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢*
@@ -1092,7 +717,7 @@ lemma rule_even_phase2 (xs : ListBlank (Fin 2)) (m : Nat) (n : Nat) (hn : n ≥ 
     rw [h_pow_add]
     exact h_final
 
-lemma rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
+private theorem rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
     (Config_gen a (2 * k) h) [target]⊢⁺ (Config_gen (a - 1) (2 * k + 4) (h - 2)) := by
   have h_LHS : Config_gen a (2 * k) h = ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k) +> ([1,
     0] : List (Fin 2))^a +> default, ([1] : List (Fin 2))^(h-1) +> default⟩⟩ := by
@@ -1159,13 +784,13 @@ lemma rule_even_gen (a k h : Nat) (ha : a ≥ 1) (hh : h ≥ 2) :
   rw [h_target_eq] at h_LHS_target_plus
   exact h_LHS_target_plus
 
-lemma tape_eq_lemma (n : Nat) (r : ListBlank (Fin 2)) :
+private theorem tape_eq_lemma (n : Nat) (r : ListBlank (Fin 2)) :
     (([1, 0] : List (Fin 2))^(n+1) +> r) = (1 : Fin 2) >> (([0,
       1] : List (Fin 2))^n +> (0 : Fin 2) >> r) := by
   rw [← ListBlank.append_pow_succ']
   exact append_10_pow_one n ((0 : Fin 2) >> r)
 
-lemma rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
+private theorem rule_odd_0 (g h : Nat) (hg : g % 2 = 1) (hh : h ≥ 2) :
     (Config_gen 0 g h) [target]⊢⁺ Config_gen 0 (g + 3) (h - 2) := by
   set k := g / 2
   have hk : g = 2 * k + 1 := by omega
@@ -1491,7 +1116,7 @@ def find_k_fuel (a : Nat) (fuel : Nat) (k : Nat) : Nat :=
 def find_k (a : Nat) : Nat :=
   find_k_fuel a a 0
 
-lemma pow_two_ge_two_mul_add_two (k : Nat) : 2^(k+1) ≥ 2*k + 2 := by
+private theorem pow_two_ge_two_mul_add_two (k : Nat) : 2^(k+1) ≥ 2*k + 2 := by
   induction k with
   | zero => omega
   | succ k ih =>
@@ -1499,40 +1124,13 @@ lemma pow_two_ge_two_mul_add_two (k : Nat) : 2^(k+1) ≥ 2*k + 2 := by
     rw [h1]
     omega
 
-lemma S_gt_self (k : Nat) : S k > k := by
+private theorem S_gt_self (k : Nat) : S k > k := by
   unfold S
   have h := pow_two_ge_two_mul_add_two k
   omega
 
-lemma S_strict_mono (k : Nat) : S (k+1) > S k := by
-  unfold S
-  have h_pow := pow_two_ge_two_mul_add_two k
-  have h_pow_succ : 2^(k+2) = 2^(k+1) * 2 := by rfl
-  rw [h_pow_succ]
-  omega
-
-lemma S_mono {x y : Nat} (h : x < y) : S x < S y := by
-  have : ∃ d, y = x + 1 + d := by
-    use y - x - 1
-    omega
-  rcases this with ⟨d, rfl⟩
-  induction d with
-  | zero =>
-    have : x + 1 + 0 = x + 1 := by omega
-    rw [this]
-    exact S_strict_mono x
-  | succ d ih =>
-    have h_arith1 : x + 1 + Nat.succ d = (x + 1 + d) + 1 := by omega
-    rw [h_arith1]
-    have h_step := S_strict_mono (x + 1 + d)
-    omega
-
-lemma S_mono_le {x y : Nat} (h : x ≤ y) : S x ≤ S y := by
-  rcases Nat.eq_or_lt_of_le h with rfl | h_lt
-  · rfl
-  · exact Nat.le_of_lt (S_mono h_lt)
-
-lemma find_k_fuel_spec (a : Nat) (fuel : Nat) (k : Nat) (h_fuel : a ≤ fuel + k) (h_low : S k ≤ a) :
+private theorem find_k_fuel_spec (a : Nat) (fuel : Nat) (k : Nat) (h_fuel : a ≤ fuel + k)
+    (h_low : S k ≤ a) :
   S (find_k_fuel a fuel k) ≤ a ∧ a < S (find_k_fuel a fuel k + 1) := by
   induction fuel generalizing k with
   | zero =>
@@ -1547,7 +1145,7 @@ lemma find_k_fuel_spec (a : Nat) (fuel : Nat) (k : Nat) (h_fuel : a ≤ fuel + k
       have h_low' : S (k+1) ≤ a := by omega
       exact ih (k+1) h_fuel' h_low'
 
-theorem find_k_spec (a : Nat) (ha : a ≥ 1) :
+private theorem find_k_spec (a : Nat) (ha : a ≥ 1) :
   S (find_k a) ≤ a ∧ a < S (find_k a + 1) := by
   unfold find_k
   have h_low : S 0 ≤ a := by
@@ -1555,28 +1153,6 @@ theorem find_k_spec (a : Nat) (ha : a ≥ 1) :
     omega
   have h_fuel : a ≤ a + 0 := by omega
   exact find_k_fuel_spec a a 0 h_fuel h_low
-
-lemma find_k_S_eq (j : Nat) (hj : S j ≥ 1) : find_k (S j) = j := by
-  have h_spec := find_k_spec (S j) hj
-  let k' := find_k (S j)
-  have h1 : S k' ≤ S j := h_spec.1
-  have h2 : S j < S (k' + 1) := h_spec.2
-  by_contra hc
-  have h_cases : k' < j ∨ k' > j := by omega
-  rcases h_cases with h_lt | h_gt
-  · have : k' + 1 ≤ j := by omega
-    have h_le := S_mono_le this
-    omega
-  · have h_lt_S := S_mono h_gt
-    omega
-
-lemma helper_distrib (j : Nat) : 2 * (S j) = 2^(j+2) - 2*j - 2 := by
-  unfold S
-  have h_pow := pow_two_ge_two_mul_add_two j
-  have h_pow_succ : 2^(j+2) = 2^(j+1) * 2 := by rfl
-  rw [h_pow_succ]
-  generalize hX : 2^(j+1) = X at h_pow ⊢
-  omega
 
 def a_new (a g : Nat) : Nat :=
   let j := find_k a
@@ -1586,27 +1162,20 @@ def a_new (a g : Nat) : Nat :=
   else
     S (j+1) - 1 - a
 
-def g_new (a g : Nat) : Nat :=
+private def g_new (a g : Nat) : Nat :=
   let j := find_k a
   if a = S j then 2
   else
     let sum := a + j + 2
     2 * (sum - a_new a g) + g - 1
 
-lemma g_new_even (a g : Nat) (hg : g % 2 = 1) : g_new a g % 2 = 0 := by
-  unfold g_new
-  dsimp -failIfUnchanged only
-  split_ifs
-  · simp
-  · omega
-
-def target_odd (a g h : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def target_odd (a g h : Nat) : Cfg (Fin 2) (Fin 6) :=
   if a = 1 then
     Config_gen ((g - 1) / 2 + 2) 2 (h - 2)
   else
     Config_gen (a_new a g) (g_new a g) (h - 2)
 
-lemma bounce_step (N : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
+private theorem bounce_step (N : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
     ((([1, 0] : List (Fin 2))^(N+1) +> zs) {{E}}> ((1 : Fin 2) >> r))
     [target]⊢*
     ((([1] : List (Fin 2))^2 +> ([1, 0] : List (Fin 2))^N +> zs) {{A}}> (1 : Fin 2) >> r) := by
@@ -1645,111 +1214,7 @@ lemma bounce_step (N : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
   have h_34 := ReachesStar.trans h_step3_star h_step4_star
   exact ReachesStar.trans h_12 h_34
 
-lemma bounce_step_correct (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
-    (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(N+1) +> zs, ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
-    ⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs,
-      (1 : Fin 2) >> (1 : Fin 2) >> ys⟩⟩ := by
-  have h_unfold1 : (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(N+1) +> zs =
-                    (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-                      0] : List (Fin 2))^N +> zs := by
-    have h_inner : ([1, 0] : List (Fin 2))^(N+1) +> zs = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^N +> zs := by
-      rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_inner]
-  let c1 := (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(N+1) +> zs,
-    ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some D, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs,
-    (1 : Fin 2) >> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c3 := (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs,
-    (1 : Fin 2) >> (1 : Fin 2) >> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c1_unfold : c1 = ⟨some E, ⟨1, (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> zs, ys⟩⟩ := by
-    dsimp -failIfUnchanged [c1]
-    rw [h_unfold1]
-  have h_step1 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c2]
-    rw [h_c1_unfold]
-    bb_steps
-  have h_step2 : c2 [target]⊢⁺ c3 := by
-    dsimp -failIfUnchanged [c2, c3]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  exact h_step1_star.trans_plus h_step2
-
-lemma bounce_induction (N : Nat) (zs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
-    (⟨some E, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> zs, ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨1, (0 : Fin 2) >> zs, ([1] : List (Fin 2))^(2 * N) +> ys⟩⟩ := by
-  induction N generalizing zs ys with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ N ih =>
-    have h_step := bounce_step_correct N zs ys
-    have h_ih := ih zs ((1 : Fin 2) >> (1 : Fin 2) >> ys)
-    have h_arith : ([1] : List (Fin 2))^(2 * (N + 1)) +> ys = ([1] : List (Fin 2))^(2 * N)
-      +> (1 : Fin 2) >> (1 : Fin 2) >> ys := by
-      rw [show 2 * (N + 1) = 2 * N + 2 by omega]
-      rw [list_pow_add]
-      rw [Turing.ListBlank.append_assoc]
-      have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
-      rw [h_pow2]
-      rfl
-    rw [h_arith]
-    have h_step_star := ReachesPlus.to_star h_step
-    exact ReachesStar.trans h_step_star h_ih
-
-lemma sweep_E_right (i : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, xs, ([1, 0] : List (Fin 2))^i +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^i +> xs, ys⟩⟩ := by
-  induction i generalizing xs ys with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ i ih =>
-    have h_pow_succ : ([1, 0] : List (Fin 2))^(i+1) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^i +> ys := by
-      rw [show i+1 = 1 + i by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-      rw [h_pow1]
-      rfl
-    let c1 := (⟨some E, ⟨0, xs, ([1, 0] : List (Fin 2))^(i+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c2 := (⟨some F, ⟨1, (0 : Fin 2) >> xs, (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^i +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c3 := (⟨some E, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> xs, ([1,
-      0] : List (Fin 2))^i +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_c1_unfold : c1 = ⟨some E, ⟨0, xs, (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^i +> ys⟩⟩ := by
-      dsimp -failIfUnchanged [c1]
-      rw [h_pow_succ]
-    have h_step1 : c1 [target]⊢⁺ c2 := by
-      dsimp -failIfUnchanged [c2]
-      rw [h_c1_unfold]
-      bb_steps
-    have h_step2 : c2 [target]⊢⁺ c3 := by
-      dsimp -failIfUnchanged [c2, c3]
-      bb_steps
-    have h_step1_star := h_step1.to_star
-    have h_step12 := h_step1_star.trans_plus h_step2
-    have h_step12_star := ReachesPlus.to_star h_step12
-    have h_ih := ih ((1 : Fin 2) >> (0 : Fin 2) >> xs) ys
-    have h_append_cons : (1 : Fin 2) >> (0 : Fin 2) >> xs = ([1, 0] : List (Fin 2)) +> xs := by rfl
-    rw [h_append_cons] at h_ih
-    have h_final := ReachesStar.trans h_step12_star h_ih
-    have h_arith : ([1, 0] : List (Fin 2))^(i+1) +> xs = ([1, 0] : List (Fin 2))^i +> ([1,
-      0] : List (Fin 2)) +> xs := by
-      rw [show i+1 = i + 1 by omega]
-      rw [list_pow_add]
-      rw [Turing.ListBlank.append_assoc]
-      have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-      rw [h_pow1]
-    rw [h_arith]
-    exact h_final
-
-lemma rule_odd_phase1 (k : Nat) (a : Nat) (ha : a ≥ 1) (ys : ListBlank (Fin 2)) :
+private theorem rule_odd_phase1 (k : Nat) (a : Nat) (ha : a ≥ 1) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*k+1) +> ([1, 0] : List (Fin 2))^a +> default,
       ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -1801,260 +1266,8 @@ lemma rule_odd_phase1 (k : Nat) (a : Nat) (ha : a ≥ 1) (ys : ListBlank (Fin 2)
   have h_step12_star := ReachesPlus.to_star h_step12
   exact ReachesStar.trans h_even_sweep h_step12_star
 
-lemma step_A0_to_E0 (len : Nat) (zs : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢⁺
-    ⟨some E, ⟨0, default, ([1,
-      0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*len+1) +> 0 >> zs⟩⟩ := by
-  have h_unfold : ([1] : List (Fin 2))^(2*len+3) +> 0 >> zs =
-                  (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len)
-                    +> 0 >> zs := by
-    have h_arith : 2*len+3 = 3 + 2*len := by omega
-    rw [h_arith, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow3 : ([1] : List (Fin 2))^3 = [1, 1, 1] := by rfl
-    rw [h_pow3]
-    rfl
-  let c0 := (⟨some A, ⟨0, default,
-    ([1] : List (Fin 2))^(2*len+3) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some B, ⟨1, (1 : Fin 2) >> default,
-    (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> default,
-    (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c3 := (⟨some D, ⟨1, (1 : Fin 2) >> default,
-    (0 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c4 := (⟨some A, ⟨1, default,
-    (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len)
-    +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c5 := (⟨some D, ⟨0, default,
-    (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len)
-    +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c6 := (⟨some E, ⟨0, default, ([1,
-    0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*len+1) +> 0 >> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c0_unfold : c0 = ⟨some A, ⟨0, default,
-    (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len) +> 0 >> zs⟩⟩ := by
-    dsimp -failIfUnchanged [c0]
-    rw [h_unfold]
-  have h_head_default : ListBlank.head (default : ListBlank (Fin 2)) = 0 := by rfl
-  have h_tail_default : ListBlank.tail (default : ListBlank (Fin 2)) = default := by rfl
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    rw [h_c0_unfold]
-    dsimp -failIfUnchanged [c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step3 : c2 [target]⊢⁺ c3 := by
-    dsimp -failIfUnchanged [c2, c3]
-    bb_steps
-  have h_step4 : c3 [target]⊢⁺ c4 := by
-    dsimp -failIfUnchanged [c3, c4]
-    bb_steps
-  have h_step5 : c4 [target]⊢⁺ c5 := by
-    dsimp -failIfUnchanged [c4, c5]
-    bb_steps
-  have h_step6 : c5 [target]⊢⁺ c6 := by
-    dsimp -failIfUnchanged [c5, c6]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step12 := h_step1_star.trans_plus h_step2
-  have h_step12_star := ReachesPlus.to_star h_step12
-  have h_step3_star := h_step3.to_star
-  have h_step13 := h_step12_star.trans_plus h_step3
-  have h_step13_star := ReachesPlus.to_star h_step13
-  have h_step4_star := h_step4.to_star
-  have h_step14 := h_step13_star.trans_plus h_step4
-  have h_step14_star := ReachesPlus.to_star h_step14
-  have h_step5_star := h_step5.to_star
-  have h_step15 := h_step14_star.trans_plus h_step5
-  have h_step15_star := ReachesPlus.to_star h_step15
-  exact h_step15_star.trans_plus h_step6
-
-lemma step_E0_to_A0 (len : Nat) (zs : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ := by
-  have h_unfold : ([1] : List (Fin 2))^(2*len+3) +> zs =
-                  (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len+1) +> zs := by
-    have h_arith : 2*len+3 = 2 + (2*len+1) := by omega
-    rw [h_arith, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
-    rw [h_pow2]
-    rfl
-  let c0 := (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some F, ⟨1, (0 : Fin 2) >> default,
-    (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len+1) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> default,
-    ([1] : List (Fin 2))^(2*len+1) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c3 := (⟨some D, ⟨1, (0 : Fin 2) >> default,
-    (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len+1) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c4 := (⟨some A, ⟨0, default, ([1] : List (Fin 2))^(2*len+3) +> zs⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c0_unfold : c0 = ⟨some E, ⟨0, default,
-    (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*len+1) +> zs⟩⟩ := by
-    dsimp -failIfUnchanged [c0]
-    rw [h_unfold]
-  have h_head_default : ListBlank.head (default : ListBlank (Fin 2)) = 0 := by rfl
-  have h_tail_default : ListBlank.tail (default : ListBlank (Fin 2)) = default := by rfl
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    rw [h_c0_unfold]
-    dsimp -failIfUnchanged [c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step3 : c2 [target]⊢⁺ c3 := by
-    dsimp -failIfUnchanged [c2, c3]
-    bb_steps
-  have h_step4 : c3 [target]⊢⁺ c4 := by
-    dsimp -failIfUnchanged [c3, c4]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step12 := h_step1_star.trans_plus h_step2
-  have h_step12_star := ReachesPlus.to_star h_step12
-  have h_step3_star := h_step3.to_star
-  have h_step13 := h_step12_star.trans_plus h_step3
-  have h_step13_star := ReachesPlus.to_star h_step13
-  have h_step4_star := h_step4.to_star
-  exact ReachesStar.trans h_step13_star h_step4_star
-
-lemma slide_A_right_10 (N : Nat) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*N) +> xs, ys⟩⟩ := by
-  induction N generalizing xs ys with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ N ih =>
-    have h_unfold : ([1, 0] : List (Fin 2))^(N+1) +> ys =
-                    (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> ys := by
-      rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-      rw [h_pow1]
-      rfl
-    let c0 := (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^(N+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c1 := (⟨some B, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c2 := (⟨some A, ⟨0, (1 : Fin 2) >> (1 : Fin 2) >> xs, ([1,
-      0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_c0_unfold : c0 = ⟨some A, ⟨0, xs, (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^N +> ys⟩⟩ := by
-      dsimp -failIfUnchanged [c0]
-      rw [h_unfold]
-    have h_step1 : c0 [target]⊢⁺ c1 := by
-      rw [h_c0_unfold]
-      dsimp -failIfUnchanged [c1]
-      bb_steps
-    have h_step2 : c1 [target]⊢⁺ c2 := by
-      dsimp -failIfUnchanged [c1, c2]
-      bb_steps
-    have h_step1_star := h_step1.to_star
-    have h_step2_star := h_step2.to_star
-    have h_step12 := ReachesStar.trans h_step1_star h_step2_star
-    have h_ih := ih ((1 : Fin 2) >> (1 : Fin 2) >> xs) ys
-    have h_arith : ([1] : List (Fin 2))^(2 * (N + 1)) +> xs = ([1] : List (Fin 2))^(2 * N)
-      +> (1 : Fin 2) >> (1 : Fin 2) >> xs := by
-      rw [show 2 * (N + 1) = 2 * N + 2 by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
-      rw [h_pow2]
-      rfl
-    have h_ih_rw := h_ih
-    rw [← h_arith] at h_ih_rw
-    exact ReachesStar.trans h_step12 h_ih_rw
-
-lemma step_A0_bounce (len : Nat) (N : Nat) (ys : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(len+1) +> default,
-      ([1] : List (Fin 2))^3 +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^len +> default, ([1, 0] : List (Fin 2))^(N+3) +> ys⟩⟩ := by
-  have h_l_unfold : ([1, 0] : List (Fin 2))^(len+1) +> default =
-                    (1 : Fin 2) >> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^len +> default := by
-    rw [show len+1 = 1 + len by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-    rw [h_pow1]
-    rfl
-  have h_r_unfold : ([1] : List (Fin 2))^3 +> (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> ys =
-                    (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-                      0] : List (Fin 2))^N +> ys := by
-    have h_pow3 : ([1] : List (Fin 2))^3 = [1, 1, 1] := by rfl
-    rw [h_pow3]
-    rfl
-  have h_pow_kp2 : ([1, 0] : List (Fin 2))^(N+2) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^(N+1) +> ys := by
-    rw [show N+2 = 1 + (N+1) by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-    rw [h_pow1]
-    rfl
-  have h_pow_kp3 : ([1, 0] : List (Fin 2))^(N+3) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^(N+2) +> ys := by
-    rw [show N+3 = 1 + (N+2) by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-    rw [h_pow1]
-    rfl
-  have h_pow_kp1_LB : ([1, 0] : List (Fin 2))^(N+1) +> ys = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys := by
-    rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-    rw [h_pow1]
-    rfl
-  let c0 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(len+1) +> default,
-    ([1] : List (Fin 2))^3 +> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some B, ⟨1, (1 : Fin 2) >> ([1, 0] : List (Fin 2))^(len+1) +> default,
-    (1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> ([1,
-    0] : List (Fin 2))^(len+1) +> default, (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c3 := (⟨some D, ⟨1, (1 : Fin 2) >> ([1, 0] : List (Fin 2))^(len+1) +> default,
-    (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c4 := (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(len+1) +> default, ([1,
-    0] : List (Fin 2))^(N+2) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c5 := (⟨some D, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^len +> default,
-    (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^(N+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c6 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^len +> default, ([1,
-    0] : List (Fin 2))^(N+3) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c0_unfold : c0 = ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(len+1) +> default,
-    (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> ys⟩⟩ := by
-    dsimp -failIfUnchanged [c0]
-    rw [h_r_unfold]
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    rw [h_c0_unfold]
-    dsimp -failIfUnchanged [c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step3 : c2 [target]⊢⁺ c3 := by
-    dsimp -failIfUnchanged [c2, c3]
-    bb_steps
-  have h_step4 : c3 [target]⊢⁺ c4 := by
-    dsimp -failIfUnchanged [c3, c4]
-    bb_steps
-  have h_step5 : c4 [target]⊢⁺ c5 := by
-    dsimp -failIfUnchanged [c4, c5]
-    rw [h_pow_kp2]
-    rw [h_l_unfold]
-    bb_steps
-  have h_step6 : c5 [target]⊢⁺ c6 := by
-    dsimp -failIfUnchanged [c5, c6]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step2_star := h_step2.to_star
-  have h_step12 := ReachesStar.trans h_step1_star h_step2_star
-  have h_step3_star := h_step3.to_star
-  have h_step13 := ReachesStar.trans h_step12 h_step3_star
-  have h_step4_star := h_step4.to_star
-  have h_step14 := ReachesStar.trans h_step13 h_step4_star
-  have h_step5_star := h_step5.to_star
-  have h_step15 := ReachesStar.trans h_step14 h_step5_star
-  have h_step6_star := h_step6.to_star
-  exact ReachesStar.trans h_step15 h_step6_star
-
-lemma bounce_E_A (M : Nat) (hm : M ≥ 2) (xs : ListBlank (Fin 2)) (ys : ListBlank (Fin 2)) :
+private theorem bounce_E_A (M : Nat) (hm : M ≥ 2) (xs : ListBlank (Fin 2))
+    (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ := by
@@ -2099,71 +1312,8 @@ lemma bounce_E_A (M : Nat) (hm : M ≥ 2) (xs : ListBlank (Fin 2)) (ys : ListBla
   have h_step4_star := h_step4.to_star
   exact ReachesStar.trans h_step13 h_step4_star
 
-lemma step_E0_E1 (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, xs, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> xs, r⟩⟩ := by
-  let c0 := (⟨some E, ⟨0, xs, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some F, ⟨1, (0 : Fin 2) >> xs, (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    dsimp -failIfUnchanged [c0, c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step2_star := h_step2.to_star
-  exact ReachesStar.trans h_step1_star h_step2_star
-
-lemma step_E1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
-    (⟨some E, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ := by
-  have h_L_unfold : ([1, 0] : List (Fin 2))^(N+1) +> default = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> default := by
-    rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-    rw [h_pow1]
-    rfl
-  let c0 := (⟨some E, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some D, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^N +> default,
-    (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default,
-    (1 : Fin 2) >> (1 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c0_unfold : c0 = ⟨some E, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> default, r⟩⟩ := by
-    dsimp -failIfUnchanged [c0]
-    rw [h_L_unfold]
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    rw [h_c0_unfold]
-    dsimp -failIfUnchanged [c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step2_star := h_step2.to_star
-  exact ReachesStar.trans h_step1_star h_step2_star
-
-lemma reduce_left_1 (r : ListBlank (Fin 2)) (xs : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨1, xs, (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩ := by
-  let c0 := (⟨some A, ⟨1, (1 : Fin 2) >> (1 : Fin 2) >> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some D, ⟨1, (1 : Fin 2) >> xs, (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some A, ⟨1, xs, (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_step1 : c0 [target]⊢⁺ c1 := by
-    dsimp -failIfUnchanged [c0, c1]
-    bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by
-    dsimp -failIfUnchanged [c1, c2]
-    bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step2_star := h_step2.to_star
-  exact ReachesStar.trans h_step1_star h_step2_star
-
-lemma step_A0_A1 (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBlank (Fin 2)) :
+private theorem step_A0_A1 (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2)
+    (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> xs, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ := by
@@ -2194,7 +1344,8 @@ lemma step_A0_A1 (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBla
   have h_step2_star := h_step2.to_star
   exact ReachesStar.trans h_step1_star h_step2_star
 
-lemma step_A0_A1_plus (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : ListBlank (Fin 2)) :
+private theorem step_A0_A1_plus (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2)
+    (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢⁺
     ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> xs, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ := by
@@ -2224,20 +1375,7 @@ lemma step_A0_A1_plus (xs : ListBlank (Fin 2)) (M : Nat) (hm : M ≥ 2) (ys : Li
   have h_step2_star := h_step2.to_star
   exact h_step1.trans_star h_step2_star
 
-lemma step_A1_E0 (r : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ := by
-  let c0 := (⟨some A, ⟨1, default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some D, ⟨0, default, (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some E, ⟨0, default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_step1 : c0 [target]⊢⁺ c1 := by bb_steps
-  have h_step2 : c1 [target]⊢⁺ c2 := by bb_steps
-  have h_step1_star := h_step1.to_star
-  have h_step2_star := h_step2.to_star
-  exact ReachesStar.trans h_step1_star h_step2_star
-
-lemma step_A1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_A1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, ([1, 0] : List (Fin 2))^1 +> r⟩⟩ := by
@@ -2267,7 +1405,7 @@ lemma step_A1_A0 (N : Nat) (r : ListBlank (Fin 2)) :
   have h_step2_star := h_step2.to_star
   exact ReachesStar.trans h_step1_star h_step2_star
 
-lemma step_A0_A0 (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
+private theorem step_A0_A0 (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^(K+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^2 +> xs, ([1, 0] : List (Fin 2))^K +> ys⟩⟩ := by
@@ -2297,51 +1435,7 @@ lemma step_A0_A0 (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
   have h_step2_star := h_step2.to_star
   exact ReachesStar.trans h_step1_star h_step2_star
 
-lemma reduce_left_many (j : Nat) (xs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨1, xs, ([1, 0] : List (Fin 2))^j +> r⟩⟩ := by
-  induction j generalizing r with
-  | zero =>
-    dsimp -failIfUnchanged [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append,
-      List.append_nil, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ j ih =>
-    have h_L_unfold : ([1] : List (Fin 2))^(2*(j+1))
-      +> xs = (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*j) +> xs := by
-      conv_lhs => rw [show 2*(j+1) = 2 + 2*j by omega]
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-      have h_pow2 : ([1] : List (Fin 2))^2 = [1, 1] := by rfl
-      rw [h_pow2]
-      rfl
-    let c0 := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(j+1)) +> xs, r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c1 := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> xs,
-      (1 : Fin 2) >> (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c2 := (⟨some A, ⟨1, xs, ([1, 0] : List (Fin 2))^(j+1) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_c0_eq : c0 = ⟨some A, ⟨1,
-      (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*j) +> xs, r⟩⟩ := by
-      dsimp -failIfUnchanged [c0]
-      rw [h_L_unfold]
-    have h_trans1 : c0 [target]⊢* c1 := by
-      rw [h_c0_eq]
-      have h_step := reduce_left_1 r (([1] : List (Fin 2))^(2*j) +> xs)
-      exact h_step
-    have h_trans2 : c1 [target]⊢* c2 := by
-      have h_ih := ih ((1 : Fin 2) >> (0 : Fin 2) >> r)
-      have h_R_eq : ([1, 0] : List (Fin 2))^j +> (1 : Fin 2) >> (0 : Fin 2) >> r = ([1,
-        0] : List (Fin 2))^(j+1) +> r := by
-        have h_pow1 : ([1, 0] : List (Fin 2))^1 = [1, 0] := by rfl
-        have h_unfold_r : (1 : Fin 2) >> (0 : Fin 2) >> r = ([1, 0] : List (Fin 2))^1 +> r := by
-          rw [h_pow1]
-          rfl
-        rw [h_unfold_r]
-        rw [← Turing.ListBlank.append_assoc]
-        rw [← list_pow_add]
-      rw [h_R_eq] at h_ih
-      exact h_ih
-    exact ReachesStar.trans h_trans1 h_trans2
-
-lemma step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
+private theorem step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, xs, ([1, 0] : List (Fin 2))^K +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*K) +> xs, ys⟩⟩ := by
@@ -2382,82 +1476,7 @@ lemma step_A0_A0_many (xs : ListBlank (Fin 2)) (K : Nat) (ys : ListBlank (Fin 2)
       exact h_ih
     exact ReachesStar.trans h_trans1 h_trans2
 
-lemma inner_loop (j N M : Nat) (hm : M ≥ 2 * N) (ys : ListBlank (Fin 2)) :
-    (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> ([1, 0] : List (Fin 2))^N +> default,
-      ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j + 4*N) +> default,
-      ([1] : List (Fin 2))^(M - 2*N) +> ys⟩⟩ := by
-  induction N generalizing j M with
-  | zero =>
-    dsimp -failIfUnchanged [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append,
-      List.append_nil, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ N ih =>
-    have h_M_ge : M ≥ 2 := by omega
-    have h_M2_ge : M - 2 ≥ 2*N := by omega
-    let c_start := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j) +> ([1,
-      0] : List (Fin 2))^(N+1) +> default, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_red := (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^(N+1) +> default, ([1,
-      0] : List (Fin 2))^j +> ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_a1_a0 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, ([1,
-      0] : List (Fin 2))^1 +> ([1,
-      0] : List (Fin 2))^j +> ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_a0_a0 := (⟨some A, ⟨0, ([1] : List (Fin 2))^(2*(j+1)) +> ([1,
-      0] : List (Fin 2))^N +> default, ([1] : List (Fin 2))^M +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_step_r := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(j+2)) +> ([1,
-      0] : List (Fin 2))^N +> default, ([1] : List (Fin 2))^(M-2) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_target := (⟨some A, ⟨1, ([1] : List (Fin 2))^(2*j + 4*(N+1)) +> default,
-      ([1] : List (Fin 2))^(M - 2*(N+1)) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_trans_red : c_start [target]⊢* c_red := by
-      have h_step := reduce_left_many j (([1,
-        0] : List (Fin 2))^(N+1) +> default) (([1] : List (Fin 2))^M +> ys)
-      exact h_step
-    have h_trans_a1_a0 : c_red [target]⊢* c_a1_a0 := by
-      have h_step := step_A1_A0 N (([1, 0] : List (Fin 2))^j +> (([1] : List (Fin 2))^M +> ys))
-      exact h_step
-    have h_trans_a0_a0 : c_a1_a0 [target]⊢* c_a0_a0 := by
-      have h_R_eq : ([1, 0] : List (Fin 2))^1 +> ([1,
-        0] : List (Fin 2))^j +> ([1] : List (Fin 2))^M +> ys = ([1,
-        0] : List (Fin 2))^(j+1) +> ([1] : List (Fin 2))^M +> ys := by
-        rw [← Turing.ListBlank.append_assoc]
-        rw [← list_pow_add]
-        have h_num : 1 + j = j+1 := by omega
-        rw [h_num]
-      have h_c_a1_a0_eq : c_a1_a0 = ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> default, ([1,
-        0] : List (Fin 2))^(j+1) +> ([1] : List (Fin 2))^M +> ys⟩⟩ := by
-        dsimp -failIfUnchanged [c_a1_a0]
-        rw [h_R_eq]
-      rw [h_c_a1_a0_eq]
-      have h_step := step_A0_A0_many (([1,
-        0] : List (Fin 2))^N +> default) (j+1) (([1] : List (Fin 2))^M +> ys)
-      exact h_step
-    have h_trans_step_r : c_a0_a0 [target]⊢* c_step_r := by
-      have h_step := step_A0_A1 (([1] : List (Fin 2))^(2*(j+1)) +> ([1,
-        0] : List (Fin 2))^N +> default) M h_M_ge ys
-      have h_L_eq : ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*(j+1)) +> ([1,
-        0] : List (Fin 2))^N +> default = ([1] : List (Fin 2))^(2*(j+2)) +> ([1,
-        0] : List (Fin 2))^N +> default := by
-        rw [← Turing.ListBlank.append_assoc]
-        rw [← list_pow_add]
-        have h_num : 2 + 2*(j+1) = 2*(j+2) := by omega
-        rw [h_num]
-      rw [h_L_eq] at h_step
-      exact h_step
-    have h_trans_ih : c_step_r [target]⊢* c_target := by
-      have h_ih := ih (j+2) (M-2) h_M2_ge
-      have h_L_eq : 2*(j+2) + 4*N = 2*j + 4*(N+1) := by omega
-      have h_R_eq : M-2 - 2*N = M - 2*(N+1) := by omega
-      have h_target_eq : ⟨some A, ⟨1, ([1] : List (Fin 2))^(2*(j+2) + 4*N) +> default,
-        ([1] : List (Fin 2))^(M-2 - 2*N) +> ys⟩⟩ = c_target := by
-        dsimp -failIfUnchanged [c_target]
-        rw [h_L_eq, h_R_eq]
-      rw [h_target_eq] at h_ih
-      exact h_ih
-    exact h_trans_red.trans (h_trans_a1_a0.trans (h_trans_a0_a0.trans
-      (h_trans_step_r.trans h_trans_ih)))
-
-lemma odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
+private theorem odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
     (⟨some D, ⟨0, ([1, 0] : List (Fin 2))^a +> default, r⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some D, ⟨0, ([1, 0] : List (Fin 2))^(a-n) +> default, ([1] : List (Fin 2))^(2*n) +> r⟩⟩ := by
@@ -2509,73 +1528,7 @@ lemma odd_left_loop (n : Nat) (a : Nat) (ha : a ≥ n) (r : ListBlank (Fin 2)) :
     rw [h_sub, h_pow] at h_ih_rw
     exact ReachesStar.trans h_step12 h_ih_rw
 
-lemma reduction_step_A0 (n : Nat) (r : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, default, ([1] : List (Fin 2))^(6*n+9) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, default, ([1, 0] : List (Fin 2))^4 +> ([1] : List (Fin 2))^(6*n+3) +> r⟩⟩ := by
-  let M := 6*n+9
-  have h_M_ge9 : M ≥ 9 := by dsimp -failIfUnchanged [M]; omega
-  have h_M_ge2 : M ≥ 2 := by omega
-  have h_M2_ge2 : M-2 ≥ 2 := by omega
-  have h_M4_ge2 : M-4 ≥ 2 := by omega
-  have h_M6_ge2 : M-6 ≥ 2 := by omega
-  let c0 := (⟨some A, ⟨0, default, ([1] : List (Fin 2))^M +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c1 := (⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> default,
-    ([1] : List (Fin 2))^(M-2) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c2 := (⟨some A, ⟨1, default, ([1,
-    0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-2) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c3 := (⟨some E, ⟨0, default, ([1,
-    0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(M-2) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c4 := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^2 +> default,
-    ([1] : List (Fin 2))^(M-2) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c5 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^2 +> default,
-    ([1] : List (Fin 2))^(M-2) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c6 := (⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> ([1, 0] : List (Fin 2))^2 +> default,
-    ([1] : List (Fin 2))^(M-4) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c7 := (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^2 +> default, ([1,
-    0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-4) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c8 := (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^1 +> default, ([1,
-    0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(M-4) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c9 := (⟨some A, ⟨0, ([1] : List (Fin 2))^4 +> ([1, 0] : List (Fin 2))^1 +> default,
-    ([1] : List (Fin 2))^(M-4) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c10 := (⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^4 +> ([1,
-    0] : List (Fin 2))^1 +> default, ([1] : List (Fin 2))^(M-6) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c11 := (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^1 +> default, ([1,
-    0] : List (Fin 2))^3 +> ([1] : List (Fin 2))^(M-6) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  let c12 := (⟨some A, ⟨0, default, ([1,
-    0] : List (Fin 2))^4 +> ([1] : List (Fin 2))^(M-6) +> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-  have h_c0_c1 : c0 [target]⊢* c1 := step_A0_A1 default M h_M_ge2 r
-  have h_c1_c2 : c1 [target]⊢* c2 := reduce_left_many 1 default (([1] : List (Fin 2))^(M-2) +> r)
-  have h_c2_c3 : c2 [target]⊢* c3 := step_A1_E0 (([1,
-    0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-2) +> r)
-  have h_c3_c4 : c3 [target]⊢* c4 := sweep_E_right 2 default (([1] : List (Fin 2))^(M-2) +> r)
-  have h_c4_c5 : c4 [target]⊢* c5 := bounce_E_A (M-2) h_M2_ge2 ([1, 0]^2 +> default) r
-  have h_c5_c6 : c5 [target]⊢* c6 := step_A0_A1 ([1, 0]^2 +> default) (M-2) h_M2_ge2 r
-  have h_c6_c7 : c6 [target]⊢* c7 := reduce_left_many 1 ([1,
-    0]^2 +> default) (([1] : List (Fin 2))^(M-4) +> r)
-  have h_c7_c8 : c7 [target]⊢* c8 := step_A1_A0 1 (([1,
-    0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(M-4) +> r)
-  have h_c8_c9 : c8 [target]⊢* c9 := step_A0_A0_many (([1,
-    0] : List (Fin 2))^1 +> default) 2 (([1] : List (Fin 2))^(M-4) +> r)
-  have h_c9_c10 : c9 [target]⊢* c10 := step_A0_A1 (([1] : List (Fin 2))^4 +> ([1,
-    0] : List (Fin 2))^1 +> default) (M-4) h_M4_ge2 r
-  have h_c10_c11 : c10 [target]⊢* c11 := by
-    have h_left_eq : ([1] : List (Fin 2))^2 +> ([1] : List (Fin 2))^4 +> ([1,
-      0] : List (Fin 2))^1 +> default = ([1] : List (Fin 2))^6 +> ([1,
-      0] : List (Fin 2))^1 +> default := by
-      rw [← Turing.ListBlank.append_assoc]
-      rw [← list_pow_add]
-    have h_step := reduce_left_many 3 (([1,
-      0] : List (Fin 2))^1 +> default) (([1] : List (Fin 2))^(M-6) +> r)
-    rw [← h_left_eq] at h_step
-    exact h_step
-  have h_c11_c12 : c11 [target]⊢* c12 := step_A1_A0 0 (([1,
-    0] : List (Fin 2))^3 +> ([1] : List (Fin 2))^(M-6) +> r)
-  exact h_c0_c1.trans (h_c1_c2.trans (h_c2_c3.trans (h_c3_c4.trans (h_c4_c5.trans (h_c5_c6.trans
-    (h_c6_c7.trans (h_c7_c8.trans (h_c8_c9.trans (h_c9_c10.trans (h_c10_c11.trans
-    h_c11_c12))))))))))
-
-lemma rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)) :
+private theorem rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(a-1) +> default, ([1,
       0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -2614,7 +1567,7 @@ lemma rule_odd_phase2 (a : Nat) (ha : a ≥ 1) (k : Nat) (ys : ListBlank (Fin 2)
   have h_loop_step3 := ReachesStar.trans h_loop h_step3_star
   exact ReachesStar.trans h_step1_star h_loop_step3
 
-lemma rule_odd_h2_loop_gen (j m : Nat) (ys : ListBlank (Fin 2)) :
+private theorem rule_odd_h2_loop_gen (j m : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1,
       0] : List (Fin 2))^(m+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -2641,7 +1594,7 @@ lemma rule_odd_h2_loop_gen (j m : Nat) (ys : ListBlank (Fin 2)) :
   have h_step2_star := h_step2.to_star
   exact ReachesStar.trans h_step1_star h_step2_star
 
-lemma rule_odd_h2_loop_many_gen (m : Nat) (j : Nat) (ys : ListBlank (Fin 2)) :
+private theorem rule_odd_h2_loop_many_gen (m : Nat) (j : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default, ([1,
       0] : List (Fin 2))^m +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -2657,7 +1610,8 @@ lemma rule_odd_h2_loop_many_gen (m : Nat) (j : Nat) (ys : ListBlank (Fin 2)) :
     rw [h_arith] at h_ih
     exact ReachesStar.trans h_step h_ih
 
-lemma rule_odd_h2_loop2_helper (j : Nat) : ∀ (m r : Nat) (ys : ListBlank (Fin 2)), r ≥ 2*j →
+private theorem rule_odd_h2_loop2_helper (j : Nat) :
+    ∀ (m r : Nat) (ys : ListBlank (Fin 2)), r ≥ 2*j →
     (⟨some A, ⟨1, ([1, 0] : List (Fin 2))^j +> default, ([1,
       0] : List (Fin 2))^m +> ([1] : List (Fin 2))^r +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -2709,7 +1663,7 @@ lemma rule_odd_h2_loop2_helper (j : Nat) : ∀ (m r : Nat) (ys : ListBlank (Fin 
     rw [h_ih_RHS_eq] at h_ih
     exact ReachesStar.trans h_trans3 h_ih
 
-lemma rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2 * j) :
+private theorem rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2 * j) :
     (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j +> default,
       ([1] : List (Fin 2))^(r+2) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -2760,7 +1714,7 @@ lemma rule_odd_h2_loop2 (j r : Nat) (ys : ListBlank (Fin 2)) (hr : r ≥ 2 * j) 
   rw [h_arith_add] at h_loop_many
   exact ReachesStar.trans h_to_E0 h_loop_many
 
-lemma pow_two_ge_two (X : Nat) (h : X ≥ 1) : 2^X ≥ 2 := by
+private theorem pow_two_ge_two (X : Nat) (h : X ≥ 1) : 2^X ≥ 2 := by
   rcases X with _ | X'
   · omega
   · have : 2^(X' + 1) = 2^X' * 2 := by rfl
@@ -2768,7 +1722,7 @@ lemma pow_two_ge_two (X : Nat) (h : X ≥ 1) : 2^X ≥ 2 := by
     have h_pos : 2^X' ≥ 1 := Nat.two_pow_pos X'
     omega
 
-lemma rule_odd_h2_loop_chain_helper (j : Nat) (m : Nat) (hm : m < j) :
+private theorem rule_odd_h2_loop_chain_helper (j : Nat) (m : Nat) (hm : m < j) :
     2 * S j + 2 * (j - 1 - m) + 5 ≥ 2^(j + 2 - m) := by
   induction m with
   | zero =>
@@ -2809,111 +1763,14 @@ lemma rule_odd_h2_loop_chain_helper (j : Nat) (m : Nat) (hm : m < j) :
       exact h_exp
     omega
 
-lemma rule_odd_h2_loop_chain (j : Nat) (n : Nat) (hn : n ≤ j) (k : Nat) (ys : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2 * S j - 1) +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(n+1) - 2) +> default,
-      ([1] : List (Fin 2))^(2 * S j + 2*n + 3 - 2^(n+2)) +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
-  induction n with
-  | zero =>
-    have h_LHS : (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2 * S j - 1) +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                 ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(0+1) - 2) +> default,
-                   ([1] : List (Fin 2))^(2 * S j + 2*0 + 3 - 2^(0+2)) +> (0 : Fin 2) >> ([1,
-                   0] : List (Fin 2))^(k+1) +> ys⟩⟩ := by
-      have h_pow1 : 2^(0+1) - 2 = 0 := by rfl
-      have h_pow2 : 2 * S j + 2*0 + 3 - 2^(0+2) = 2 * S j - 1 := by
-        have h_S_ge1 : S j ≥ 1 := by
-          unfold S
-          have := pow_two_ge_two_mul_add_two j
-          omega
-        omega
-      rw [h_pow1, h_pow2]
-      simp [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, ListBlank.append]
-    rw [h_LHS]
-  | succ n ih =>
-    have hn_n : n ≤ j := by omega
-    have h_ih := ih hn_n
-    let m := j - 1 - n
-    have hm : m < j := by omega
-    have h_help := rule_odd_h2_loop_chain_helper j m hm
-    have h_m_eq : j - 1 - m = n := by omega
-    rw [h_m_eq] at h_help
-    have h_exp_eq : j + 2 - m = n + 3 := by omega
-    rw [h_exp_eq] at h_help
-    have h_r_ge : 2 * S j + 2*n + 1 - 2^(n+2) ≥ 2 * (2^(n+1) - 2) := by
-      have h_pow_rel1 : 2^(n+2) = 2^(n+1) * 2 := by rfl
-      have h_pow_rel2 : 2^(n+3) = 2^(n+1) * 4 := by
-        have h1 : 2^(n+3) = 2^(n+2) * 2 := by rfl
-        have h2 : 2^(n+2) = 2^(n+1) * 2 := by rfl
-        rw [h1, h2]
-        generalize 2^(n+1) = U
-        omega
-      have h_U_ge2 : 2^(n+1) ≥ 2 := pow_two_ge_two (n+1) (by omega)
-      rw [h_pow_rel2] at h_help
-      rw [h_pow_rel1] at ⊢
-      generalize h_pow_n1 : 2^(n+1) = U at h_help ⊢
-      rw [h_pow_n1] at h_U_ge2
-      clear h_ih ih
-      omega
-    let j_loop := 2^(n+1) - 2
-    let r_loop := 2 * S j + 2*n + 1 - 2^(n+2)
-    let ys_loop := (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys
-    have h_C_n_eq : (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(n+1) - 2) +> default,
-      ([1] : List (Fin 2))^(2 * S j + 2*n + 3 - 2^(n+2)) +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                    ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^j_loop +> default,
-                      ([1] : List (Fin 2))^(r_loop + 2) +> ys_loop⟩⟩ := by
-      have h_safe : 2 * S j + 2*n + 1 ≥ 2^(n+2) := by
-        have h_pow_rel : 2^(n+3) = 2^(n+2) * 2 := by rfl
-        rw [h_pow_rel] at h_help
-        generalize h_pow_n2 : 2^(n+2) = V at h_help ⊢
-        have h_V_ge4 : V ≥ 4 := by
-          rw [← h_pow_n2]
-          have h_eq : 2^(n+2) = 2^(n+1) * 2 := by rfl
-          rw [h_eq]
-          have : 2^(n+1) ≥ 2 := pow_two_ge_two (n+1) (by omega)
-          omega
-        clear h_r_ge h_ih ih hn_n hm h_m_eq h_exp_eq
-        omega
-      have : r_loop + 2 = 2 * S j + 2*n + 3 - 2^(n+2) := by
-        dsimp -failIfUnchanged [r_loop]
-        omega
-      rw [this]
-    have h_step := rule_odd_h2_loop2 j_loop r_loop ys_loop h_r_ge
-    have h_LHS_eq : 2 * j_loop + 2 = 2^(n+2) - 2 := by
-      dsimp -failIfUnchanged [j_loop]
-      have : 2^(n+2) = 2^(n+1) * 2 := by rfl
-      have h_pow_ge2 : 2^(n+1) ≥ 2 := pow_two_ge_two (n+1) (by omega)
-      omega
-    have h_RHS_eq : r_loop - 2 * j_loop = 2 * S j + 2*(n+1) + 3 - 2^(n+3) := by
-      dsimp -failIfUnchanged [r_loop, j_loop]
-      have h_pow_n2 : 2^(n+2) = 2^(n+1) * 2 := by rfl
-      have h_pow_n3 : 2^(n+3) = 2^(n+1) * 4 := by
-        have h1 : 2^(n+3) = 2^(n+2) * 2 := by rfl
-        have h2 : 2^(n+2) = 2^(n+1) * 2 := by rfl
-        rw [h1, h2]
-        generalize 2^(n+1) = U
-        omega
-      have h_pow_ge2 : 2^(n+1) ≥ 2 := pow_two_ge_two (n+1) (by omega)
-      generalize h_pow_n1 : 2^(n+1) = U at h_help h_pow_n2 h_pow_n3 ⊢
-      rw [h_pow_n1] at h_pow_ge2
-      rw [h_pow_n2, h_pow_n3]
-      clear h_help h_step h_C_n_eq h_LHS_eq h_r_ge h_ih ih hn_n hm h_m_eq h_exp_eq
-      omega
-    rw [h_LHS_eq, h_RHS_eq] at h_step
-    rw [h_C_n_eq] at h_ih
-    exact ReachesStar.trans h_ih h_step
-
-lemma rule_odd_loop_chain_helper (a : Nat) (j : Nat) (hj : S j ≤ a) (m : Nat) (hm : m < j) :
+private theorem rule_odd_loop_chain_helper (a : Nat) (j : Nat) (hj : S j ≤ a) (m : Nat)
+    (hm : m < j) :
     2 * a + 2 * (j - 1 - m) + 5 ≥ 2^(j + 2 - m) := by
   have h_S := rule_odd_h2_loop_chain_helper j m hm
   omega
 
-lemma rule_odd_loop_chain (a : Nat) (j : Nat) (hj : S j ≤ a) (n : Nat) (hn : n ≤ j) (k : Nat) (ys :
-  ListBlank (Fin 2)) :
+private theorem rule_odd_loop_chain (a : Nat) (j : Nat) (hj : S j ≤ a) (n : Nat) (hn : n ≤ j)
+    (k : Nat) (ys : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, default, ([1] : List (Fin 2))^(2 * a - 1) +> (0 : Fin 2) >> ([1,
       0] : List (Fin 2))^(k+1) +> ys⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -3013,376 +1870,19 @@ lemma rule_odd_loop_chain (a : Nat) (j : Nat) (hj : S j ≤ a) (n : Nat) (hn : n
     rw [h_C_n_eq] at h_ih
     exact ReachesStar.trans h_ih h_step
 
-lemma bb_step_11A_A10 (l r : ListBlank (Fin 2)) (n : Nat) :
-    ((l <+ (([1, 1] : List (Fin 2))^n)) <{{A}} r) [target]⊢* (l <{{A}} ((([1,
-      0] : List (Fin 2))^n) +> r)) := by
-  induction n generalizing l r with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    rw [list_pow_add, Turing.ListBlank.append_assoc]
-    refine ReachesStar.trans (ih _ _) ?_
-    simp only [A, Fin.isValue, list_pow_succ, list_pow_zero, List.cons_append, List.nil_append,
-      List.append_nil, ListBlank.append_cons, ListBlank.append]
-    bb_steps
-
-lemma bb_step_A0_11A (l r : ListBlank (Fin 2)) (n : Nat) :
-    (l {{A}}> ((0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> r))
-    [target]⊢*
-    ((l <+ ([1, 1] : List (Fin 2))^n) {{A}}> ((0 : Fin 2) >> r)) := by
-  induction n generalizing l r with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_split : (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(n + 1) +> r =
-                   (0 : Fin 2) >> ([1, 0] : List (Fin 2))^n +> ([1, 0] : List (Fin 2))^1 +> r := by
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-    rw [h_split]
-    refine ReachesStar.trans (ih _ _) ?_
-    simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
-      ListBlank.append]
-    bb_steps
-
-lemma bb_lmove_2steps_L (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
-    (((1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> l) <{{A}} r)
-    [target]⊢*
-    (l {{A}}> ((0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> r)) := by
-  bb_steps
-
-lemma listBlank_pow_11_comm (n : Nat) (l : ListBlank (Fin 2)) :
-    (([1, 1] : List (Fin 2))^n +> (1 : Fin 2) >> l) = (1 : Fin 2) >> ([1,
-      1] : List (Fin 2))^n +> l :=
-  swap_1_11_pow n l
-
-lemma bb_step_A0_10_cleanup (k : Nat) (m : Nat) (l : ListBlank (Fin 2)) (r : ListBlank (Fin 2))
-    (h : m ≥ 2 * k) :
-    ((l <+ ([1, 0] : List (Fin 2))^k) {{A}}> ((0 : Fin 2) >> ([1] : List (Fin 2))^m +> r))
-    [target]⊢*
-    (l {{A}}> ((0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(2*k) +> ([1] : List (Fin 2))^(m - 2*k) +> r)) := by
-  induction k generalizing l m r with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append, Nat.mul_zero, Nat.sub_zero]
-    exact ReachesStar.refl _ _
-  | succ k ih =>
-    have h_m : m ≥ 2*k := by omega
-    have h_left_split : l <+ ([1, 0] : List (Fin 2))^(k + 1) = (l <+ ([1,
-      0] : List (Fin 2))^1) <+ ([1, 0] : List (Fin 2))^k := by
-      rw [list_pow_add, Turing.ListBlank.append_assoc]
-    rw [h_left_split]
-    refine ReachesStar.trans (ih _ _ _ h_m) ?_
-    refine ReachesStar.trans (bb_step_A0_11A _ _ _) ?_
-    have h_right_split : (0 : Fin 2) >> ([1] : List (Fin 2))^(m - 2*k) +> r =
-                         (0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(m - 2*k
-                           - 2) +> r := by
-      have h_arith : ([1] : List (Fin 2))^(m - 2*k) = [1,
-        1] ++ ([1] : List (Fin 2))^(m - 2*k - 2) := by
-        have h_eq : m - 2*k = 2 + (m - 2*k - 2) := by omega
-        rw [h_eq, list_pow_add]
-        simp [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil]
-      rw [h_arith]
-      rfl
-    rw [h_right_split]
-    have h_2steps_R :
-      (((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1,
-        1] : List (Fin 2))^(2*k)) {{A}}> ((0 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List
-        (Fin 2))^(m - 2*k - 2) +> r))
-      [target]⊢*
-      (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1,
-        1] : List (Fin 2))^(2*k + 1))) <{{A}} ([1] : List (Fin 2))^(m - 2*k - 2) +> r) := by
-        bb_steps
-    refine ReachesStar.trans h_2steps_R ?_
-    have h_2steps_L :
-      (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1,
-        1] : List (Fin 2))^(2*k + 1))) <{{A}} ([1] : List (Fin 2))^(m - 2*k - 2) +> r)
-      [target]⊢*
-      (((1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1,
-        1] : List (Fin 2))^(2*k))) <{{A}} (([1,
-        0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r)) := by
-        have h_rw : ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1, 1] : List (Fin 2))^(2*k + 1)) =
-                    (1 : Fin 2) >> (1 : Fin 2) >> ((l <+ ([1, 0] : List (Fin 2))^1) <+ ([1,
-                      1] : List (Fin 2))^(2*k)) := by
-          have : 2*k + 1 = 1 + 2*k := by omega
-          rw [this, list_pow_add, Turing.ListBlank.append_assoc]
-          simp [list_pow_succ, list_pow_zero, List.append_nil, ListBlank.append]
-        rw [h_rw]
-        bb_steps
-    refine ReachesStar.trans h_2steps_L ?_
-    rw [← listBlank_pow_11_comm]
-    have h_11_to_10 := bb_step_11A_A10 ((1 : Fin 2) >> (l <+ ([1, 0] : List (Fin 2))^1)) (([1,
-      0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r) (2*k)
-    refine ReachesStar.trans h_11_to_10 ?_
-    have h_rhs_rw : ([1, 0] : List (Fin 2))^(2*k) +> ([1,
-      0] : List (Fin 2))^1 +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r =
-                    ([1, 0] : List (Fin 2))^(2*k + 1) +> ([1] : List (Fin 2))^(m - 2*k - 2)
-                      +> r := by
-      rw [← Turing.ListBlank.append_assoc, ← list_pow_add]
-    have h_lhs_rw : (1 : Fin 2) >> (l <+ ([1,
-      0] : List (Fin 2))^1) = (1 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> l := by
-      simp [list_pow_succ, list_pow_zero, List.append_nil, ListBlank.append]
-    rw [h_lhs_rw, h_rhs_rw]
-    have h_lmove := bb_lmove_2steps_L l (([1,
-      0] : List (Fin 2))^(2*k + 1) +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r)
-    refine ReachesStar.trans h_lmove ?_
-    have h_final_rw : (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(2*k + 1) +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r =
-                      (0 : Fin 2) >> ([1,
-                        0] : List (Fin 2))^(2*k + 2) +> ([1] : List (Fin 2))^(m - 2*k - 2)
-                        +> r := by
-      have h_comm := ListBlank.append_comm_of_comm (list_pow_add_comm [1, 0] (2*k + 1) 1)
-        (([1] : List (Fin 2))^(m - 2*k - 2) +> r)
-      rw [show (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-        0] : List (Fin 2))^(2*k + 1) +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r =
-               ([1, 0] : List (Fin 2))^1 +> ([1,
-                 0] : List (Fin 2))^(2*k + 1) +> ([1] : List (Fin 2))^(m - 2*k - 2) +> r by rfl]
-      rw [h_comm]
-      rw [← Turing.ListBlank.append_assoc, ← list_pow_add]
-    rw [h_final_rw]
-    exact ReachesStar.refl _ _
-
-lemma rule_odd_h2 (a k : Nat) (ha : a ≥ 1) (h_halt : ∃ j, a = S j) :
-    (Config_gen a (2 * k + 1) 2) [target]⊢⁺
-    ⟨some F, ⟨0, (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(2^(find_k a + 1) + k + 1) +> default,
-      default⟩⟩ := by
-  have ha_cases : a = 1 ∨ a = 2 ∨ a ≥ 3 := by omega
-  rcases ha_cases with rfl | rfl | ha_ge3
-  · -- a = 1
-    have h_phase1 := rule_odd_phase1 k 1 (by omega) (([1] : List (Fin 2))^1 +> default)
-    have h_phase2 := rule_odd_phase2 1 (by omega) k (([1] : List (Fin 2))^1 +> default)
-    have h_phases := ReachesStar.trans h_phase1 h_phase2
-    change (Config_gen 1 (2 * k + 1) 2) [target]⊢* ⟨some E, ⟨0, default,
-      (1: Fin 2) >> (0: Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default⟩⟩ at h_phases
-    have h_eq : (1: Fin 2) >> (0: Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> (1 : Fin 2) >> default =
-                ([1, 0] : List (Fin 2))^(k+2) +> (1 : Fin 2) >> default := by
-      have h_unfold : ([1, 0] : List (Fin 2))^(k+2) = [1, 0] ++ ([1, 0] : List (Fin 2))^(k+1) := by
-        rw [show k+2 = 1 + (k+1) by omega, list_pow_add]
-        rfl
-      rw [h_unfold, Turing.ListBlank.append_assoc]
-      rfl
-    rw [h_eq] at h_phases
-    have h_loop1 := rule_odd_h2_loop_many_gen (k+2) 0 (ListBlank.cons (1 : Fin 2) default)
-    have h_arith_add : 0 + (k+2) = k+2 := by omega
-    rw [h_arith_add] at h_loop1
-    have h_phases2 := ReachesStar.trans h_phases h_loop1
-    let c_loop_end := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+2) +> default,
-      ListBlank.cons (1: Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_f1_final := (⟨some F, ⟨1, ListBlank.cons (0: Fin 2) (([1,
-      0] : List (Fin 2))^(k+2) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_e0_halt := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+3) +> default,
-      default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_f0_halt := (⟨some F, ⟨0, ListBlank.cons (0: Fin 2) (([1,
-      0] : List (Fin 2))^(k+3) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_step5 : c_loop_end [target]⊢⁺ c_f1_final := by bb_steps
-    have h_step6 : c_f1_final [target]⊢⁺ c_e0_halt := by
-      dsimp -failIfUnchanged [c_f1_final, c_e0_halt]
-      bb_steps
-    have h_step7 : c_e0_halt [target]⊢⁺ c_f0_halt := by bb_steps
-    have h_step5_star := h_step5.to_star
-    have h_step6_star := h_step6.to_star
-    have h_step7_plus := h_step7
-    have h_56 := ReachesStar.trans h_step5_star h_step6_star
-    have h_final := ReachesStar.trans_plus h_56 h_step7_plus
-    have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(2^(find_k 1 + 1) + k + 1) +> default, default⟩⟩ = c_f0_halt := by
-      dsimp -failIfUnchanged [c_f0_halt]
-      have h_find_k : find_k 1 = 0 := by rfl
-      have h_arith : 2^(find_k 1 + 1) + k + 1 = k+3 := by
-        rw [h_find_k]
-        omega
-      rw [h_arith]
-    rw [h_target_eq]
-    exact ReachesStar.trans_plus h_phases2 h_final
-  · -- a = 2
-    have h_phase1 := rule_odd_phase1 k 2 (by omega) (([1] : List (Fin 2))^1 +> default)
-    have h_phase2 := rule_odd_phase2 2 (by omega) k (([1] : List (Fin 2))^1 +> default)
-    have h_phases := ReachesStar.trans h_phase1 h_phase2
-    have h_loop2 := rule_odd_h2_loop2 0 1 (ListBlank.cons (0 : Fin 2) (([1,
-      0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default)) (by omega)
-    have h_phases2 := ReachesStar.trans h_phases h_loop2
-    change (Config_gen 2 (2 * k + 1) 2) [target]⊢* ⟨some E, ⟨0, ([1,
-      0] : List (Fin 2))^2 +> default,
-      ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1,
-      0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default))⟩⟩ at h_phases2
-    have h_pow_unfold : ([1,
-      0] : List (Fin 2))^(k+2)
-      +> ListBlank.cons (1 : Fin 2) default
-      = ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1,
-      0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default)) := by
-      rw [show k+2 = 1 + (k+1) by omega, list_pow_add, Turing.ListBlank.append_assoc]
-      rfl
-    rw [← h_pow_unfold] at h_phases2
-    have h_loop1 := rule_odd_h2_loop_many_gen (k+2) 2 (ListBlank.cons (1 : Fin 2) default)
-    have h_phases3 := ReachesStar.trans h_phases2 h_loop1
-    let c_loop_end := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+4) +> default,
-      ListBlank.cons (1: Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_f1_final := (⟨some F, ⟨1, ListBlank.cons (0: Fin 2) (([1,
-      0] : List (Fin 2))^(k+4) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_e0_halt := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(k+5) +> default,
-      default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_f0_halt := (⟨some F, ⟨0, ListBlank.cons (0: Fin 2) (([1,
-      0] : List (Fin 2))^(k+5) +> default), default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_step5 : c_loop_end [target]⊢⁺ c_f1_final := by bb_steps
-    have h_step6 : c_f1_final [target]⊢⁺ c_e0_halt := by
-      dsimp -failIfUnchanged [c_f1_final, c_e0_halt]
-      bb_steps
-    have h_step7 : c_e0_halt [target]⊢⁺ c_f0_halt := by bb_steps
-    have h_step5_star := h_step5.to_star
-    have h_step6_star := h_step6.to_star
-    have h_step7_plus := h_step7
-    have h_56 := ReachesStar.trans h_step5_star h_step6_star
-    have h_final := ReachesStar.trans_plus h_56 h_step7_plus
-    have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(2^(find_k 2 + 1) + k + 1) +> default, default⟩⟩ = c_f0_halt := by
-      dsimp -failIfUnchanged [c_f0_halt]
-      have h_find_k : find_k 2 = 1 := by rfl
-      have h_arith : 2^(find_k 2 + 1) + k + 1 = k+5 := by
-        rw [h_find_k]
-        have h_pow : 2^(1 + 1) = 4 := by rfl
-        rw [h_pow]
-        omega
-      rw [h_arith]
-    have h_cast : ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2 + (k + 2)) +> default,
-      ListBlank.cons (1 : Fin 2) default⟩⟩ = c_loop_end := by
-      dsimp -failIfUnchanged [c_loop_end]
-      have h_arith : 2 + (k + 2) = k + 4 := by omega
-      rw [h_arith]
-    rw [h_cast] at h_phases3
-    rw [h_target_eq]
-    exact ReachesStar.trans_plus h_phases3 h_final
-  · -- a >= 3
-    rcases h_halt with ⟨j, rfl⟩
-    have hj_ge2 : j ≥ 2 := by
-      by_contra hc
-      have hj_cases : j = 0 ∨ j = 1 := by omega
-      rcases hj_cases with rfl | rfl
-      · have : S 0 = 1 := by rfl
-        omega
-      · have : S 1 = 2 := by rfl
-        omega
-    have h_S_gt : S j > j := S_gt_self j
-    have h_S_ge1 : S j ≥ 1 := by omega
-    have h_phase1 := rule_odd_phase1 k (S j) h_S_ge1 (ListBlank.cons (1 : Fin 2) default)
-    have h_phase2 := rule_odd_phase2 (S j) h_S_ge1 k (ListBlank.cons (1 : Fin 2) default)
-    have h_phases := ReachesStar.trans h_phase1 h_phase2
-    have h_chain := rule_odd_h2_loop_chain j j (by omega) k (ListBlank.cons (1 : Fin 2) default)
-    have h_phases2 := ReachesStar.trans h_phases h_chain
-    have h_power_eval : 2 * S j + 2*j + 3 - 2^(j+2) = 1 := by
-      unfold S
-      have h_pow := pow_two_ge_two_mul_add_two j
-      have h_pow_succ : 2^(j+2) = 2^(j+1) * 2 := by rfl
-      rw [h_pow_succ]
-      generalize hX : 2^(j+1) = X at h_pow ⊢
-      omega
-    have h_cast1 : (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(j+1) - 2) +> default,
-      ([1] : List (Fin 2))^(2 * S j + 2*j + 3 - 2^(j+2)) +> (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                   (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(j+1) - 2) +> default, ([1,
-                     0] : List (Fin 2))^(k+2)
-                     +> ListBlank.cons (1 : Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6)) := by
-      rw [h_power_eval]
-      have h_tape : ([1] : List (Fin 2))^1 +> (0 : Fin 2) >> ([1,
-        0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default =
-                    ([1, 0] : List (Fin 2))^(k+2) +> ListBlank.cons (1 : Fin 2) default := by
-        change ListBlank.cons (1 : Fin 2) (ListBlank.cons (0 : Fin 2) (([1,
-          0] : List (Fin 2))^(k+1) +> ListBlank.cons (1 : Fin 2) default)) =
-               ([1, 0] : List (Fin 2))^(k+2) +> ListBlank.cons (1 : Fin 2) default
-        rw [show k+2 = 1 + (k+1) by omega]
-        rw [list_pow_add ([1, 0] : List (Fin 2)) 1 (k+1)]
-        rw [Turing.ListBlank.append_assoc]
-        rfl
-      rw [h_tape]
-    rw [h_cast1] at h_phases2
-    have h_loop_many :=
-      rule_odd_h2_loop_many_gen (k+2) (2^(j+1) - 2) (ListBlank.cons (1 : Fin 2) default)
-    have h_phases3 := ReachesStar.trans h_phases2 h_loop_many
-    let N := 2^(j+1) + k
-    have h_cast2 : (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(2^(j+1) - 2 + (k + 2)) +> default,
-      ListBlank.cons (1 : Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                   (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^N +> default,
-                     ListBlank.cons (1 : Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6)) := by
-      have h_arith : 2^(j+1) - 2 + (k + 2) = N := by
-        dsimp -failIfUnchanged [N]
-        have h_pow := pow_two_ge_two_mul_add_two j
-        omega
-      rw [h_arith]
-    rw [h_cast2] at h_phases3
-    let c_pre := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^N +> default,
-      ListBlank.cons (1 : Fin 2) default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_f1 := (⟨some F, ⟨1, ListBlank.cons 0 (([1, 0] : List (Fin 2))^N +> default),
-      default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_e0 := (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(N+1) +> default,
-      default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    let c_halt := (⟨some F, ⟨0, ListBlank.cons 0 (([1, 0] : List (Fin 2))^(N+1) +> default),
-      default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    have h_step_pre_f1 : c_pre [target]⊢⁺ c_f1 := by bb_steps
-    have h_step_f1_e0 : c_f1 [target]⊢⁺ c_e0 := by
-      dsimp -failIfUnchanged [c_f1, c_e0]
-      bb_steps
-    have h_step_e0_halt : c_e0 [target]⊢⁺ c_halt := by bb_steps
-    have h_step_pre_f1_star := h_step_pre_f1.to_star
-    have h_step_f1_e0_star := h_step_f1_e0.to_star
-    have h_step_e0_halt_plus := h_step_e0_halt
-    have h_pre_e0 := ReachesStar.trans h_step_pre_f1_star h_step_f1_e0_star
-    have h_final_plus := ReachesStar.trans_plus h_pre_e0 h_step_e0_halt_plus
-    have h_target_eq : ⟨some F, ⟨0, (0 : Fin 2) >> ([1,
-      0] : List (Fin 2))^(2^(find_k (S j) + 1) + k + 1) +> default, default⟩⟩ = c_halt := by
-      dsimp -failIfUnchanged [c_halt, N]
-      have h_find_k_eq : find_k (S j) = j := by
-        apply find_k_S_eq
-        have : S j > j := S_gt_self j
-        omega
-      rw [h_find_k_eq]
-    rw [h_target_eq]
-    exact ReachesStar.trans_plus h_phases3 h_final_plus
-
-lemma step_E0_consume_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2)) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨0, ([1, 0] : List (Fin 2)) +> left, right⟩⟩ := by
-  bb_steps
-
-lemma step_E0_consume_10_many (n : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2))^n +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^n +> left, right⟩⟩ := by
-  induction n generalizing left with
-  | zero =>
-    simp only [list_pow_zero, ListBlank.append]
-    exact ReachesStar.refl _ _
-  | succ n ih =>
-    have h_LHS_eq : (⟨some E, ⟨0, left, ([1,
-      0] : List (Fin 2))^(n+1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                    ⟨some E, ⟨0, left, ([1, 0] : List (Fin 2)) +> ([1,
-                      0] : List (Fin 2))^n +> right⟩⟩ := rfl
-    rw [h_LHS_eq]
-    have h_step := step_E0_consume_10 left (([1, 0] : List (Fin 2))^n +> right)
-    have h_ih := ih (([1, 0] : List (Fin 2)) +> left)
-    have h_trans := ReachesStar.trans h_step h_ih
-    have h_RHS_eq : (⟨some E, ⟨0, ([1, 0] : List (Fin 2))^n +> ([1, 0] : List (Fin 2)) +> left,
-      right⟩⟩ : Cfg (Fin 2) (Fin 6)) =
-                    ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^(n+1) +> left, right⟩⟩ := by
-      rw [← Turing.ListBlank.append_assoc]
-      rw [← list_pow_succ']
-    rw [← h_RHS_eq]
-    exact h_trans
-
-lemma step_E0_to_A0_gen (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem step_E0_to_A0_gen (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, left, (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ := by
   bb_steps
 
-lemma step_E0_sweep_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem step_E0_sweep_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, (1 : Fin 2) >> (0 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢⁺
     ⟨some E, ⟨0, (1 : Fin 2) >> (0 : Fin 2) >> left, right⟩⟩ := by
   bb_steps
 
-lemma rule_E0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem rule_E0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some E, ⟨0, left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some E, ⟨0, ([1, 0] : List (Fin 2))^N +> left, right⟩⟩ := by
@@ -3415,55 +1915,19 @@ lemma rule_E0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (
     rw [h_unfold_left]
     exact h_trans
 
-lemma step_A0_bounce_gen (N : Nat) (m : Nat) (zs : ListBlank (Fin 2)) (r : ListBlank (Fin 2)) :
-    (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(N+1) +> zs,
-      ([1] : List (Fin 2))^(2*m+3) +> (0 : Fin 2) >> r⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨0, ([1, 0] : List (Fin 2))^N +> zs, ([1,
-      0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*m+1) +> (0 : Fin 2) >> r⟩⟩ := by
-  have h_left : (([1, 0] : List (Fin 2))^(N+1) +> zs) = (1 : Fin 2) >> (0 : Fin 2) >> ([1,
-    0] : List (Fin 2))^N +> zs := by
-    rw [show N+1 = 1 + N by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    rfl
-  have h_right : (([1] : List (Fin 2))^(2*m+3)
-    +> (0 : Fin 2) >> r)
-    = (1 : Fin 2) >> (1 : Fin 2) >> (1 : Fin 2) >> ([1] : List (Fin 2))^(2*m)
-    +> (0 : Fin 2) >> r := by
-    rw [show 2*m+3 = 3 + 2*m by omega, list_pow_add, Turing.ListBlank.append_assoc]
-    rfl
-  have h_target_right : (([1,
-    0] : List (Fin 2))^2 +> ([1] : List (Fin 2))^(2*m+1) +> (0 : Fin 2) >> r) =
-                        (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >> (0 : Fin 2) >> (1 : Fin 2) >>
-                          ([1] : List (Fin 2))^(2*m) +> (0 : Fin 2) >> r := by
-    have h_pow1 : ([1, 0] : List (Fin 2))^2 = [1, 0, 1, 0] := by rfl
-    have h_pow2 : ([1] : List (Fin 2))^(2*m+1) = [1] ++ ([1] : List (Fin 2))^(2*m) := by
-      rw [show 2*m+1 = 1 + 2*m by omega, list_pow_add]
-      have h_one : ([1] : List (Fin 2))^1 = [1] := by rfl
-      rw [h_one]
-    rw [h_pow1, h_pow2]
-    rfl
-  rw [h_left, h_right, h_target_right]
-  bb_steps
-
-lemma step_E0_to_A (left : ListBlank (Fin 2)) :
-    (⟨some E, ⟨0, left, ([1] : List (Fin 2))^2 +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
-    [target]⊢*
-    ⟨some A, ⟨1, ([1] : List (Fin 2))^2 +> left, default⟩⟩ := by
-  bb_steps
-
-lemma step_A0_to_A1 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem step_A0_to_A1 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, left,
       (1 : Fin 2) >> (1 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢⁺ ⟨some A, ⟨1,
       (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
   bb_steps
 
-lemma step_A0_to_A0_step_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem step_A0_to_A0_step_10 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, left,
       (1 : Fin 2) >> (0 : Fin 2) >> right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢⁺ ⟨some A, ⟨0,
       (1 : Fin 2) >> (1 : Fin 2) >> left, right⟩⟩ := by
   bb_steps
 
-lemma rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, left, ([1, 0] : List (Fin 2))^N +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
     ⟨some A, ⟨0, ([1] : List (Fin 2))^(2*N) +> left, right⟩⟩ := by
@@ -3496,14 +1960,14 @@ lemma rule_A0_sweep_10 (N : Nat) (left : ListBlank (Fin 2)) (right : ListBlank (
     rw [h_arith]
     exact h_final
 
-lemma step_A1_to_A0 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem step_A1_to_A0 (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨1, (1 : Fin 2) >> (0 : Fin 2) >> left,
       right⟩⟩ : Cfg (Fin 2) (Fin 6)) [target]⊢⁺ ⟨some A, ⟨0, left, ([1,
       0] : List (Fin 2)) +> right⟩⟩ := by
   bb_steps
 
-lemma rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat) (left : ListBlank
-  (Fin 2)) (right : ListBlank (Fin 2)) :
+private theorem rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat)
+    (left : ListBlank (Fin 2)) (right : ListBlank (Fin 2)) :
     (⟨some A, ⟨0, ([1, 0] : List (Fin 2))^(J+1) +> left, ([1,
       0] : List (Fin 2))^K +> ([1] : List (Fin 2))^(2*m+1) +> right⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -3591,7 +2055,8 @@ lemma rule_odd_remainder_bounce_gen (J : Nat) (m : Nat) (hm : m ≥ 1) (K : Nat)
   exact ReachesStar.trans (ReachesStar.trans (ReachesStar.trans h_sweep h_step_A0_A1) h_even_sweep)
     h_step_A1_A0
 
-lemma rule_odd_remainder_loop (j : Nat) (m : Nat) (K : Nat) (k : Nat) (ys : ListBlank (Fin 2))
+private theorem rule_odd_remainder_loop (j : Nat) (m : Nat) (K : Nat) (k : Nat)
+    (ys : ListBlank (Fin 2))
     (h_J : K / 2 + m ≤ 2 ^ (j + 1) - 2) :
     let J := 2^(j+1) - 2
     let right_tail := (0 : Fin 2) >> ([1, 0] : List (Fin 2))^(k+1) +> ys
@@ -3621,14 +2086,14 @@ lemma rule_odd_remainder_loop (j : Nat) (m : Nat) (K : Nat) (k : Nat) (ys : List
     rw [h_arith1, h_arith2] at h_chain
     exact h_chain
 
-lemma pow_two_ge_succ (n : Nat) : 2^n ≥ n + 1 := by
+private theorem pow_two_ge_succ (n : Nat) : 2^n ≥ n + 1 := by
   induction n with
   | zero => decide
   | succ n ih =>
     rw [pow_succ]
     omega
 
-lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h ≥ 3) :
+private theorem rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h ≥ 3) :
     let j := find_k a
     let J := 2^(j+1) - 2
     let R_exp := 2*a + 2*j + 3 - 2^(j+2)
@@ -3879,7 +2344,7 @@ lemma rule_odd_remainder (a : Nat) (ha : a ≥ 2) (k : Nat) (h : Nat) (hh : h �
     rw [h_a_eq, h_g_eq] at h_total_plus
     exact h_total_plus
 
-lemma rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) :
+private theorem rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) :
     (Config_gen a g h) [target]⊢⁺ target_odd a g h := by
   rcases hg_odd : (show ∃ k, g = 2*k + 1 by use g/2; omega) with ⟨k, rfl⟩
   rcases a with _ | a
@@ -4043,7 +2508,7 @@ lemma rule_odd_gen (a g h : Nat) (ha : a ≥ 1) (hg : g % 2 = 1) (hh : h ≥ 3) 
       have h_rem := rule_odd_remainder (a + 1 + 1) ha_ge2 k h hh
       exact ReachesStar.trans_plus h_after_chain h_rem
 
-lemma sweep_C_left (g : Nat) (k : Nat) :
+private theorem sweep_C_left (g : Nat) (k : Nat) :
     (⟨some C, ⟨1, ([1] : List (Fin 2))^g +> default,
       ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -4066,7 +2531,7 @@ lemma sweep_C_left (g : Nat) (k : Nat) :
     rw [h_eq] at h_ih
     exact ReachesStar.trans h_step_star h_ih
 
-lemma sweep_C_left_gen (g k : Nat) (xs : ListBlank (Fin 2)) :
+private theorem sweep_C_left_gen (g k : Nat) (xs : ListBlank (Fin 2)) :
     (⟨some C, ⟨1, ([1] : List (Fin 2))^g +> xs,
       ([1] : List (Fin 2))^k +> default⟩⟩ : Cfg (Fin 2) (Fin 6))
     [target]⊢*
@@ -4089,7 +2554,7 @@ lemma sweep_C_left_gen (g k : Nat) (xs : ListBlank (Fin 2)) :
     rw [h_eq] at h_ih
     exact ReachesStar.trans h_step_star h_ih
 
-lemma rule_E0 (g : Nat) :
+private theorem rule_E0 (g : Nat) :
     (Config_1 g 0) [target]⊢⁺ (Config_1 1 (g + 2)) := by
   unfold Config_1 Config_gen
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
@@ -4120,27 +2585,27 @@ lemma rule_E0 (g : Nat) :
   have h123 := ReachesStar.trans h12 h3
   exact h123.trans_plus h4
 
-def Cfg_D_int (a g : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def Cfg_D_int (a g : Nat) : Cfg (Fin 2) (Fin 6) :=
   ⟨some D, ⟨1, ([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^a +> default,
     (0 : Fin 2) >> default⟩⟩
 
-def Cfg_A_garbage (a g : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def Cfg_A_garbage (a g : Nat) : Cfg (Fin 2) (Fin 6) :=
   ⟨some A, ⟨1, ([1] : List (Fin 2))^g +> ([1, 0] : List (Fin 2))^a +> default, ([1,
     0] : List (Fin 2)) +> default⟩⟩
 
-lemma Cfg_A_garbage_eq_Config_gen (a g : Nat) :
+private theorem Cfg_A_garbage_eq_Config_gen (a g : Nat) :
   (Cfg_A_garbage a g) = Config_gen a g 2 := by
   unfold Cfg_A_garbage Config_gen
   simp [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
     ListBlank.append]
 
-lemma step_to_D (a k : Nat) (hk : k ≥ 1) :
+private theorem step_to_D (a k : Nat) (hk : k ≥ 1) :
     (Config_gen a (2 * k) 1) [target]⊢⁺ (Cfg_D_int a (2 * k - 1)) := by
   unfold Config_gen Cfg_D_int
   rw [unfold_pow_1_gen (2*k) (by omega), list_pow_one]
   bb_steps
 
-lemma step_D_to_A_garbage (a k : Nat) (hk : k ≥ 1) :
+private theorem step_D_to_A_garbage (a k : Nat) (hk : k ≥ 1) :
     (Cfg_D_int a (2 * k - 1)) [target]⊢⁺ (Cfg_A_garbage a (2 * k - 2)) := by
   unfold Cfg_D_int Cfg_A_garbage
   rw [unfold_pow_1_gen (2*k - 1) (by omega)]
@@ -4148,24 +2613,24 @@ lemma step_D_to_A_garbage (a k : Nat) (hk : k ≥ 1) :
   rw [heq]
   bb_steps
 
-lemma rule_h1_even_correct (a k : Nat) (hk : k ≥ 1) :
+private theorem rule_h1_even_correct (a k : Nat) (hk : k ≥ 1) :
     (Config_gen a (2 * k) 1) [target]⊢⁺ (Cfg_A_garbage a (2 * k - 2)) := by
   have h1 := step_to_D a k hk
   have h2 := step_D_to_A_garbage a k hk
   have h2_star := h2.to_star
   exact h1.trans_star h2_star
 
-lemma rule_h1_even_gen (a k : Nat) (hk : k ≥ 1) :
+private theorem rule_h1_even_gen (a k : Nat) (hk : k ≥ 1) :
     (Config_gen a (2 * k) 1) [target]⊢⁺ Config_gen a (2 * k - 2) 2 := by
   have h1 := rule_h1_even_correct a k hk
   rw [← Cfg_A_garbage_eq_Config_gen]
   exact h1
 
-def cfg_halt_0_0_2 : Cfg (Fin 2) (Fin 6) :=
+private def cfg_halt_0_0_2 : Cfg (Fin 2) (Fin 6) :=
   ⟨some F, ⟨0, (0: Fin 2) >> (1: Fin 2) >> (0: Fin 2) >> (1: Fin 2) >> (0: Fin 2) >> default,
     default⟩⟩
 
-lemma rule_even_0_0_2 :
+private theorem rule_even_0_0_2 :
     ∃ cfg', ((Config_gen 0 0 2) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   refine ⟨cfg_halt_0_0_2, ?_, ?_⟩
   · simp only [Config_gen, cfg_halt_0_0_2, list_pow_succ, list_pow_zero, List.cons_append,
@@ -4174,7 +2639,7 @@ lemma rule_even_0_0_2 :
     bb_steps
   · bb_halt
 
-lemma rule_h0_gen (a g : Nat) :
+private theorem rule_h0_gen (a g : Nat) :
     (Config_gen (a+1) g 0) [target]⊢⁺ (Config_gen a 1 (g+3)) := by
   have h_LHS : Config_gen (a+1) g 0 = ⟨some A, ⟨0, ([1] : List (Fin 2))^g +> ([1,
     0] : List (Fin 2))^(a+1) +> default, default⟩⟩ := by rfl
@@ -4252,11 +2717,11 @@ lemma rule_h0_gen (a g : Nat) :
   rw [h_RHS]
   exact h12345
 
-lemma init_reach_Config_1_1_2 : (init []) [target]⊢* (Config_1 1 2) := by
+private theorem init_reach_Config_1_1_2 : (init []) [target]⊢* (Config_1 1 2) := by
   unfold Config_1 Config_gen
   bb_steps
 
-theorem rules_closed : IsClosedPatternSet target ps := by
+private theorem rules_closed : IsClosedPatternSet target ps := by
   constructor
   · use Config_gen 0 1 2
     constructor
@@ -4587,7 +3052,7 @@ def classifyEven (a k h : ℕ) : State :=
   Nat.casesOn h (.H2_even a k) fun h' =>
   .H3 a (2 * k + 1) h'
 
-lemma encode_classifyEven (a k h : ℕ) :
+private theorem encode_classifyEven (a k h : ℕ) :
     encode (classifyEven a k h) = Config_gen a (2 * (k + 1)) (h + 1) := by
   rcases h with _ | _ | h' <;> rfl
 

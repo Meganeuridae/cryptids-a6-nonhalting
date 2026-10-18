@@ -59,7 +59,7 @@ abbrev target : Machine (Fin 2) (Fin 6) :=
 /-! ## Shift Lemmas -/
 
 /-- `C>` scanning `1` shifts leftward over `1^k`, preserving `1^k` on the right. -/
-lemma shift_C_left (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_C_left (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1] : List (Fin 2))^k) {{C}}> (([1] : List (Fin 2)) +> r)) [target]⊢*
     (l {{C}}> (([1] : List (Fin 2))^k +> (([1] : List (Fin 2)) +> r))) := by
   induction k generalizing l r with
@@ -86,7 +86,7 @@ lemma shift_C_left (k : Nat) (l r : ListBlank (Fin 2)) :
 
 /-- `E>` scanning `1` shifts leftward over `(11)^k`,
   turning each `(11)` into `(10)` on the right. -/
-lemma shift_ED_left (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_ED_left (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 1] : List (Fin 2))^k) {{E}}> (([1] : List (Fin 2)) +> r)) [target]⊢*
     (l {{E}}> (([1] : List (Fin 2)) +> (([1, 0] : List (Fin 2))^k +> r))) := by
   induction k generalizing l r with
@@ -110,7 +110,7 @@ lemma shift_ED_left (k : Nat) (l r : ListBlank (Fin 2)) :
     rwa [h_comb] at h12
 
 /-- `A>` shifts rightward over `(01)^k`, writing `(11)^k` on the left. -/
-lemma shift_AB_right (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_AB_right (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{A}}> (([0, 1] : List (Fin 2))^k +> r)) [target]⊢*
     ((l <+ ([1, 1] : List (Fin 2))^k) {{A}}> r) := by
   induction k generalizing l r with
@@ -131,7 +131,7 @@ lemma shift_AB_right (k : Nat) (l r : ListBlank (Fin 2)) :
     rwa [h_comb] at h12
 
 /-- `F>` shifts rightward over `(10)^k`, writing `(01)^k` (`[1, 0]^k` on the left stack). -/
-lemma shift_FE_right (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_FE_right (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{F}}> (([1, 0] : List (Fin 2))^k +> r)) [target]⊢*
     ((l <+ ([1, 0] : List (Fin 2))^k) {{F}}> r) := by
   induction k generalizing l r with
@@ -169,28 +169,28 @@ def pat_P2 : TapePattern (Fin 2) (Fin 6) :=
 def ps : TapePatternSet (Fin 2) (Fin 6) :=
   [(pat_P1, .true), (pat_P2, .true)]
 
-def cfg_P1 (a c : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_P1 (a c : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((default <+ ([1] : List (Fin 2))^a) {{A}}> (([1] : List (Fin 2))^c +> default))
 
-def cfg_P2 (k m c : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_P2 (k m c : Nat) : Cfg (Fin 2) (Fin 6) :=
   (((((default <+ ([0, 1] : List (Fin 2))^k) << 1) << 0) <+ ([1, 1] : List (Fin 2))^m) {{A}}>
    (([1] : List (Fin 2))^c +> default))
 
-lemma eval_pat_P1 (vars : Nat → Nat) :
+private theorem eval_pat_P1 (vars : Nat → Nat) :
     evalTapePattern pat_P1 vars = cfg_P1 (vars 0) (vars 1) := rfl
 
-lemma eval_pat_P2 (vars : Nat → Nat) :
+private theorem eval_pat_P2 (vars : Nat → Nat) :
     evalTapePattern pat_P2 vars = cfg_P2 (vars 0) (vars 1) (vars 2) := rfl
 
-lemma in_ps_P1 (a c : Nat) : IsInPatternSet ps (cfg_P1 a c) := by
+private theorem in_ps_P1 (a c : Nat) : IsInPatternSet ps (cfg_P1 a c) := by
   refine ⟨(pat_P1, .true), List.Mem.head _, (fun i => match i with | 0 => a | _ => c), rfl, trivial⟩
 
-lemma in_ps_P2 (k m c : Nat) : IsInPatternSet ps (cfg_P2 k m c) := by
+private theorem in_ps_P2 (k m c : Nat) : IsInPatternSet ps (cfg_P2 k m c) := by
   refine ⟨(pat_P2, .true), List.Mem.tail _ (List.Mem.head _),
     (fun i => match i with | 0 => k | 1 => m | _ => c), rfl, trivial⟩
 
 /-- Rule 1 (`P1, c = 0`): `P1(a, 0) -> P1(2, a + 1)` in `a + 6` steps. -/
-theorem rule_1 (a : Nat) :
+private theorem rule_1 (a : Nat) :
     (cfg_P1 a 0) [target]⊢⁺ (cfg_P1 2 (a + 1)) := by
   have h1 : (cfg_P1 a 0) [target]⊢⁺
       ((default <+ ([1] : List (Fin 2))^a) {{C}}> (([1] : List (Fin 2)) +> default)) := by
@@ -212,14 +212,14 @@ theorem rule_1 (a : Nat) :
   exact ReachesPlus.trans h12 h3
 
 /-- Rule 2 (`P1, c = 1`): `P1(a, 1) -> P1(a + 2, 0)` in `2` steps. -/
-theorem rule_2 (a : Nat) :
+private theorem rule_2 (a : Nat) :
     (cfg_P1 a 1) [target]⊢⁺ (cfg_P1 (a + 2) 0) := by
   unfold cfg_P1
   rw [ListBlank.append_pow_add_rev default ([1] : List (Fin 2)) a 2]
   bb_steps
 
 /-- Rule 3 (`P1, a = 2m, c = d + 2`): `P1(2m, d + 2) -> P1(2m + 3, d)` in `4m + 6` steps. -/
-theorem rule_3 (m d : Nat) :
+private theorem rule_3 (m d : Nat) :
     (cfg_P1 (2 * m) (d + 2)) [target]⊢⁺ (cfg_P1 (2 * m + 3) d) := by
   have h1 : (cfg_P1 (2 * m) (d + 2)) [target]⊢⁺
       ((default <+ ([1,
@@ -257,7 +257,7 @@ theorem rule_3 (m d : Nat) :
   rwa [h_l] at h1234
 
 /-- Common prefix for Rules 4, 5, 6 (`a = 2m + 1, c = d + 2`): reaches `E>` in `4m + 8` steps. -/
-lemma odd_P1_to_E (m d : Nat) :
+private theorem odd_P1_to_E (m d : Nat) :
     (cfg_P1 (2 * m + 1) (d + 2)) [target]⊢⁺
     ((default <+ ([0, 1] : List (Fin 2))^(m + 2)) {{E}}> (([1] : List (Fin 2))^d +> default)) := by
   have h_l0 : (default <+ ([1] : List (Fin 2))^(2 * m + 1)) =
@@ -307,7 +307,7 @@ lemma odd_P1_to_E (m d : Nat) :
   exact ReachesPlus.trans h1234 h5
 
 /-- Rule 4 (`P1, a = 2m + 1, c = 2`): `P1(2m + 1, 2)` halts in `4m + 9` steps. -/
-theorem rule_4_halt (m : Nat) :
+private theorem rule_4_halt (m : Nat) :
     ∃ cfg', ((cfg_P1 (2 * m + 1) 2) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   refine ⟨(((default <+ ([0, 1] : List (Fin 2))^(m + 2)) << 1) {{F}}> default), ?_, rfl⟩
   have h1 := odd_P1_to_E m 0
@@ -319,7 +319,7 @@ theorem rule_4_halt (m : Nat) :
   exact ReachesPlus.trans h1 h2
 
 /-- Rule 5 (`P1, a = 2m + 1, c = 3`): `P1(2m + 1, 3) -> P2(m, 1, 0)` in `4m + 10` steps. -/
-theorem rule_5 (m : Nat) :
+private theorem rule_5 (m : Nat) :
     (cfg_P1 (2 * m + 1) 3) [target]⊢⁺ (cfg_P2 m 1 0) := by
   have h1 := odd_P1_to_E m 1
   have h2 : ((default <+ ([0,
@@ -334,7 +334,7 @@ theorem rule_5 (m : Nat) :
   exact ReachesPlus.trans h1 h2
 
 /-- Rule 6 (`P1, a = 2m + 1, c = d + 4`): `P1(2m + 1, d + 4) -> P2(m, 2, d)` in `4m + 12` steps. -/
-theorem rule_6 (m d : Nat) :
+private theorem rule_6 (m d : Nat) :
     (cfg_P1 (2 * m + 1) (d + 4)) [target]⊢⁺ (cfg_P2 m 2 d) := by
   have h1 := odd_P1_to_E m (d + 2)
   have h2 : ((default <+ ([0,
@@ -352,7 +352,7 @@ theorem rule_6 (m d : Nat) :
 
 /-- Common lemma for Rules 7 and 8 (`P2, c = 0`): `(((l << 1) << 0) <+ [1,
   1]^m) A> default -> l A> ([1]^(2m + 3) +> default)`. -/
-lemma rule_P2_c0 (l : ListBlank (Fin 2)) (m : Nat) :
+private theorem rule_P2_c0 (l : ListBlank (Fin 2)) (m : Nat) :
     (((((l << 1) << 0) <+ ([1, 1] : List (Fin 2))^m) {{A}}> default)) [target]⊢⁺
     (l {{A}}> (([1] : List (Fin 2))^(2 * m + 3) +> default)) := by
   have h1 : (((((l << 1) << 0) <+ ([1, 1] : List (Fin 2))^m) {{A}}> default)) [target]⊢⁺
@@ -381,14 +381,14 @@ lemma rule_P2_c0 (l : ListBlank (Fin 2)) (m : Nat) :
   exact ReachesPlus.trans h12 h3
 
 /-- Rule 7 (`P2, k = 0, c = 0`): `P2(0, m, 0) -> P1(0, 2m + 3)` in `2m + 4` steps. -/
-theorem rule_7 (m : Nat) :
+private theorem rule_7 (m : Nat) :
     (cfg_P2 0 m 0) [target]⊢⁺ (cfg_P1 0 (2 * m + 3)) := by
   unfold cfg_P2 cfg_P1
   simp only [list_pow_zero, ListBlank.append_nil]
   exact rule_P2_c0 default m
 
 /-- Rule 8 (`P2, k = k' + 1, c = 0`): `P2(k' + 1, m, 0) -> P2(k', 0, 2m + 3)` in `2m + 4` steps. -/
-theorem rule_8 (k' m : Nat) :
+private theorem rule_8 (k' m : Nat) :
     (cfg_P2 (k' + 1) m 0) [target]⊢⁺ (cfg_P2 k' 0 (2 * m + 3)) := by
   unfold cfg_P2
   rw [ListBlank.append_pow_add_rev default ([0, 1] : List (Fin 2)) k' 1]
@@ -397,7 +397,7 @@ theorem rule_8 (k' m : Nat) :
   exact rule_P2_c0 (((default <+ ([0, 1] : List (Fin 2))^k') << 1) << 0) m
 
 /-- Rule 9 (`P2, c = 1`): `P2(k, m, 1) -> P2(k, m + 1, 0)` in `2` steps. -/
-theorem rule_9 (k m : Nat) :
+private theorem rule_9 (k m : Nat) :
     (cfg_P2 k m 1) [target]⊢⁺ (cfg_P2 k (m + 1) 0) := by
   unfold cfg_P2
   rw [ListBlank.append_pow_add_rev (((default <+ ([0, 1] : List (Fin 2))^k) << 1) << 0) ([1,
@@ -406,7 +406,7 @@ theorem rule_9 (k m : Nat) :
 
 /-- Common lemma for Rules 10 and 11 (`P2, c = d + 2`): `(((l << 1) << 0) <+ [1,
   1]^m) A> ([1]^(d + 2) +> default) -> (l <+ [1, 1]^(m + 2)) A> ([1]^d +> default)`. -/
-lemma rule_P2_c2 (l : ListBlank (Fin 2)) (m d : Nat) :
+private theorem rule_P2_c2 (l : ListBlank (Fin 2)) (m d : Nat) :
     (((((l << 1) << 0) <+ ([1,
       1] : List (Fin 2))^m) {{A}}> (([1] : List (Fin 2))^(d + 2) +> default))) [target]⊢⁺
     ((l <+ ([1, 1] : List (Fin 2))^(m + 2)) {{A}}> (([1] : List (Fin 2))^d +> default)) := by
@@ -442,7 +442,7 @@ lemma rule_P2_c2 (l : ListBlank (Fin 2)) (m d : Nat) :
   rwa [h_l] at h1234
 
 /-- Rule 10 (`P2, k = 0, c = d + 2`): `P2(0, m, d + 2) -> P1(2m + 4, d)` in `4m + 6` steps. -/
-theorem rule_10 (m d : Nat) :
+private theorem rule_10 (m d : Nat) :
     (cfg_P2 0 m (d + 2)) [target]⊢⁺ (cfg_P1 (2 * m + 4) d) := by
   unfold cfg_P2 cfg_P1
   simp only [list_pow_zero, ListBlank.append_nil]
@@ -453,7 +453,7 @@ theorem rule_10 (m d : Nat) :
 
 /-- Rule 11 (`P2, k = k' + 1, c = d + 2`): `P2(k' + 1, m, d + 2) -> P2(k', m + 2,
   d)` in `4m + 6` steps. -/
-theorem rule_11 (k' m d : Nat) :
+private theorem rule_11 (k' m d : Nat) :
     (cfg_P2 (k' + 1) m (d + 2)) [target]⊢⁺ (cfg_P2 k' (m + 2) d) := by
   unfold cfg_P2
   rw [ListBlank.append_pow_add_rev default ([0, 1] : List (Fin 2)) k' 1]
@@ -464,7 +464,7 @@ theorem rule_11 (k' m d : Nat) :
 /-! ## Blank-Tape Entry and Closure -/
 
 /-- Blank initial tape `init []` is `cfg_P1 0 0` and reaches `cfg_P1 2 1` in 6 steps. -/
-theorem init_reaches_P1 : (init []) [target]⊢* (cfg_P1 2 1) := by
+private theorem init_reaches_P1 : (init []) [target]⊢* (cfg_P1 2 1) := by
   have h : (init [] : Cfg (Fin 2) (Fin 6)) = cfg_P1 0 0 := by
     unfold init cfg_P1
     simp only [list_pow_zero, ListBlank.append_nil]
@@ -472,19 +472,8 @@ theorem init_reaches_P1 : (init []) [target]⊢* (cfg_P1 2 1) := by
   rw [h]
   exact ReachesPlus.to_star (rule_1 0)
 
-theorem audit_ps_nonempty : ∃ cfg, IsInPatternSet ps cfg :=
-  ⟨cfg_P1 2 1, in_ps_P1 2 1⟩
-
-theorem audit_init_neq_cfg0 :
-    (init [] : Cfg (Fin 2) (Fin 6)) ≠ cfg_P1 2 1 := by
-  intro h
-  have h_r : (init [] : Cfg (Fin 2) (Fin 6)).tape.head = (cfg_P1 2 1).tape.head :=
-    congr_arg (fun c => c.tape.head) h
-  revert h_r
-  decide
-
 /-- Complete closure of Hub 1 (`cfg_P1 a c`) across all `(a, c) ∈ ℕ²` (Rules 1–6). -/
-theorem step_P1_all (a c : Nat) :
+private theorem step_P1_all (a c : Nat) :
     ∃ cfg', ((cfg_P1 a c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases c with _ | c1
@@ -509,7 +498,7 @@ theorem step_P1_all (a c : Nat) :
             exact ⟨cfg_P2 m 2 d2, rule_6 m d2, Or.inl (in_ps_P2 m 2 d2)⟩
 
 /-- Complete closure of Hub 2 (`cfg_P2 k m c`) across all `(k, m, c) ∈ ℕ³` (Rules 7–11). -/
-theorem step_P2_all (k m c : Nat) :
+private theorem step_P2_all (k m c : Nat) :
     ∃ cfg', ((cfg_P2 k m c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases c with _ | c1
@@ -532,98 +521,6 @@ theorem step_P2_all (k m c : Nat) :
 /-! ## Countdown and Exponential Macro-Transitions
 
 Additional accelerated transitions on `P2` (not needed for the closure theorems below). -/
-
-/-- Countdown acceleration of Rule 11:
-    `P₂(k + j, m, d + 2j) ⊢* P₂(k, m + 2j, d)` in `j` sweeps. -/
-theorem countdown_P2 : ∀ (j k m d : Nat),
-    (cfg_P2 (k + j) m (d + 2 * j)) [target]⊢* (cfg_P2 k (m + 2 * j) d)
-  | 0, k, m, d => ReachesStar.refl _ _
-  | j + 1, k, m, d => by
-    have h1 : k + (j + 1) = (k + j) + 1 := by omega
-    have h2 : d + 2 * (j + 1) = (d + 2 * j) + 2 := by omega
-    have h3 : (m + 2) + 2 * j = m + 2 * (j + 1) := by omega
-    rw [h1, h2, ← h3]
-    exact ReachesStar.trans (ReachesPlus.to_star (rule_11 (k + j) m (d + 2 * j)))
-      (countdown_P2 j k (m + 2) d)
-
-/-- 1-cycle doubling step on `P₂(k, 2, d)`:
-    `P₂(k, 2, d + 2k + 8) ⊢⁺ P₂(2k + 5, 2,
-      d)` via `countdown_P2` + `rule_10` + `rule_3` + `rule_6`. -/
-theorem double_P2 (k d : Nat) :
-    (cfg_P2 k 2 (d + 2 * k + 8)) [target]⊢⁺ (cfg_P2 (2 * k + 5) 2 d) := by
-  have h1 := countdown_P2 k 0 2 (d + 8)
-  simp only [Nat.zero_add] at h1
-  have h_in : d + 2 * k + 8 = d + 8 + 2 * k := by omega
-  have h_m : 2 + 2 * k = 2 * k + 2 := by omega
-  rw [← h_in, h_m] at h1
-  have h2 := rule_10 (2 * k + 2) (d + 6)
-  have h_d8 : (d + 6) + 2 = d + 8 := by omega
-  have h_p1 : 2 * (2 * k + 2) + 4 = 2 * (2 * k + 4) := by omega
-  rw [h_d8, h_p1] at h2
-  have h3 := rule_3 (2 * k + 4) (d + 4)
-  have h_d6 : (d + 4) + 2 = d + 6 := by omega
-  have h_p1_odd : 2 * (2 * k + 4) + 3 = 2 * (2 * k + 5) + 1 := by omega
-  rw [h_d6, h_p1_odd] at h3
-  have h4 := rule_6 (2 * k + 5) d
-  exact ReachesStar.trans_plus h1 (ReachesPlus.trans h2 (ReachesPlus.trans h3 h4))
-
-/-- Relational predicate for Base-2 (`2^n`) exponential doubling on `P₂(k, 2, d)`. -/
-def ExpRelP2 (k d_cost k_out : Nat) : Prop :=
-  ∀ d : Nat, (cfg_P2 k 2 (d + d_cost)) [target]⊢* (cfg_P2 k_out 2 d)
-
-theorem ExpRelP2_zero (k : Nat) : ExpRelP2 k 0 k := by
-  intro d; rw [Nat.add_zero]
-
-theorem ExpRelP2_succ {k d_cost k_out : Nat} (h : ExpRelP2 k d_cost k_out) :
-    ExpRelP2 k (d_cost + 2 * k_out + 8) (2 * k_out + 5) := by
-  intro d
-  have h_eq : d + (d_cost + 2 * k_out + 8) = (d + 2 * k_out + 8) + d_cost := by omega
-  rw [h_eq]
-  exact ReachesStar.trans (h (d + 2 * k_out + 8)) (ReachesPlus.to_star (double_P2 k_out d))
-
-theorem mul_pow2_ge (k n : Nat) : (k + 5) * 2 ^ n ≥ k + n + 5 := by
-  induction n with
-  | zero => omega
-  | succ n ih =>
-    rw [Nat.pow_succ, ← Nat.mul_assoc]
-    omega
-
-theorem ExpRelP2_pow2 (n k : Nat) :
-    ExpRelP2 k (2 * ((k + 5) * 2 ^ n) - 2 * k - 2 * n - 10) ((k + 5) * 2 ^ n - 5) := by
-  induction n with
-  | zero =>
-    have h1 : 2 * ((k + 5) * 2 ^ 0) - 2 * k - 2 * 0 - 10 = 0 := by omega
-    have h2 : (k + 5) * 2 ^ 0 - 5 = k := by omega
-    rw [h1, h2]
-    exact ExpRelP2_zero k
-  | succ n ih =>
-    have h_ge := mul_pow2_ge k n
-    have h_pow : (k + 5) * 2 ^ (n + 1) = ((k + 5) * 2 ^ n) * 2 := by
-      rw [Nat.pow_succ, ← Nat.mul_assoc]
-    have h_step := ExpRelP2_succ ih
-    have h1 : 2 * ((k + 5) * 2 ^ n) - 2 * k - 2 * n - 10 + 2 * ((k + 5) * 2 ^ n - 5) + 8 =
-              2 * ((k + 5) * 2 ^ (n + 1)) - 2 * k - 2 * (n + 1) - 10 := by
-      rw [h_pow]; omega
-    have h2 : 2 * ((k + 5) * 2 ^ n - 5) + 5 = (k + 5) * 2 ^ (n + 1) - 5 := by
-      rw [h_pow]; omega
-    rw [h1, h2] at h_step
-    exact h_step
-
-/-- Base-2 (`2^n`) Exponential Macro-Transition on `P₂`:
-    `P₂(k, 2, d + (2(k + 5) * 2^n - 2k - 2n - 10)) ⊢* P₂((k + 5) * 2^n - 5, 2, d)`. -/
-theorem exp_step_P2 (n k d : Nat) :
-    (cfg_P2 k 2 (d + (2 * ((k + 5) * 2 ^ n) - 2 * k - 2 * n - 10))) [target]⊢*
-    (cfg_P2 ((k + 5) * 2 ^ n - 5) 2 d) :=
-  ExpRelP2_pow2 n k d
-
-/-- Base-2 (`2^n`) Exponential Macro-Transition from `P₁` to `P₂`:
-    `P₁(2k + 1, d + (2(k + 5) * 2^n - 2k - 2n - 10) + 4) ⊢⁺ P₂((k + 5) * 2^n - 5, 2, d)`. -/
-theorem exp_step_P1_to_P2 (n k d : Nat) :
-    (cfg_P1 (2 * k + 1) (d + (2 * ((k + 5) * 2 ^ n) - 2 * k - 2 * n - 10) + 4)) [target]⊢⁺
-    (cfg_P2 ((k + 5) * 2 ^ n - 5) 2 d) :=
-  ReachesPlus.trans_star
-    (rule_6 k (d + (2 * ((k + 5) * 2 ^ n) - 2 * k - 2 * n - 10)))
-    (exp_step_P2 n k d)
 
 /-! ## Closed Pattern Set (Level A) -/
 

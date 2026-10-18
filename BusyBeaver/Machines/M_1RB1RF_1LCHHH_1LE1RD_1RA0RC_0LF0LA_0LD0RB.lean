@@ -53,14 +53,31 @@ def machine : ConjectureMachines.Machine 6 2 :=
 
 abbrev target : Machine (Fin 2) (Fin 6) := machine.toBB
 
-def hub_1 : Cert.SC := ⟨2, true, [⟨[0, 1], ⟨0, [1]⟩⟩, ⟨[1, 0], ⟨0, [0, 1]⟩⟩, ⟨[1], ⟨1, []⟩⟩],
+/-- Variable environment `[a, b, c]` (all other variables `0`) for 3-variable certificates. -/
+private def env3 (a b c : Nat) : Nat → Nat
+  | 0 => a
+  | 1 => b
+  | 2 => c
+  | _ => 0
+
+private theorem env3_0 (a b c : Nat) : env3 a b c 0 = a := rfl
+private theorem env3_1 (a b c : Nat) : env3 a b c 1 = b := rfl
+private theorem env3_2 (a b c : Nat) : env3 a b c 2 = c := rfl
+
+private theorem congr_cfg3 (f : Nat → Nat → Nat → Cfg (Fin 2) (Fin 6))
+    {a1 a2 b1 b2 c1 c2 : Nat} (ha : a1 = a2) (hb : b1 = b2) (hc : c1 = c2) :
+    f a1 b1 c1 = f a2 b2 c2 := by
+  subst ha hb hc; rfl
+
+private def hub_1 : Cert.SC :=
+  ⟨2, true, [⟨[0, 1], ⟨0, [1]⟩⟩, ⟨[1, 0], ⟨0, [0, 1]⟩⟩, ⟨[1], ⟨1, []⟩⟩],
   [⟨[0, 1], ⟨0, [0, 0, 1]⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩]⟩
 
-def hub_2 : Cert.SC := ⟨3, true, [⟨[1], ⟨1, []⟩⟩, ⟨[0, 1], ⟨0, [1]⟩⟩, ⟨[1, 0], ⟨0, [0, 1]⟩⟩,
+private def hub_2 : Cert.SC := ⟨3, true, [⟨[1], ⟨1, []⟩⟩, ⟨[0, 1], ⟨0, [1]⟩⟩, ⟨[1, 0], ⟨0, [0, 1]⟩⟩,
   ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩], [⟨[1, 0], ⟨0, [0, 0, 1]⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩,
   ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩]⟩
 
-def hubs : List Cert.SC := [hub_1, hub_2]
+private def hubs : List Cert.SC := [hub_1, hub_2]
 
 def pat_P1 : TapePattern (Fin 2) (Fin 6) :=
   { left := .rep [0, 1] 0 (.rep [1, 0] 1 (.sym 1 .default))
@@ -75,27 +92,24 @@ def pat_P2 : TapePattern (Fin 2) (Fin 6) :=
 def ps : TapePatternSet (Fin 2) (Fin 6) :=
   [(pat_P1, .true), (pat_P2, .true)]
 
-def cfg_P1 (a b c : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_P1 (a b c : Nat) : Cfg (Fin 2) (Fin 6) :=
   hub_1.den (env3 a b c) default default
 
-lemma eval_pat_P1 (vars : Nat → Nat) :
+private theorem eval_pat_P1 (vars : Nat → Nat) :
     evalTapePattern pat_P1 vars = cfg_P1 (vars 0) (vars 1) (vars 2) :=
   Cert.toPat_eval hub_1 rfl vars
 
-lemma in_ps_P1 (a b c : Nat) : IsInPatternSet ps (cfg_P1 a b c) :=
+private theorem in_ps_P1 (a b c : Nat) : IsInPatternSet ps (cfg_P1 a b c) :=
   Cert.in_hubsPS hubs (by decide) hub_1 (by simp [hubs]) (env3 a b c)
 
-def cfg_P2 (a b c : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_P2 (a b c : Nat) : Cfg (Fin 2) (Fin 6) :=
   hub_2.den (env3 a b c) default default
 
-lemma eval_pat_P2 (vars : Nat → Nat) :
+private theorem eval_pat_P2 (vars : Nat → Nat) :
     evalTapePattern pat_P2 vars = cfg_P2 (vars 0) (vars 1) (vars 2) :=
   Cert.toPat_eval hub_2 rfl vars
 
-lemma in_ps_P2 (a b c : Nat) : IsInPatternSet ps (cfg_P2 a b c) :=
-  Cert.in_hubsPS hubs (by decide) hub_2 (by simp [hubs]) (env3 a b c)
-
-def rdefs : List Cert.RDef := [
+private def rdefs : List Cert.RDef := [
   .prove ⟨⟨3, false, [⟨[1, 0], ⟨1, [0, 1]⟩⟩], [⟨[0], ⟨1, []⟩⟩, ⟨[0, 1], ⟨0, [1]⟩⟩]⟩, ⟨3, false,
     [⟨[1, 0], ⟨0, [0, 1]⟩⟩], [⟨[0], ⟨1, []⟩⟩, ⟨[0, 1], ⟨1, [1]⟩⟩]⟩, true,
     false⟩ [.rw true 0 .splitF, .rw true 0 .unpack, .step, .step, .step, .step,
@@ -104,10 +118,12 @@ def rdefs : List Cert.RDef := [
   .iter 0 ⟨3, false, [⟨[1, 0], ⟨0, [0, 1]⟩⟩], [⟨[0], ⟨1, []⟩⟩, ⟨[0, 1], ⟨0, [1]⟩⟩]⟩ 1 [1, 0]
 ]
 
-def rule_1_rhs : Cert.SC := ⟨1, true, [⟨[0], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1,
+private def rule_1_rhs : Cert.SC :=
+  ⟨1, true, [⟨[0], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1,
   []⟩⟩, ⟨[0], ⟨1, []⟩⟩, ⟨[1, 0], ⟨1, [0, 1]⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩], [⟨[1], ⟨1, []⟩⟩,
   ⟨[1], ⟨1, []⟩⟩]⟩
-def rule_1_pf : List Cert.Ins := [.rw false 0 .zdrop, .step, .step, .step, .step, .step, .step,
+private def rule_1_pf : List Cert.Ins :=
+  [.rw false 0 .zdrop, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .rw true 1 (.pack 2),
   .rw true 1 .merge, .rw true 0 (.rotB 1), .rw false 1 (.zins [0, 1]), .app 1 [⟨0, []⟩, ⟨1, []⟩],
   .rw true 0 .zdrop, .step, .step, .rw true 0 (.rotB 1), .shift, .step, .step, .step, .step,
@@ -116,7 +132,7 @@ def rule_1_pf : List Cert.Ins := [.rw false 0 .zdrop, .step, .step, .step, .step
   .step, .rw false 0 .zdrop, .step, .done]
 
 /-- Rule 1 (Halting): `P_1(0, b, 0) -> Halt`. -/
-theorem rule_1_halt (b : Nat) :
+private theorem rule_1_halt (b : Nat) :
     ∃ cfg', ((cfg_P1 0 b 0) [target]⊢⁺ cfg') ∧
             (step target cfg').isNone := by
   have h_tr := Cert.checkHaltTrans_sound target rdefs
@@ -133,7 +149,8 @@ theorem rule_1_halt (b : Nat) :
   rw [hL] at h_tr
   exact ⟨rule_1_rhs.den (env3 0 b 0) default default, h_tr.1, h_tr.2⟩
 
-def rule_2_pf : List Cert.Ins := [.rw false 0 .zdrop, .step, .step, .step, .step, .step, .step,
+private def rule_2_pf : List Cert.Ins :=
+  [.rw false 0 .zdrop, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .rw true 1 (.pack 2),
   .rw true 1 .merge, .rw true 0 (.rotB 1), .rw false 1 (.zins [0, 1]), .app 1 [⟨0, []⟩, ⟨2,
   [1]⟩], .rw true 0 .zdrop, .step, .step, .rw true 0 (.rotB 1), .shift, .step, .step, .step,
@@ -146,7 +163,7 @@ def rule_2_pf : List Cert.Ins := [.rw false 0 .zdrop, .step, .step, .step, .step
   .rw true 1 (.pack 2), .rw true 1 .merge, .rw false 0 (.rotB 1), .done]
 
 /-- Rule 2: `P_1(a + 1, b, 0) -> P_2(2, b + 1, a)`. -/
-theorem rule_2 (a b : Nat) :
+private theorem rule_2 (a b : Nat) :
     (cfg_P1 (a + 1) b 0) [target]⊢⁺ (cfg_P2 2 (b + 1) a) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_1.substAll [⟨1, [1]⟩, ⟨0, [0, 1]⟩, ⟨0, []⟩]) (hub_2.substAll [⟨2, []⟩, ⟨1, [0, 1]⟩, ⟨0,
@@ -172,7 +189,7 @@ theorem rule_2 (a b : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_3_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
+private def rule_3_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .zdrop, .step, .step, .step, .rw false 2 (.pack 2),
   .rw false 1 .merge, .rw false 0 (.rotB 1), .shift, .step, .rw false 0 .zdrop, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step,
@@ -186,7 +203,7 @@ def rule_3_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .ste
   .rw false 0 (.rot 1), .rw false 1 (.rot 1), .rw false 0 (.pack 2), .rw false 0 .merge, .done]
 
 /-- Rule 3: `P_1(a, 0, 1) -> P_2(2, 0, a + 1)`. -/
-theorem rule_3 (a : Nat) :
+private theorem rule_3 (a : Nat) :
     (cfg_P1 a 0 1) [target]⊢⁺ (cfg_P2 2 0 (a + 1)) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_1.substAll [⟨0, [1]⟩, ⟨0, []⟩, ⟨1, []⟩]) (hub_2.substAll [⟨2, []⟩, ⟨0, []⟩, ⟨1, [1]⟩])
@@ -209,7 +226,7 @@ theorem rule_3 (a : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_4_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
+private def rule_4_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .zdrop, .step, .step, .step, .rw false 2 (.pack 2),
   .rw false 1 .merge, .rw false 0 (.rotB 1), .shift, .step, .rw false 0 .splitF,
   .rw false 0 .unpack, .step, .rw true 0 (.rotB 1), .shift, .step, .step, .step, .step, .step,
@@ -226,7 +243,7 @@ def rule_4_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .ste
 
 set_option maxRecDepth 200000 in
 /-- Rule 4: `P_1(a, 0, c + 2) -> P_1(a + 4, 0, c)`. -/
-theorem rule_4 (a c : Nat) :
+private theorem rule_4 (a c : Nat) :
     (cfg_P1 a 0 (c + 2)) [target]⊢⁺ (cfg_P1 (a + 4) 0 c) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_1.substAll [⟨0, [1]⟩, ⟨0, []⟩, ⟨2, [0, 0, 1]⟩]) (hub_1.substAll [⟨4, [1]⟩, ⟨0, []⟩, ⟨0,
@@ -252,7 +269,7 @@ theorem rule_4 (a c : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_5_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
+private def rule_5_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .step, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .splitF, .rw true 0 .unpack, .step, .step, .step,
   .rw false 2 (.pack 2), .rw false 1 .merge, .rw false 0 (.rotB 1), .shift, .step,
   .rw true 1 .splitF, .rw true 1 .unpack, .rw true 2 (.rotB 1), .rw true 1 (.rotB 1),
@@ -261,7 +278,7 @@ def rule_5_pf : List Cert.Ins := [.rw false 0 .splitF, .rw false 0 .unpack, .ste
   .rw true 0 (.pack 2), .rw true 0 .merge, .done]
 
 /-- Rule 5: `P_1(a, b + 1, c + 1) -> P_1(a + 2, b, c)`. -/
-theorem rule_5 (a b c : Nat) :
+private theorem rule_5 (a b c : Nat) :
     (cfg_P1 a (b + 1) (c + 1)) [target]⊢⁺ (cfg_P1 (a + 2) b c) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_1.substAll [⟨0, [1]⟩, ⟨1, [0, 1]⟩, ⟨1, [0, 0, 1]⟩]) (hub_1.substAll [⟨2, [1]⟩, ⟨0, [0,
@@ -291,7 +308,8 @@ theorem rule_5 (a b c : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_6_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .zdrop, .step, .step,
+private def rule_6_pf : List Cert.Ins :=
+  [.rw false 0 (.rot 1), .step, .rw false 0 .zdrop, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step,
   .step, .rw true 3 (.pack 2), .rw true 3 .merge, .rw true 1 (.pack 2), .rw true 1 .merge,
   .rw true 0 (.rotB 1), .rw false 1 (.zins [0, 1]), .app 1 [⟨0, []⟩, ⟨2, [1]⟩],
@@ -306,7 +324,7 @@ def rule_6_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .zdro
   .rw false 1 (.rot 1), .rw false 0 (.pack 2), .rw false 0 .merge, .done]
 
 /-- Rule 6: `P_2(a, b, 0) -> P_1(1, b + 2, a + 1)`. -/
-theorem rule_6 (a b : Nat) :
+private theorem rule_6 (a b : Nat) :
     (cfg_P2 a b 0) [target]⊢⁺ (cfg_P1 1 (b + 2) (a + 1)) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_2.substAll [⟨0, [1]⟩, ⟨0, [0, 1]⟩, ⟨0, []⟩]) (hub_1.substAll [⟨1, []⟩, ⟨2, [0, 1]⟩, ⟨1,
@@ -332,7 +350,7 @@ theorem rule_6 (a b : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_7_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
+private def rule_7_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
   .rw false 0 .unpack, .step, .rw true 0 (.pack 2), .rw true 0 .merge, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .zdrop, .step, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .rw false 0 (.pack 2), .rw false 0 .merge, .rw false 1 (.pack 2),
@@ -356,7 +374,7 @@ def rule_7_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .spli
   .rw false 2 (.pack 2), .rw false 2 .merge, .rw false 0 (.pack 2), .rw false 0 .merge, .done]
 
 /-- Rule 7: `P_2(a, 0, 1) -> P_2(2, 0, a + 4)`. -/
-theorem rule_7 (a : Nat) :
+private theorem rule_7 (a : Nat) :
     (cfg_P2 a 0 1) [target]⊢⁺ (cfg_P2 2 0 (a + 4)) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_2.substAll [⟨0, [1]⟩, ⟨0, []⟩, ⟨1, []⟩]) (hub_2.substAll [⟨2, []⟩, ⟨0, []⟩, ⟨4, [1]⟩])
@@ -379,9 +397,10 @@ theorem rule_7 (a : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_8_rhs : Cert.SC := ⟨1, true, [⟨[0], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1, 0],
+private def rule_8_rhs : Cert.SC :=
+  ⟨1, true, [⟨[0], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1, 0],
   ⟨3, [1]⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩], [⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩]⟩
-def rule_8_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
+private def rule_8_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
   .rw false 0 .unpack, .step, .rw true 0 (.pack 2), .rw true 0 .merge, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .zdrop, .step, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .rw false 0 (.pack 2), .rw false 0 .merge, .rw false 1 (.pack 2),
@@ -389,7 +408,7 @@ def rule_8_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .spli
   .rw false 0 .zdrop, .step, .done]
 
 /-- Rule 8 (Halting): `P_2(a, 0, 2) -> Halt`. -/
-theorem rule_8_halt (a : Nat) :
+private theorem rule_8_halt (a : Nat) :
     ∃ cfg', ((cfg_P2 a 0 2) [target]⊢⁺ cfg') ∧
             (step target cfg').isNone := by
   have h_tr := Cert.checkHaltTrans_sound target rdefs
@@ -406,7 +425,7 @@ theorem rule_8_halt (a : Nat) :
   rw [hL] at h_tr
   exact ⟨rule_8_rhs.den (env3 a 0 0) default default, h_tr.1, h_tr.2⟩
 
-def rule_9_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
+private def rule_9_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
   .rw false 0 .unpack, .step, .rw true 0 (.pack 2), .rw true 0 .merge, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .zdrop, .step, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .rw false 0 (.pack 2), .rw false 0 .merge, .rw false 1 (.pack 2),
@@ -420,7 +439,7 @@ def rule_9_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .spli
   .rw true 3 (.pack 2), .rw true 1 (.pack 2), .rw true 1 .merge, .rw false 0 (.rotB 1), .done]
 
 /-- Rule 9: `P_2(a, 0, c + 3) -> P_2(2, a + 2, c)`. -/
-theorem rule_9 (a c : Nat) :
+private theorem rule_9 (a c : Nat) :
     (cfg_P2 a 0 (c + 3)) [target]⊢⁺ (cfg_P2 2 (a + 2) c) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_2.substAll [⟨0, [1]⟩, ⟨0, []⟩, ⟨3, [0, 0, 1]⟩]) (hub_2.substAll [⟨2, []⟩, ⟨2, [1]⟩, ⟨0,
@@ -446,7 +465,7 @@ theorem rule_9 (a c : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
-def rule_10_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
+private def rule_10_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .splitF,
   .rw false 0 .unpack, .step, .rw true 0 (.pack 2), .rw true 0 .merge, .shift,
   .rw true 0 (.rot 1), .step, .rw true 0 .splitF, .rw true 0 .unpack, .step, .step, .step,
   .rw false 2 (.pack 2), .rw false 1 .merge, .rw false 0 (.rotB 1), .shift, .rw true 0 .splitF,
@@ -457,7 +476,7 @@ def rule_10_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .rw false 0 .spl
   .rw true 1 .merge, .rw false 0 (.rotB 1), .done]
 
 /-- Rule 10: `P_2(a, b + 1, c + 1) -> P_2(a + 2, b, c)`. -/
-theorem rule_10 (a b c : Nat) :
+private theorem rule_10 (a b c : Nat) :
     (cfg_P2 a (b + 1) (c + 1)) [target]⊢⁺ (cfg_P2 (a + 2) b c) := by
   have h_tr := Cert.checkTrans_sound target rdefs
     (hub_2.substAll [⟨0, [1]⟩, ⟨1, [0, 1]⟩, ⟨1, [0, 0, 1]⟩]) (hub_2.substAll [⟨2, [1]⟩, ⟨0, [0,
@@ -487,31 +506,20 @@ theorem rule_10 (a b c : Nat) :
           env3_1, env3_2]; omega))
   rwa [hL, hR] at h_tr
 
--- ============================================================================
--- Section 8: Blank-Tape Entry & Complete Closure Proof (`HasCollatzReduction`)
--- ============================================================================
+/-! ## Blank-Tape Entry and Closure of `ps` (Level A) -/
 
-def init_pf : List Cert.Ins := [.step, .step, .step, .step, .step, .step, .step, .step, .step,
+private def init_pf : List Cert.Ins :=
+  [.step, .step, .step, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .rw true 2 (.zins [1, 0]),
   .rw true 0 (.pack 2), .rw false 0 (.zins [0, 1]), .done]
 
 /-- Blank initial tape `init []` reaches `cfg_P1 1 0 0` in 16 concrete steps. -/
-theorem init_reaches_P1 : (init []) [target]⊢* (cfg_P1 1 0 0) :=
+private theorem init_reaches_P1 : (init []) [target]⊢* (cfg_P1 1 0 0) :=
   Cert.checkInit_sound target rdefs ⟨2, true, [⟨[0, 1], ⟨1, []⟩⟩, ⟨[1, 0], ⟨0, []⟩⟩, ⟨[1], ⟨1,
     []⟩⟩], [⟨[0, 1], ⟨0, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1, []⟩⟩, ⟨[1], ⟨1,
     []⟩⟩]⟩ init_pf rfl (env3 0 0 0)
 
-theorem audit_ps_nonempty : ∃ cfg, IsInPatternSet ps cfg :=
-  ⟨cfg_P1 1 0 0, in_ps_P1 1 0 0⟩
-
-theorem audit_init_neq_cfg0 :
-    (init [] : Cfg (Fin 2) (Fin 6)) ≠ cfg_P1 1 0 0 := by
-  intro h
-  have h_neq := congr_arg (fun c => c.q) h
-  revert h_neq
-  decide
-
-def hub_1_pf : List Cert.Ins := [.splitZ 2, .rw false 0 .zdrop, .step, .step, .step, .step,
+private def hub_1_pf : List Cert.Ins := [.splitZ 2, .rw false 0 .zdrop, .step, .step, .step, .step,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step,
   .rw true 1 (.pack 2), .rw true 1 .merge, .rw true 0 (.rotB 1), .rw false 1 (.zins [0, 1]),
   .app 1 [⟨0, []⟩, ⟨1, [1]⟩], .rw true 0 .zdrop, .step, .step, .rw true 0 (.rotB 1), .shift,
@@ -555,12 +563,12 @@ def hub_1_pf : List Cert.Ins := [.splitZ 2, .rw false 0 .zdrop, .step, .step, .s
 
 set_option maxRecDepth 200000 in
 /-- Complete closure of Hub 1 (`cfg_P1 a b c`) across all `(a b c) ∈ ℕ^3`. -/
-theorem step_P1_all (a b c : Nat) :
+private theorem step_P1_all (a b c : Nat) :
     ∃ cfg', ((cfg_P1 a b c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) :=
   Cert.checkHub_sound target hubs rdefs hub_1 hub_1_pf rfl (env3 a b c)
 
-def hub_2_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .splitZ 2, .rw false 0 .zdrop,
+private def hub_2_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .splitZ 2, .rw false 0 .zdrop,
   .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step, .step,
   .step, .step, .step, .rw true 3 (.pack 2), .rw true 3 .merge, .rw true 1 (.pack 2),
   .rw true 1 .merge, .rw true 0 (.rotB 1), .rw false 1 (.zins [0, 1]), .app 1 [⟨0, []⟩, ⟨2,
@@ -614,12 +622,12 @@ def hub_2_pf : List Cert.Ins := [.rw false 0 (.rot 1), .step, .splitZ 2, .rw fal
 
 set_option maxRecDepth 200000 in
 /-- Complete closure of Hub 2 (`cfg_P2 a b c`) across all `(a b c) ∈ ℕ^3`. -/
-theorem step_P2_all (a b c : Nat) :
+private theorem step_P2_all (a b c : Nat) :
     ∃ cfg', ((cfg_P2 a b c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) :=
   Cert.checkHub_sound target hubs rdefs hub_2 hub_2_pf rfl (env3 a b c)
 
-theorem step_all (cfg : Cfg (Fin 2) (Fin 6)) (h_in : IsInPatternSet ps cfg) :
+private theorem step_all (cfg : Cfg (Fin 2) (Fin 6)) (h_in : IsInPatternSet ps cfg) :
     ∃ cfg', ((cfg) [target]⊢⁺ cfg') ∧
       (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases h_in with ⟨entry, h_mem, vars, rfl, _⟩
@@ -649,10 +657,10 @@ def encode : State → Cfg (Fin 2) (Fin 6)
   | .P_2 a b c => evalTapePattern pat_P2
       (fun i => if i = 0 then a else if i = 1 then b else if i = 2 then c else 0)
 
-private lemma encode_P1 (a b c : ℕ) : encode (.P_1 a b c) = cfg_P1 a b c :=
+private theorem encode_P1 (a b c : ℕ) : encode (.P_1 a b c) = cfg_P1 a b c :=
   eval_pat_P1 (fun i => if i = 0 then a else if i = 1 then b else if i = 2 then c else 0)
 
-private lemma encode_P2 (a b c : ℕ) : encode (.P_2 a b c) = cfg_P2 a b c :=
+private theorem encode_P2 (a b c : ℕ) : encode (.P_2 a b c) = cfg_P2 a b c :=
   eval_pat_P2 (fun i => if i = 0 then a else if i = 1 then b else if i = 2 then c else 0)
 
 def next : State → Option State

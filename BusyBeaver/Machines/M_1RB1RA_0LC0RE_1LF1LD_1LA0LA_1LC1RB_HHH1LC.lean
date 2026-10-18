@@ -51,7 +51,7 @@ abbrev target : Machine (Fin 2) (Fin 6) :=
 
 /-! ## Shift Lemmas -/
 
-lemma shift_A_11 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_A_11 (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{A}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
     ((l <+ ([1, 1] : List (Fin 2))^k) {{A}}> r) := by
   induction k generalizing l r with
@@ -70,7 +70,7 @@ lemma shift_A_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [← ListBlank.append_assoc, ← list_pow_succ']
     rwa [h_pow] at h3
 
-lemma shift_B_11 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_B_11 (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{B}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
     ((l <+ ([1, 0] : List (Fin 2))^k) {{B}}> r) := by
   induction k generalizing l r with
@@ -89,7 +89,7 @@ lemma shift_B_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [← ListBlank.append_assoc, ← list_pow_succ']
     rwa [h_pow] at h3
 
-lemma shift_E_11 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_E_11 (k : Nat) (l r : ListBlank (Fin 2)) :
     (l {{E}}> (([1, 1] : List (Fin 2))^k +> r)) [target]⊢*
     ((l <+ ([0, 1] : List (Fin 2))^k) {{E}}> r) := by
   induction k generalizing l r with
@@ -108,7 +108,7 @@ lemma shift_E_11 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [← ListBlank.append_assoc, ← list_pow_succ']
     rwa [h_pow] at h3
 
-lemma shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((0 : Fin 2) >> r)) [target]⊢*
     (l {{C}}> ((0 : Fin 2) >> (([1, 1] : List (Fin 2))^k +> r))) := by
   induction k generalizing l r with
@@ -133,7 +133,7 @@ lemma shift_C_left_01 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [← ListBlank.append_assoc, ← list_pow_succ']
     rwa [h_pow_r] at h3
 
-lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 0] : List (Fin 2))^k) {{C}}> ((1 : Fin 2) >> r)) [target]⊢*
     (l {{C}}> (([1, 0] : List (Fin 2))^k +> ((1 : Fin 2) >> r))) := by
   induction k generalizing l r with
@@ -164,7 +164,7 @@ lemma shift_C_left_10 (k : Nat) (l r : ListBlank (Fin 2)) :
       rw [← ListBlank.append_assoc, ← list_pow_succ']
     rwa [h_pow_r] at h3
 
-lemma step_C_11_to_B (d : Nat) (l r : ListBlank (Fin 2)) :
+private theorem step_C_11_to_B (d : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ [1, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
     ((l <+ [1, 1]) {{B}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) := by
   cases d with
@@ -175,7 +175,7 @@ lemma step_C_11_to_B (d : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ ([1, 1] : List (Fin 2)) d]
     bb_steps
 
-lemma step_C_default_to_E (d : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_C_default_to_E (d : Nat) (r : ListBlank (Fin 2)) :
     (default {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
     ((default <+ [0, 1]) {{E}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) := by
   cases d with
@@ -186,7 +186,7 @@ lemma step_C_default_to_E (d : Nat) (r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ ([1, 1] : List (Fin 2)) d]
     bb_steps
 
-lemma step_C_01_to_A (d : Nat) (l r : ListBlank (Fin 2)) :
+private theorem step_C_01_to_A (d : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
     (l {{A}}> (([1, 1] : List (Fin 2))^d +> ([1, 1] +> ((1 : Fin 2) >> r)))) := by
   have h1 : ((l <+ [0, 1]) {{C}}> (([1, 1] : List (Fin 2))^d +> ((1 : Fin 2) >> r))) [target]⊢⁺
@@ -214,21 +214,21 @@ def pat_A : TapePattern (Fin 2) (Fin 6) :=
 
 def ps : TapePatternSet (Fin 2) (Fin 6) := [(pat_A, .true)]
 
-def cfg_A (a k d c : Nat) : Cfg (Fin 2) (Fin 6) :=
+private def cfg_A (a k d c : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((([0, 1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^k) {{C}}>
     (([1, 1] : List (Fin 2))^d +> (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default)))
 
-lemma eval_pat_A (vars : Nat -> Nat) :
+private theorem eval_pat_A (vars : Nat -> Nat) :
     evalTapePattern pat_A vars = cfg_A (vars 0) (vars 1) (vars 2) (vars 3) := rfl
 
-lemma in_ps_A (a k d c : Nat) : IsInPatternSet ps (cfg_A a k d c) := by
+private theorem in_ps_A (a k d c : Nat) : IsInPatternSet ps (cfg_A a k d c) := by
   refine ⟨(pat_A, .true), List.Mem.head _,
       (fun i => match i with | 0 => a | 1 => k | 2 => d | 3 => c | _ => 0), ?_, trivial⟩
   exact (eval_pat_A (fun i => match i with | 0 => a | 1 => k | 2 => d | 3 => c | _ => 0)).symm
 
 /-! ## Accelerated Transition Rules -/
 
-theorem rule_1 (a k d c : Nat) :
+private theorem rule_1 (a k d c : Nat) :
     (cfg_A a (k + 1) d (c + 1)) [target]⊢⁺ (cfg_A a k (d + 2) c) := by
   let L := ((([0, 1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^k)
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
@@ -268,7 +268,7 @@ theorem rule_1 (a k d c : Nat) :
     rfl
   rwa [h_end] at h12345
 
-theorem rule_2 (a k d : Nat) :
+private theorem rule_2 (a k d : Nat) :
     (cfg_A a (k + 1) d 0) [target]⊢⁺ (cfg_A a (k + 1) 0 (d + 1)) := by
   let L := ((([0, 1] : List (Fin 2))^a +> default) <+ ([1, 1] : List (Fin 2))^k)
   have h_start : cfg_A a (k + 1) d 0 =
@@ -302,7 +302,7 @@ theorem rule_2 (a k d : Nat) :
     rfl
   rwa [h_end] at h1234
 
-theorem rule_3 (d : Nat) :
+private theorem rule_3 (d : Nat) :
     ∃ cfg', ((cfg_A 0 0 d 0) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   refine ⟨(default {{F}}> ((0 : Fin 2) >> ((1 : Fin 2) >> (([1,
       1] : List (Fin 2))^(d + 3) +> ([1] +> default))))), ?_,
@@ -346,7 +346,7 @@ theorem rule_3 (d : Nat) :
     bb_steps
   exact ReachesPlus.trans h12345 h6
 
-theorem rule_4 (d c : Nat) :
+private theorem rule_4 (d c : Nat) :
     (cfg_A 0 0 d (c + 1)) [target]⊢⁺ (cfg_A (d + 1) 0 0 (c + 1)) := by
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
   have h_start : cfg_A 0 0 d (c + 1) =
@@ -375,7 +375,7 @@ theorem rule_4 (d c : Nat) :
     rfl
   rwa [h_end] at h123
 
-theorem rule_5 (a d : Nat) :
+private theorem rule_5 (a d : Nat) :
     (cfg_A (a + 1) 0 d 0) [target]⊢⁺ (cfg_A a (d + 2) 0 0) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   have h_start : cfg_A (a + 1) 0 d 0 =
@@ -404,7 +404,7 @@ theorem rule_5 (a d : Nat) :
     rfl
   rwa [h_end] at h123
 
-theorem rule_6 (a d : Nat) :
+private theorem rule_6 (a d : Nat) :
     (cfg_A (a + 1) 0 d 1) [target]⊢⁺ (cfg_A a (d + 2) 0 1) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   have h_start : cfg_A (a + 1) 0 d 1 =
@@ -433,7 +433,7 @@ theorem rule_6 (a d : Nat) :
     rfl
   rwa [h_end] at h123
 
-theorem rule_7 (a d c : Nat) :
+private theorem rule_7 (a d c : Nat) :
     (cfg_A (a + 1) 0 d (c + 2)) [target]⊢⁺ (cfg_A a (d + 1) 2 c) := by
   let L := (([0, 1] : List (Fin 2))^a +> default)
   let R_tail := (([1, 0] : List (Fin 2))^c +> ([1, 1, 1, 1] +> default))
@@ -466,12 +466,12 @@ theorem rule_7 (a d c : Nat) :
     rfl
   rwa [h_end] at h123
 
-theorem init_reaches_A : (init []) [target]⊢* (cfg_A 0 0 0 1) := by
+private theorem init_reaches_A : (init []) [target]⊢* (cfg_A 0 0 0 1) := by
   refine ReachesPlus.to_star ?_
   unfold init cfg_A
   bb_steps
 
-theorem step_A_all (a k d c : Nat) :
+private theorem step_A_all (a k d c : Nat) :
     ∃ cfg', ((cfg_A a k d c) [target]⊢⁺ cfg') ∧
             (IsInPatternSet ps cfg' ∨ (step target cfg').isNone) := by
   rcases k with _ | k'

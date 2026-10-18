@@ -56,7 +56,7 @@ def machine : ConjectureMachines.Machine 6 2 :=
 
 abbrev target : Machine (Fin 2) (Fin 6) := machine.toBB
 
-lemma split_111_succ (b : Nat) (l_0 : ListBlank (Fin 2)) :
+private theorem split_111_succ (b : Nat) (l_0 : ListBlank (Fin 2)) :
     l_0 <+ ([1, 1, 1] : List (Fin 2))^(b + 1) =
     ((l_0 <+ [1, 1]) <+ ([1, 1, 1] : List (Fin 2))^b) <+ [1] := by
   induction b generalizing l_0 with
@@ -75,7 +75,7 @@ lemma split_111_succ (b : Nat) (l_0 : ListBlank (Fin 2)) :
       rfl
     rw [h2, <- ListBlank.append_pow_succ ([1, 1, 1] : List (Fin 2)) b]
 
-lemma comm_1_111 (b : Nat) (l_0 : ListBlank (Fin 2)) :
+private theorem comm_1_111 (b : Nat) (l_0 : ListBlank (Fin 2)) :
     (l_0 <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^b =
     (l_0 <+ ([1, 1, 1] : List (Fin 2))^b) <+ [1] := by
   induction b generalizing l_0 with
@@ -89,7 +89,7 @@ lemma comm_1_111 (b : Nat) (l_0 : ListBlank (Fin 2)) :
       rfl
     rw [h1, <- ListBlank.append_pow_add_rev l_0 ([1, 1, 1] : List (Fin 2)) b 1]
 
-lemma shift_A_left_111 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_A_left_111 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([1, 1, 1] : List (Fin 2))^k) <{{A}} r) [target]⊢*
     (l <{{A}} (([1, 1, 0] : List (Fin 2))^k +> r)) := by
   induction k generalizing l r with
@@ -106,7 +106,7 @@ lemma shift_A_left_111 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([1, 1, 0] : List (Fin 2)) k r] at h2
     exact ReachesPlus.to_star (ReachesPlus.trans_star h1 h2)
 
-lemma shift_D_right_10 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_D_right_10 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ [0]) {{D}}> (([1, 0] : List (Fin 2))^k +> r)) [target]⊢*
     (((l <+ ([0, 1] : List (Fin 2))^k) <+ [0]) {{D}}> r) := by
   induction k generalizing l r with
@@ -123,7 +123,7 @@ lemma shift_D_right_10 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([0, 1] : List (Fin 2)) k l] at h2
     exact ReachesPlus.to_star (ReachesPlus.trans_star h1 h2)
 
-lemma shift_D_right_110 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_D_right_110 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^k +> r)) [target]⊢*
     (((l <+ ([1, 1, 1] : List (Fin 2))^k) <+ [0]) {{D}}> r) := by
   induction k generalizing l r with
@@ -140,7 +140,7 @@ lemma shift_D_right_110 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([1, 1, 1] : List (Fin 2)) k l] at h2
     exact ReachesPlus.to_star (ReachesPlus.trans_star h1 h2)
 
-lemma shift_A_left_01_with_110 (k : Nat) (l r : ListBlank (Fin 2)) :
+private theorem shift_A_left_01_with_110 (k : Nat) (l r : ListBlank (Fin 2)) :
     ((l <+ ([0, 1] : List (Fin 2))^k) <{{A}} ([1, 1, 0] +> r)) [target]⊢*
     (l <{{A}} ([1, 1, 0] +> (([1, 0] : List (Fin 2))^k +> r))) := by
   induction k generalizing l r with
@@ -157,14 +157,14 @@ lemma shift_A_left_01_with_110 (k : Nat) (l r : ListBlank (Fin 2)) :
     rw [ListBlank.append_pow_succ' ([1, 0] : List (Fin 2)) k r] at h2
     exact ReachesPlus.to_star (ReachesPlus.trans_star h1 h2)
 
-lemma bounce_A_left_with_110 (r : ListBlank (Fin 2)) :
+private theorem bounce_A_left_with_110 (r : ListBlank (Fin 2)) :
     (default <{{A}} ([1, 1, 0] +> r)) [target]⊢⁺
     (default {{D}}> (([1, 0] : List (Fin 2))^2 +> r)) := by
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma drain_A_left_01_with_110 (a : Nat) (r : ListBlank (Fin 2)) :
+private theorem drain_A_left_01_with_110 (a : Nat) (r : ListBlank (Fin 2)) :
     ((default <+ ([0, 1] : List (Fin 2))^a) <{{A}} ([1, 1, 0] +> r)) [target]⊢⁺
     (default {{D}}> (([1, 0] : List (Fin 2))^(a + 2) +> r)) := by
   have h1 := shift_A_left_01_with_110 a default r
@@ -175,7 +175,7 @@ lemma drain_A_left_01_with_110 (a : Nat) (r : ListBlank (Fin 2)) :
   rw [h_eq] at h2
   exact ReachesStar.trans_plus h1 h2
 
-lemma drain_A_left_111_01_with_110 (a b : Nat) (r : ListBlank (Fin 2)) :
+private theorem drain_A_left_111_01_with_110 (a b : Nat) (r : ListBlank (Fin 2)) :
     (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1, 1, 1] : List (Fin 2))^b) <{{A}} ([1, 1, 0]
         +> r))
     [target]⊢⁺
@@ -187,7 +187,7 @@ lemma drain_A_left_111_01_with_110 (a b : Nat) (r : ListBlank (Fin 2)) :
   rw [h_eq] at h1
   exact ReachesStar.trans_plus h1 (drain_A_left_01_with_110 a (([1, 1, 0] : List (Fin 2))^b +> r))
 
-lemma roundtrip_D_110_cap0 (b d : Nat) (l_0 : ListBlank (Fin 2)) :
+private theorem roundtrip_D_110_cap0 (b d : Nat) (l_0 : ListBlank (Fin 2)) :
     ((l_0 <+ [0]) {{D}}> (([1, 1, 0] : List (Fin 2))^(b + 1) +> ([0] +> (([1] : List (Fin 2))^d
         +> default))))
     [target]⊢⁺
@@ -224,17 +224,17 @@ def D_cfg (a b c d : Nat) : Cfg (Fin 2) (Fin 6) :=
         (([0] : List (Fin 2))^c +>
           (([1] : List (Fin 2))^d +> default))))
 
-lemma eval_pat_D (vars : Nat -> Nat) :
+private theorem eval_pat_D (vars : Nat -> Nat) :
     evalTapePattern pat_D vars = D_cfg (vars 0) (vars 1) (vars 2) (vars 3) := by
   rfl
 
-lemma in_ps_D (a b c d : Nat) (hc : c <= 1) : IsInPatternSet ps (D_cfg a b c d) := by
+private theorem in_ps_D (a b c d : Nat) (hc : c <= 1) : IsInPatternSet ps (D_cfg a b c d) := by
   refine ⟨(pat_D, .not (.ge_const 2 2)), by simp [ps],
     fun | 0 => a | 1 => b | 2 => c | 3 => d | _ => 0, rfl, ?_⟩
   simp only [evalVarCond]
   omega
 
-lemma closes_of_in_ps {c_1 : Cfg (Fin 2) (Fin 6)} {a b c d : Nat}
+private theorem closes_of_in_ps {c_1 : Cfg (Fin 2) (Fin 6)} {a b c d : Nat}
     (h₁ : c_1 [target]⊢⁺ D_cfg a b c d) (hc : c <= 1) : StepsToClosed target ps c_1 :=
   StepsToClosed.of_isInPatternSet h₁ (in_ps_D a b c d hc)
 
@@ -242,7 +242,7 @@ def A_ones (a k b d : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) <{{A}}
     (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +> default)))
 
-lemma step_A_ones_k2 (a b d : Nat) :
+private theorem step_A_ones_k2 (a b d : Nat) :
     (A_ones a 2 b d) [target]⊢⁺ (D_cfg (a + 2) b 1 d) := by
   unfold A_ones
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^3) <{{A}}
@@ -259,10 +259,10 @@ lemma step_A_ones_k2 (a b d : Nat) :
         default))))
   exact ReachesPlus.trans h1 h2
 
-lemma closes_A_ones_k2 (a b d : Nat) : StepsToClosed target ps (A_ones a 2 b d) :=
+private theorem closes_A_ones_k2 (a b d : Nat) : StepsToClosed target ps (A_ones a 2 b d) :=
   closes_of_in_ps (step_A_ones_k2 a b d) (by decide)
 
-lemma step_A_ones_a0_k0 (b d : Nat) :
+private theorem step_A_ones_a0_k0 (b d : Nat) :
     ∃ cfg', ((A_ones 0 0 b d) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   unfold A_ones
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^0) <+ ([1] : List (Fin 2))^1) <{{A}}
@@ -275,7 +275,7 @@ lemma step_A_ones_a0_k0 (b d : Nat) :
     bb_steps
   exact ⟨_, h1, rfl⟩
 
-lemma step_A_ones_a1_k0 (b d : Nat) :
+private theorem step_A_ones_a1_k0 (b d : Nat) :
     (A_ones 1 0 b d) [target]⊢⁺ (D_cfg 0 (b + 1) 1 d) := by
   unfold A_ones D_cfg
   rw [ListBlank.append_pow_succ ([1, 1, 0] : List (Fin 2)) b]
@@ -283,7 +283,7 @@ lemma step_A_ones_a1_k0 (b d : Nat) :
     ListBlank.append_nil]
   bb_steps
 
-lemma step_A_ones_asucc2_k0 (a' b d : Nat) :
+private theorem step_A_ones_asucc2_k0 (a' b d : Nat) :
     (A_ones (a' + 2) 0 b d) [target]⊢⁺ (A_ones a' 2 b (d + 2)) := by
   unfold A_ones
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^(a' + 2)) <+ ([1] : List (Fin 2))^1) <{{A}}
@@ -306,7 +306,7 @@ lemma step_A_ones_asucc2_k0 (a' b d : Nat) :
   rw [h_eq] at h2
   exact ReachesPlus.trans h1 h2
 
-lemma closes_A_ones_k0 (a b d : Nat) : StepsToClosed target ps (A_ones a 0 b d) := by
+private theorem closes_A_ones_k0 (a b d : Nat) : StepsToClosed target ps (A_ones a 0 b d) := by
   rcases a with _ | _ | a'
   · obtain ⟨cfg', h1, h2⟩ := step_A_ones_a0_k0 b d
     exact StepsToClosed.of_halting h1 h2
@@ -314,7 +314,7 @@ lemma closes_A_ones_k0 (a b d : Nat) : StepsToClosed target ps (A_ones a 0 b d) 
   · exact StepsToClosed.of_reachesPlus (step_A_ones_asucc2_k0 a' b d)
       (closes_A_ones_k2 a' b (d + 2))
 
-lemma step_A_ones_ksucc3 (a k b d : Nat) :
+private theorem step_A_ones_ksucc3 (a k b d : Nat) :
     (A_ones a (k + 3) b d) [target]⊢⁺ (A_ones a k (b + 1) d) := by
   unfold A_ones
   rw [ListBlank.append_pow_add_rev (default <+ ([0, 1] : List (Fin 2))^a) ([1] : List (Fin 2))
@@ -328,7 +328,7 @@ def H_mid (a b m : Nat) : Cfg (Fin 2) (Fin 6) :=
   ((((default <+ ([0, 1] : List (Fin 2))^a) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^b) <+ [0]) {{D}}>
     (([1] : List (Fin 2))^m +> default)
 
-lemma step_H_mid_a0_m1 (b : Nat) :
+private theorem step_H_mid_a0_m1 (b : Nat) :
     (H_mid 0 (b + 1) 1) [target]⊢⁺ (A_ones 0 0 (b + 1) 3) := by
   unfold H_mid A_ones
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^0) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b +
@@ -346,10 +346,10 @@ lemma step_H_mid_a0_m1 (b : Nat) :
       +> (([1] : List (Fin 2))^3 +> default))
   exact ReachesPlus.trans_star h1 h2
 
-lemma closes_H_mid_a0_m1 (b : Nat) : StepsToClosed target ps (H_mid 0 (b + 1) 1) :=
+private theorem closes_H_mid_a0_m1 (b : Nat) : StepsToClosed target ps (H_mid 0 (b + 1) 1) :=
   StepsToClosed.of_reachesPlus (step_H_mid_a0_m1 b) (closes_A_ones_k0 0 (b + 1) 3)
 
-lemma step_H_mid_asucc_m1 (a b : Nat) :
+private theorem step_H_mid_asucc_m1 (a b : Nat) :
     (H_mid (a + 1) (b + 1) 1) [target]⊢⁺ (A_ones (a + 1) 0 (b + 1) 3) := by
   unfold H_mid A_ones
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^(a + 1)) <+ [1]) <+ ([1, 1, 1] : List (Fin
@@ -368,10 +368,11 @@ lemma step_H_mid_asucc_m1 (a b : Nat) :
     (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^3 +> default))
   exact ReachesPlus.trans_star h1 h2
 
-lemma closes_H_mid_asucc_m1 (a b : Nat) : StepsToClosed target ps (H_mid (a + 1) (b + 1) 1) :=
+private theorem closes_H_mid_asucc_m1 (a b : Nat) :
+    StepsToClosed target ps (H_mid (a + 1) (b + 1) 1) :=
   StepsToClosed.of_reachesPlus (step_H_mid_asucc_m1 a b) (closes_A_ones_k0 (a + 1) (b + 1) 3)
 
-lemma step_H_mid_m2 (a b : Nat) :
+private theorem step_H_mid_m2 (a b : Nat) :
     (H_mid a (b + 1) 2) [target]⊢⁺ (D_cfg (a + 2) (b + 1) 1 2) := by
   unfold H_mid
   rw [comm_1_111 (b + 1) (default <+ ([0, 1] : List (Fin 2))^a)]
@@ -388,10 +389,10 @@ lemma step_H_mid_m2 (a b : Nat) :
     (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^2 +> default))
   exact ReachesPlus.trans h1 h2
 
-lemma closes_H_mid_m2 (a b : Nat) : StepsToClosed target ps (H_mid a (b + 1) 2) :=
+private theorem closes_H_mid_m2 (a b : Nat) : StepsToClosed target ps (H_mid a (b + 1) 2) :=
   closes_of_in_ps (step_H_mid_m2 a b) (by decide)
 
-lemma step_H_mid_a0_m3 (b m : Nat) :
+private theorem step_H_mid_a0_m3 (b m : Nat) :
     ∃ cfg', ((H_mid 0 (b + 1) (m + 3)) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   unfold H_mid
   have h1 : ((((((default <+ ([0, 1] : List (Fin 2))^0) <+ [1]) <+ ([1, 1, 1] : List (Fin 2))^(b
@@ -423,11 +424,12 @@ lemma step_H_mid_a0_m3 (b m : Nat) :
     bb_steps
   exact ⟨_, ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3, rfl⟩
 
-lemma closes_H_mid_a0_m3 (b m : Nat) : StepsToClosed target ps (H_mid 0 (b + 1) (m + 3)) := by
+private theorem closes_H_mid_a0_m3 (b m : Nat) :
+    StepsToClosed target ps (H_mid 0 (b + 1) (m + 3)) := by
   obtain ⟨cfg', h1, h2⟩ := step_H_mid_a0_m3 b m
   exact StepsToClosed.of_halting h1 h2
 
-lemma step_H_mid_a1_m3_prefix (b m : Nat) :
+private theorem step_H_mid_a1_m3_prefix (b m : Nat) :
     (H_mid 1 (b + 1) (m + 3)) [target]⊢⁺
     (((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
       (([1] : List (Fin 2))^(m + 1) +> default)) := by
@@ -475,7 +477,7 @@ lemma step_H_mid_a1_m3_prefix (b m : Nat) :
   rw [h_eq] at h4
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) (ReachesPlus.trans_star h3 h4)
 
-lemma step_H_mid_a1_m3_0 (b : Nat) :
+private theorem step_H_mid_a1_m3_0 (b : Nat) :
     (H_mid 1 (b + 1) 3) [target]⊢⁺ (D_cfg 2 (b + 2) 1 3) := by
   have h_pref := step_H_mid_a1_m3_prefix b 0
   have h1 : (((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
@@ -491,7 +493,7 @@ lemma step_H_mid_a1_m3_0 (b : Nat) :
     (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^3 +> default))
   exact ReachesPlus.trans h_pref (ReachesPlus.trans h1 h2)
 
-lemma step_H_mid_a1_m3_1 (b : Nat) :
+private theorem step_H_mid_a1_m3_1 (b : Nat) :
     (H_mid 1 (b + 1) 4) [target]⊢⁺ (D_cfg 1 (b + 3) 1 2) := by
   have h_pref := step_H_mid_a1_m3_prefix b 1
   have h1 : (((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
@@ -516,7 +518,7 @@ lemma step_H_mid_a1_m3_1 (b : Nat) :
     bb_steps
   exact ReachesPlus.trans h_pref (ReachesPlus.trans (ReachesPlus.trans_star h1 h2) h3)
 
-lemma step_H_mid_a1_m3_succ2 (b m' : Nat) :
+private theorem step_H_mid_a1_m3_succ2 (b m' : Nat) :
     (H_mid 1 (b + 1) (m' + 5)) [target]⊢⁺ (D_cfg 2 (b + 3) 0 (m' + 1)) := by
   have h_pref := step_H_mid_a1_m3_prefix b (m' + 2)
   have h1 : (((default <+ ([1, 1, 1] : List (Fin 2))^(b + 3)) <+ [0]) {{D}}>
@@ -537,13 +539,14 @@ lemma step_H_mid_a1_m3_succ2 (b m' : Nat) :
     (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(m' + 1) +> default))
   exact ReachesPlus.trans h_pref (ReachesPlus.trans h1 h2)
 
-lemma closes_H_mid_a1_m3 (b m : Nat) : StepsToClosed target ps (H_mid 1 (b + 1) (m + 3)) := by
+private theorem closes_H_mid_a1_m3 (b m : Nat) :
+    StepsToClosed target ps (H_mid 1 (b + 1) (m + 3)) := by
   rcases m with _ | _ | m'
   · exact closes_of_in_ps (step_H_mid_a1_m3_0 b) (by decide)
   · exact closes_of_in_ps (step_H_mid_a1_m3_1 b) (by decide)
   · exact closes_of_in_ps (step_H_mid_a1_m3_succ2 b m') (by decide)
 
-lemma step_H_mid_asucc2_m3 (a b m : Nat) :
+private theorem step_H_mid_asucc2_m3 (a b m : Nat) :
     (H_mid (a + 2) (b + 1) (m + 3)) [target]⊢⁺ (H_mid a (b + 3) (m + 1)) := by
   unfold H_mid
   have h1 : (((((default <+ ([0, 1] : List (Fin 2))^(a + 2)) <+ [1]) <+ ([1, 1, 1] : List (Fin
@@ -594,7 +597,8 @@ lemma step_H_mid_asucc2_m3 (a b m : Nat) :
   rw [h_eq] at h4
   exact ReachesPlus.trans (ReachesPlus.trans_star h1 h2) (ReachesPlus.trans_star h3 h4)
 
-lemma closes_H_mid (a : Nat) : ∀ b m, StepsToClosed target ps (H_mid a (b + 1) (m + 1)) := by
+private theorem closes_H_mid (a : Nat) :
+    ∀ b m, StepsToClosed target ps (H_mid a (b + 1) (m + 1)) := by
   induction a using Nat.strong_induction_on with
   | h a ih =>
     intro b m
@@ -614,7 +618,7 @@ def B_mid (a k b d : Nat) : Cfg (Fin 2) (Fin 6) :=
     ([0, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2)) +> (([1] : List (Fin 2))^d +>
     default))))
 
-lemma step_B_mid_a0_k1_b0 (d : Nat) :
+private theorem step_B_mid_a0_k1_b0 (d : Nat) :
     (B_mid 0 1 0 d) [target]⊢⁺ (D_cfg 0 0 0 (d + 4)) := by
   unfold B_mid D_cfg
   have hd : (([1] : List (Fin 2))^(d + 4) +> default) =
@@ -626,10 +630,10 @@ lemma step_B_mid_a0_k1_b0 (d : Nat) :
     ListBlank.append_nil]
   bb_steps
 
-lemma closes_B_mid_a0_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 0 1 0 d) :=
+private theorem closes_B_mid_a0_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 0 1 0 d) :=
   closes_of_in_ps (step_B_mid_a0_k1_b0 d) (by decide)
 
-lemma step_B_mid_a1_k1_b0 (d : Nat) :
+private theorem step_B_mid_a1_k1_b0 (d : Nat) :
     ∃ cfg', ((B_mid 1 1 0 d) [target]⊢⁺ cfg') ∧ (step target cfg').isNone := by
   have h1 : (B_mid 1 1 0 d) [target]⊢⁺
       (default <{{F}} ([1, 0, 1, 1, 0] +> (([1] : List (Fin 2))^(d + 2) +> default))) := by
@@ -644,11 +648,11 @@ lemma step_B_mid_a1_k1_b0 (d : Nat) :
     bb_steps
   exact ⟨_, h1, rfl⟩
 
-lemma closes_B_mid_a1_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 1 1 0 d) := by
+private theorem closes_B_mid_a1_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 1 1 0 d) := by
   obtain ⟨cfg', h1, h2⟩ := step_B_mid_a1_k1_b0 d
   exact StepsToClosed.of_halting h1 h2
 
-lemma step_B_mid_a2_k1_b0 (d : Nat) :
+private theorem step_B_mid_a2_k1_b0 (d : Nat) :
     (B_mid 2 1 0 d) [target]⊢⁺ (D_cfg 0 2 0 (d + 2)) := by
   unfold B_mid D_cfg
   have hd : (([1] : List (Fin 2))^(d + 2) +> default) =
@@ -660,10 +664,10 @@ lemma step_B_mid_a2_k1_b0 (d : Nat) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma closes_B_mid_a2_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 2 1 0 d) :=
+private theorem closes_B_mid_a2_k1_b0 (d : Nat) : StepsToClosed target ps (B_mid 2 1 0 d) :=
   closes_of_in_ps (step_B_mid_a2_k1_b0 d) (by decide)
 
-lemma step_B_mid_asucc3_k1_b0 (a d : Nat) :
+private theorem step_B_mid_asucc3_k1_b0 (a d : Nat) :
     (B_mid (a + 3) 1 0 d) [target]⊢⁺ (H_mid a 2 (d + 2)) := by
   unfold B_mid H_mid
   rw [ListBlank.append_pow_add_rev default ([0, 1] : List (Fin 2)) a 3]
@@ -676,14 +680,14 @@ lemma step_B_mid_asucc3_k1_b0 (a d : Nat) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma closes_B_mid_k1_b0 (a d : Nat) : StepsToClosed target ps (B_mid a 1 0 d) := by
+private theorem closes_B_mid_k1_b0 (a d : Nat) : StepsToClosed target ps (B_mid a 1 0 d) := by
   rcases a with _ | _ | _ | a'
   · exact closes_B_mid_a0_k1_b0 d
   · exact closes_B_mid_a1_k1_b0 d
   · exact closes_B_mid_a2_k1_b0 d
   · exact StepsToClosed.of_reachesPlus (step_B_mid_asucc3_k1_b0 a' d) (closes_H_mid a' 1 (d + 1))
 
-lemma step_B_mid_ksucc2_b0 (a k d : Nat) :
+private theorem step_B_mid_ksucc2_b0 (a k d : Nat) :
     (B_mid a (k + 2) 0 d) [target]⊢⁺ (A_ones a k 0 (d + 3)) := by
   unfold B_mid A_ones
   rw [ListBlank.append_pow_add_rev (default <+ ([0, 1] : List (Fin 2))^a) ([1] : List (Fin 2))
@@ -697,7 +701,7 @@ lemma step_B_mid_ksucc2_b0 (a k d : Nat) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma step_B_mid_bsucc (a k b d : Nat) :
+private theorem step_B_mid_bsucc (a k b d : Nat) :
     (B_mid a (k + 1) (b + 1) d) [target]⊢⁺ (B_mid a (k + 2) b (d + 2)) := by
   unfold B_mid
   have h1 : (((default <+ ([0, 1] : List (Fin 2))^a) <+ ([1] : List (Fin 2))^(k + 1)) {{B}}>
@@ -726,17 +730,17 @@ lemma step_B_mid_bsucc (a k b d : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 (ReachesPlus.trans h2 h3)
 
-lemma step_A_ones_a0_k1 (b d : Nat) :
+private theorem step_A_ones_a0_k1 (b d : Nat) :
     (A_ones 0 1 b d) [target]⊢⁺ (D_cfg 1 b 1 d) := by
   unfold A_ones D_cfg
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma closes_A_ones_a0_k1 (b d : Nat) : StepsToClosed target ps (A_ones 0 1 b d) :=
+private theorem closes_A_ones_a0_k1 (b d : Nat) : StepsToClosed target ps (A_ones 0 1 b d) :=
   closes_of_in_ps (step_A_ones_a0_k1 b d) (by decide)
 
-lemma step_A_ones_asucc_k1 (a b d : Nat) :
+private theorem step_A_ones_asucc_k1 (a b d : Nat) :
     (A_ones (a + 1) 1 b d) [target]⊢⁺ (B_mid a 2 b d) := by
   unfold A_ones B_mid
   rw [ListBlank.append_pow_add_rev default ([0, 1] : List (Fin 2)) a 1]
@@ -744,7 +748,8 @@ lemma step_A_ones_asucc_k1 (a b d : Nat) :
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma closes_B_mid_all (a : Nat) : ∀ b k d, StepsToClosed target ps (B_mid a (k + 1) b d) := by
+private theorem closes_B_mid_all (a : Nat) :
+    ∀ b k d, StepsToClosed target ps (B_mid a (k + 1) b d) := by
   induction a using Nat.strong_induction_on with
   | h a ih_a =>
     have h_A_ones : ∀ k b d, StepsToClosed target ps (A_ones a k b d) := by
@@ -775,10 +780,10 @@ lemma closes_B_mid_all (a : Nat) : ∀ b k d, StepsToClosed target ps (B_mid a (
       intro k d
       exact StepsToClosed.of_reachesPlus (step_B_mid_bsucc a k b d) (ih_b (k + 1) (d + 2))
 
-lemma closes_B_mid (b a k d : Nat) : StepsToClosed target ps (B_mid a (k + 1) b d) :=
+private theorem closes_B_mid (b a k d : Nat) : StepsToClosed target ps (B_mid a (k + 1) b d) :=
   closes_B_mid_all a b k d
 
-lemma step_D_cfg_to_D_mid (a : Nat) (r : ListBlank (Fin 2)) :
+private theorem step_D_cfg_to_D_mid (a : Nat) (r : ListBlank (Fin 2)) :
     (default {{D}}> (([1, 0] : List (Fin 2))^a +> r)) [target]⊢*
     (((default <+ ([0, 1] : List (Fin 2))^a) <+ [0]) {{D}}> r) := by
   have h := shift_D_right_10 a default r
@@ -786,7 +791,7 @@ lemma step_D_cfg_to_D_mid (a : Nat) (r : ListBlank (Fin 2)) :
     ListBlank.default_eq_append_zero.symm
   rwa [h_def] at h
 
-lemma step_D_cfg_c1_a0_b0 (d : Nat) :
+private theorem step_D_cfg_c1_a0_b0 (d : Nat) :
     (D_cfg 0 0 1 d) [target]⊢⁺ (D_cfg 0 0 1 (d + 1)) := by
   unfold D_cfg
   rw [ListBlank.append_pow_succ ([1] : List (Fin 2)) d]
@@ -794,7 +799,7 @@ lemma step_D_cfg_c1_a0_b0 (d : Nat) :
     ListBlank.append_nil]
   bb_steps
 
-lemma step_D_cfg_c1_a0_bsucc (b' d : Nat) :
+private theorem step_D_cfg_c1_a0_bsucc (b' d : Nat) :
     (D_cfg 0 (b' + 1) 1 d) [target]⊢⁺ (D_cfg 1 b' 1 (d + 2)) := by
   have h1 := roundtrip_D_110_cap0 b' d default
   have h_def : (default <+ ([0] : List (Fin 2))) = default :=
@@ -814,7 +819,7 @@ lemma step_D_cfg_c1_a0_bsucc (b' d : Nat) :
   rw [h_start] at h1
   exact ReachesPlus.trans h1 h2
 
-lemma step_D_cfg_c1_asucc (a' b d : Nat) :
+private theorem step_D_cfg_c1_asucc (a' b d : Nat) :
     (D_cfg (a' + 1) b 1 d) [target]⊢⁺ (B_mid a' 1 b d) := by
   have h1 := step_D_cfg_to_D_mid a'
     ([1, 0] +> (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin
@@ -837,19 +842,19 @@ lemma step_D_cfg_c1_asucc (a' b d : Nat) :
     bb_steps
   exact ReachesStar.trans_plus h1 h2
 
-lemma closes_D_cfg_c1 (a b d : Nat) : StepsToClosed target ps (D_cfg a b 1 d) := by
+private theorem closes_D_cfg_c1 (a b d : Nat) : StepsToClosed target ps (D_cfg a b 1 d) := by
   rcases a with _ | a'
   · rcases b with _ | b'
     · exact closes_of_in_ps (step_D_cfg_c1_a0_b0 d) (by decide)
     · exact closes_of_in_ps (step_D_cfg_c1_a0_bsucc b' d) (by decide)
   · exact StepsToClosed.of_reachesPlus (step_D_cfg_c1_asucc a' b d) (closes_B_mid b a' 0 d)
 
-lemma D_cfg_c0_d0_eq (a b : Nat) : D_cfg a b 0 0 = D_cfg a b 1 0 := by
+private theorem D_cfg_c0_d0_eq (a b : Nat) : D_cfg a b 0 0 = D_cfg a b 1 0 := by
   unfold D_cfg
   simp only [list_pow_succ, list_pow_zero, List.append_nil, ListBlank.append_cons,
     ListBlank.append_nil, ListBlank.cons_zero_default]
 
-lemma D_cfg_c0_d2_eq (a b : Nat) : D_cfg a b 0 2 = D_cfg a (b + 1) 1 0 := by
+private theorem D_cfg_c0_d2_eq (a b : Nat) : D_cfg a b 0 2 = D_cfg a (b + 1) 1 0 := by
   unfold D_cfg
   have h_b : (([1, 1, 0] : List (Fin 2))^(b + 1) +> (([0] : List (Fin 2))^1 +> (([1] : List (Fin
       2))^0 +> default))) =
@@ -860,14 +865,14 @@ lemma D_cfg_c0_d2_eq (a b : Nat) : D_cfg a b 0 2 = D_cfg a (b + 1) 1 0 := by
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append,
     List.append_nil, ListBlank.append_cons, ListBlank.append_nil, ListBlank.cons_zero_default]
 
-lemma step_D_cfg_c0_d1_a0_b0 :
+private theorem step_D_cfg_c0_d1_a0_b0 :
     (D_cfg 0 0 0 1) [target]⊢⁺ (D_cfg 0 0 0 4) := by
   unfold D_cfg
   simp only [list_pow_succ, list_pow_zero, List.cons_append, List.nil_append, List.append_nil,
     ListBlank.append_cons, ListBlank.append_nil]
   bb_steps
 
-lemma step_D_cfg_c0_d1_asucc_b0 (a' : Nat) :
+private theorem step_D_cfg_c0_d1_asucc_b0 (a' : Nat) :
     (D_cfg (a' + 1) 0 0 1) [target]⊢⁺ (B_mid (a' + 1) 1 0 0) := by
   have h1 := step_D_cfg_to_D_mid (a' + 1)
     (([1, 1, 0] : List (Fin 2))^0 +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^1 +>
@@ -889,7 +894,7 @@ lemma step_D_cfg_c0_d1_asucc_b0 (a' : Nat) :
     bb_steps
   exact ReachesStar.trans_plus h1 h2
 
-lemma step_D_cfg_c0_d1_bsucc (a b' : Nat) :
+private theorem step_D_cfg_c0_d1_bsucc (a b' : Nat) :
     (D_cfg a (b' + 1) 0 1) [target]⊢⁺ (D_cfg (a + 2) b' 1 3) := by
   have h1 := step_D_cfg_to_D_mid a
     (([1, 1, 0] : List (Fin 2))^(b' + 1) +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^1
@@ -911,7 +916,7 @@ lemma step_D_cfg_c0_d1_bsucc (a b' : Nat) :
     (([0] : List (Fin 2))^1 +> (([1] : List (Fin 2))^3 +> default))
   exact ReachesStar.trans_plus (ReachesStar.trans h1 h2) (ReachesPlus.trans h3 h4)
 
-lemma closes_D_cfg_c0_d1 (a b : Nat) : StepsToClosed target ps (D_cfg a b 0 1) := by
+private theorem closes_D_cfg_c0_d1 (a b : Nat) : StepsToClosed target ps (D_cfg a b 0 1) := by
   rcases b with _ | b'
   · rcases a with _ | a'
     · exact closes_of_in_ps step_D_cfg_c0_d1_a0_b0 (by decide)
@@ -919,7 +924,7 @@ lemma closes_D_cfg_c0_d1 (a b : Nat) : StepsToClosed target ps (D_cfg a b 0 1) :
         (closes_B_mid 0 (a' + 1) 0 0)
   · exact closes_of_in_ps (step_D_cfg_c0_d1_bsucc a b') (by decide)
 
-lemma step_D_cfg_c0_d3 (a b d : Nat) :
+private theorem step_D_cfg_c0_d3 (a b d : Nat) :
     (D_cfg a b 0 (d + 3)) [target]⊢⁺ (D_cfg (a + 2) b 0 (d + 1)) := by
   have h1 := step_D_cfg_to_D_mid a
     (([1, 1, 0] : List (Fin 2))^b +> (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(d + 3) +>
@@ -943,10 +948,11 @@ lemma step_D_cfg_c0_d3 (a b d : Nat) :
     (([0] : List (Fin 2))^0 +> (([1] : List (Fin 2))^(d + 1) +> default))
   exact ReachesStar.trans_plus (ReachesStar.trans h1 h2) (ReachesPlus.trans h3 h4)
 
-lemma closes_D_cfg_c0_d3 (a b d : Nat) : StepsToClosed target ps (D_cfg a b 0 (d + 3)) :=
+private theorem closes_D_cfg_c0_d3 (a b d : Nat) : StepsToClosed target ps (D_cfg a b 0 (d + 3)) :=
   closes_of_in_ps (step_D_cfg_c0_d3 a b d) (by decide)
 
-lemma closes_D_cfg (a b c d : Nat) (hc : c <= 1) : StepsToClosed target ps (D_cfg a b c d) := by
+private theorem closes_D_cfg (a b c d : Nat) (hc : c <= 1) :
+    StepsToClosed target ps (D_cfg a b c d) := by
   have hc_cases : c = 0 \/ c = 1 := by omega
   rcases hc_cases with rfl | rfl
   · rcases d with _ | _ | _ | d'
@@ -958,7 +964,7 @@ lemma closes_D_cfg (a b c d : Nat) (hc : c <= 1) : StepsToClosed target ps (D_cf
     · exact closes_D_cfg_c0_d3 a b d'
   · exact closes_D_cfg_c1 a b d
 
-theorem init_reaches_D :
+private theorem init_reaches_D :
     (init []) [target]⊢* (D_cfg 0 0 0 4) := by
   have h_init : (init []) [target]⊢⁺ (D_cfg 0 0 0 4) := by
     unfold init D_cfg
