@@ -23,8 +23,8 @@ All proofs in `BusyBeaver/` target machine-checked behavioral predicates over th
 | `IsNotHalt M` (`IsDoesNotHalt M`) | Every configuration reachable from `init []` has a well-defined successor (`(step M cfg).isSome`). |
 | `IsClosedPatternSet M ps` | **Level A (Counter)**: `M`'s blank-tape trajectory enters the explicit `TapePatternSet` `ps`, and every member configuration advances (`ReachesPlus`) either to another member of `ps` or to a halting configuration. |
 | `HasCollatzReduction M` | `∃ ps, IsClosedPatternSet M ps`. |
-| `IsClosedStackPatternSet M ps` | **Level A (Stacked)**: `M`'s blank-tape trajectory enters the explicit `StackPatternSet` `ps` (which extends `TapeExpr` with unbounded words `.word alphabet stack_idx` over a finite block alphabet), and every member configuration advances (`ReachesPlus`) either to another member of `ps` or to a halting configuration. |
-| `HasStackedCollatzReduction M` | `∃ ps, IsClosedStackPatternSet M ps`. |
+| `IsClosedStackPatternSet M ps` | **Level A (Stacked)**: `ps` is well-formed (`IsWellFormedStackPatternSet ps`: non-empty, blank-free block vocabularies, and single-sided stack configuration with at most one `.word` segment), `M`'s blank-tape trajectory enters `ps`, and every member configuration advances (`ReachesPlus`) either to another member of `ps` or to a halting configuration. |
+| `HasStackedCollatzReduction M` | `∃ ps, IsClosedStackPatternSet M ps` (an existential summary that is always paired in `BusyBeaverChallenge.lean` with a concrete `ps` and an explicit Level B finite-state transducer acceleration). |
 | `IsValidAcceleration M start encode next` | **Level B**: `encode : S → Cfg Γ Λ` and `next : S → Option S` form a certified acceleration of `M` from `start : S` (`init []` reaches `encode start`, `next s = some s'` implies `ReachesPlus M (encode s) (encode s')`, and `next s = none` implies halting from `encode s`), yielding `IsHalt M ↔ CollatzHalts next start`. |
 
 ## Foundational Lemmas ([`Basic.lean`](./Basic.lean))

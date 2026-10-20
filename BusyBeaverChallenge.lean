@@ -268,6 +268,18 @@ inductive StackSeg (Γ : Type*) where
   /-- Stack word `stacks stack_idx` expanded over block vocabulary `words`. -/
   | word (words : List (List Γ)) (stack_idx : ℕ)
 
+/-- Whether a `StackSeg Γ` is a `.word` stack segment. -/
+def StackSeg.isWord {Γ : Type*} : StackSeg Γ → Bool
+  | .word _ _ => true
+  | _ => false
+
+/-- A `StackSeg Γ` is well-formed when every repeated block or stack-vocabulary block is non-empty
+and contains no blank (`default`) symbols, and every `.word` vocabulary is non-empty. -/
+def StackSeg.WellFormed {Γ : Type*} [Inhabited Γ] [DecidableEq Γ] : StackSeg Γ → Bool
+  | .sym _ => true
+  | .rep blk _ => !blk.isEmpty && blk.all (· != default)
+  | .word words _ => !words.isEmpty && words.all (fun w => !w.isEmpty && w.all (· != default))
+
 /-- Parametric stack-word half-tape expression (evaluated from head to blank tail). -/
 abbrev StackExpr (Γ : Type*) := List (StackSeg Γ)
 
@@ -295,6 +307,16 @@ structure StackPattern (Γ Λ : Type*) where
   /-- Right half-tape expression (whose head is under the tape head). -/
   right : StackExpr Γ
 
+/-- A `StackPattern Γ Λ` is well-formed when all segments on both half-tapes are well-formed
+(non-empty and blank-free blocks), at least one half-tape is empty (single-sided tape boundary),
+and at most one `.word` stack segment appears across the pattern. -/
+def StackPattern.WellFormed {Γ Λ : Type*} [Inhabited Γ] [DecidableEq Γ]
+    (p : StackPattern Γ Λ) : Bool :=
+  p.left.all StackSeg.WellFormed &&
+  p.right.all StackSeg.WellFormed &&
+  (p.left.isEmpty || p.right.isEmpty) &&
+  (decide (p.left.countP StackSeg.isWord + p.right.countP StackSeg.isWord ≤ 1))
+
 /-- Evaluate a `StackPattern Γ Λ` under counter assignment `vars : ℕ → ℕ` and stack assignment
 `stks : ℕ → List ℕ`. -/
 def evalStackPattern {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
@@ -305,6 +327,12 @@ def evalStackPattern {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
 /-- Finite list of guarded stack-word tape patterns. -/
 abbrev StackPatternSet (Γ Λ : Type*) := List (StackPattern Γ Λ × VarCond)
 
+/-- A `StackPatternSet Γ Λ` is well-formed when it is non-empty and every pattern in it is
+well-formed (`StackPattern.WellFormed`). -/
+def IsWellFormedStackPatternSet {Γ Λ : Type*} [Inhabited Γ] [DecidableEq Γ]
+    (ps : StackPatternSet Γ Λ) : Prop :=
+  (!ps.isEmpty && ps.all (fun entry => entry.1.WellFormed)) = true
+
 /-- Membership of configuration `cfg` in a `StackPatternSet`. -/
 def IsInStackPatternSet {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
     (ps : StackPatternSet Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
@@ -312,18 +340,26 @@ def IsInStackPatternSet {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
     ∃ (vars : ℕ → ℕ) (stks : ℕ → List ℕ),
       cfg = evalStackPattern entry.1 vars stks ∧ evalVarCond entry.2 vars
 
-/-- `ps` is a closed accelerated `StackPatternSet` for `M` if `M`'s blank-tape trajectory enters
-`ps` and every member configuration of `ps` steps in `ReachesPlus` (`n > 0` steps) either to
-another member of `ps` or to a halting configuration. -/
-def IsClosedStackPatternSet (M : Machine Γ Λ) (ps : StackPatternSet Γ Λ) : Prop :=
+/-- `ps` is a closed accelerated `StackPatternSet` for `M` if `ps` is well-formed
+(`IsWellFormedStackPatternSet`), `M`'s blank-tape trajectory enters `ps`, and every member
+configuration of `ps` steps in `ReachesPlus` (`n > 0` steps) either to another member of `ps` or
+to a halting configuration.
+
+In `BusyBeaverChallenge.lean`, `IsClosedStackPatternSet` pins an explicit `ps` and is always paired
+with a concrete Level B finite-state transducer acceleration (`IsValidAcceleration`). -/
+def IsClosedStackPatternSet [DecidableEq Γ] (M : Machine Γ Λ) (ps : StackPatternSet Γ Λ) : Prop :=
+  IsWellFormedStackPatternSet ps ∧
   (∃ cfg₀, ReachesStar M (init []) cfg₀ ∧ IsInStackPatternSet ps cfg₀) ∧
   (∀ cfg, IsInStackPatternSet ps cfg →
     ∃ cfg', ReachesPlus M cfg cfg' ∧
       (IsInStackPatternSet ps cfg' ∨ (step M cfg').isNone))
 
-/-- `M`'s blank-tape trajectory enters a closed accelerated `StackPatternSet` in which every
-member configuration steps in `ReachesPlus` either to another member or to a halting state. -/
-def HasStackedCollatzReduction (M : Machine Γ Λ) : Prop :=
+/-- `M`'s blank-tape trajectory enters a well-formed closed accelerated `StackPatternSet` in which
+every member configuration steps in `ReachesPlus` either to another member or to a halting state.
+This existential summary is always paired in `BusyBeaverChallenge.lean` with a concrete `ps`
+(`IsClosedStackPatternSet M ps`) and an explicit Level B finite-state transducer acceleration
+(`IsValidAcceleration M start encode next`). -/
+def HasStackedCollatzReduction [DecidableEq Γ] (M : Machine Γ Λ) : Prop :=
   ∃ ps : StackPatternSet Γ Λ, IsClosedStackPatternSet M ps
 
 namespace SixState
@@ -4721,12 +4757,7 @@ theorem is_closed_stack_pattern_set : IsClosedStackPatternSet target ps := by so
 theorem has_stacked_collatz_reduction : HasStackedCollatzReduction target := by sorry
 end M_1RB1LB2LC_1LA2RB1RB_HHH0LA2LA
 
-namespace M_1RB2LA1LA_2LA0RA2RC_HHH0LC2RA
-def machine : ConjectureMachines.Machine 3 3 :=
-  load_rle_machine% "1RB2LA1LA_2LA0RA2RC_---0LC2RA"
-
-abbrev target : Machine (Fin 3) (Fin 3) :=
-  machine.toBB
+namespace WilyCoyote
 
 inductive State where
   | W (w : List Bool)
@@ -4762,10 +4793,6 @@ def encode : State → Cfg (Fin 3) (Fin 3)
 def next : State → Option State
   | .W w => (fun w' => .W (false :: w')) <$> wilyPass .s0 w
 
-theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
-
-theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
-
 def pat_W : StackPattern (Fin 3) (Fin 3) :=
   { left := []
     head := some ThreeState.A
@@ -4773,6 +4800,28 @@ def pat_W : StackPattern (Fin 3) (Fin 3) :=
 
 def ps : StackPatternSet (Fin 3) (Fin 3) :=
   [(pat_W, .true)]
+
+end WilyCoyote
+
+namespace M_1RB2LA1LA_2LA0RA2RC_HHH0LC2RA
+def machine : ConjectureMachines.Machine 3 3 :=
+  load_rle_machine% "1RB2LA1LA_2LA0RA2RC_---0LC2RA"
+
+abbrev target : Machine (Fin 3) (Fin 3) :=
+  machine.toBB
+
+abbrev State := WilyCoyote.State
+abbrev WilyMode := WilyCoyote.WilyMode
+abbrev wilyPass := WilyCoyote.wilyPass
+abbrev start : State := WilyCoyote.start
+abbrev encode : State → Cfg (Fin 3) (Fin 3) := WilyCoyote.encode
+abbrev next : State → Option State := WilyCoyote.next
+abbrev pat_W : StackPattern (Fin 3) (Fin 3) := WilyCoyote.pat_W
+abbrev ps : StackPatternSet (Fin 3) (Fin 3) := WilyCoyote.ps
+
+theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
+
+theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 
 theorem is_closed_stack_pattern_set : IsClosedStackPatternSet target ps := by sorry
 
@@ -4786,51 +4835,18 @@ def machine : ConjectureMachines.Machine 3 3 :=
 abbrev target : Machine (Fin 3) (Fin 3) :=
   machine.toBB
 
-inductive State where
-  | W (w : List Bool)
-  deriving DecidableEq, Repr
-
-inductive WilyMode where
-  | s0
-  | s1
-  | s2
-  | s3
-  deriving DecidableEq, Repr
-
-def wilyPass : WilyMode → List Bool → Option (List Bool)
-  | .s0, [] => some [false]
-  | .s0, false :: xs => List.cons true <$> wilyPass .s1 xs
-  | .s0, true :: xs => List.cons false <$> wilyPass .s2 xs
-  | .s1, [] => none
-  | .s1, false :: xs => List.cons true <$> wilyPass .s3 xs
-  | .s1, true :: xs => List.cons false <$> wilyPass .s0 xs
-  | .s2, [] => some [true, true, false, false]
-  | .s2, false :: xs => List.cons false <$> wilyPass .s2 xs
-  | .s2, true :: xs => List.cons true <$> wilyPass .s1 xs
-  | .s3, [] => some [false, false]
-  | .s3, b :: xs => some ((!b) :: xs)
-
-def start : State := .W [false, false]
-
-def encode : State → Cfg (Fin 3) (Fin 3)
-  | .W w =>
-      Cfg.headRight ThreeState.A default
-        (ListBlank.cons 0 (ListBlank.append (w.map fun b => if b then 1 else 2) default))
-
-def next : State → Option State
-  | .W w => (fun w' => .W (false :: w')) <$> wilyPass .s0 w
+abbrev State := WilyCoyote.State
+abbrev WilyMode := WilyCoyote.WilyMode
+abbrev wilyPass := WilyCoyote.wilyPass
+abbrev start : State := WilyCoyote.start
+abbrev encode : State → Cfg (Fin 3) (Fin 3) := WilyCoyote.encode
+abbrev next : State → Option State := WilyCoyote.next
+abbrev pat_W : StackPattern (Fin 3) (Fin 3) := WilyCoyote.pat_W
+abbrev ps : StackPatternSet (Fin 3) (Fin 3) := WilyCoyote.ps
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
-
-def pat_W : StackPattern (Fin 3) (Fin 3) :=
-  { left := []
-    head := some ThreeState.A
-    right := [.sym 0, .word [[2], [1]] 0] }
-
-def ps : StackPatternSet (Fin 3) (Fin 3) :=
-  [(pat_W, .true)]
 
 theorem is_closed_stack_pattern_set : IsClosedStackPatternSet target ps := by sorry
 

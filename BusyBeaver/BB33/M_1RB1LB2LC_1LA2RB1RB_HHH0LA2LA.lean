@@ -21,7 +21,7 @@ $$W(w) = 0^\infty\,\overline{w}\,\mathrm{B}{>}\,0^\infty
 at $W([\mathtt{true}]) = 0^\infty\,1\,\mathrm{B}{>}\,0^\infty$ in 1 raw Turing machine step (and
 $W([\mathtt{false}, \mathtt{false}, \mathtt{false}, \mathtt{true}]) =
   0^\infty\,1\,2\,2\,2\,\mathrm{B}{>}\,0^\infty$
-at step 11). Each full sweep from $W(w)$ runs LegionMammal's 6-carry pass transducer `pass .ca w`
+at step 8). Each full sweep from $W(w)$ runs LegionMammal's 6-carry pass transducer `pass .ca w`
 across $w$ from right to left (head-first):
 - if `pass .ca w = some w'`, the machine returns in `ReachesPlus` to
   $W(\mathtt{false} :: w')$;

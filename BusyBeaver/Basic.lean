@@ -856,18 +856,19 @@ theorem IsValidAcceleration.isClosedPatternSet {M : Machine Γ Λ} {S : Type*}
   · exact ⟨encode s', h.step_some s s' hnext, Or.inl (h_in s')⟩
 
 /-- Derive `IsClosedStackPatternSet M ps` from a valid acceleration `IsValidAcceleration M start
-encode next` whose image `encode` characterizes `ps` and whose halting states step in `ReachesPlus`
-to a halting configuration. -/
-theorem IsValidAcceleration.isClosedStackPatternSet {M : Machine Γ Λ} {S : Type*}
+encode next` whose image `encode` characterizes a well-formed `ps` and whose halting states step in
+`ReachesPlus` to a halting configuration. -/
+theorem IsValidAcceleration.isClosedStackPatternSet [DecidableEq Γ] {M : Machine Γ Λ} {S : Type*}
     {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
     {ps : StackPatternSet Γ Λ}
     (h : IsValidAcceleration M start encode next)
     (h_in : ∀ s, IsInStackPatternSet ps (encode s))
     (h_of_in : ∀ cfg, IsInStackPatternSet ps cfg → ∃ s, cfg = encode s)
     (h_halt_plus : ∀ s, next s = none →
-      ∃ cfg', ReachesPlus M (encode s) cfg' ∧ (step M cfg').isNone) :
+      ∃ cfg', ReachesPlus M (encode s) cfg' ∧ (step M cfg').isNone)
+    (h_wf : IsWellFormedStackPatternSet ps := by rfl) :
     IsClosedStackPatternSet M ps := by
-  refine ⟨⟨encode start, h.init_reaches, h_in start⟩, fun cfg hcfg => ?_⟩
+  refine ⟨h_wf, ⟨encode start, h.init_reaches, h_in start⟩, fun cfg hcfg => ?_⟩
   obtain ⟨s, rfl⟩ := h_of_in cfg hcfg
   rcases hnext : next s with _ | s'
   · obtain ⟨cfg', hplus, hnone⟩ := h_halt_plus s hnext

@@ -17,16 +17,16 @@ analyzed by Shawn Ligocki and savask in October 2023, see
 <https://www.sligocki.com/2023/10/16/bb-3-3-is-hard.html>).
 
 Starting from the blank tape (`init []`), the trajectory reaches the single canonical family
-$$A(a, b, c) = 0^\infty\,(21)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty
+$$A(a, b, c) = 0^\infty\,(12)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty
   \quad (a, b, c \in \mathbb{N})$$
-at $A(2, 0, 0)$ in 27 raw Turing machine steps. Every configuration $A(a, b, c)$ advances in
+at $A(2, 0, 0)$ in 69 raw Turing machine steps. Every configuration $A(a, b, c)$ advances in
 `ReachesPlus` according to $b \bmod 6 = 6q + r$:
 
 ## Collatz-like Acceleration Rules
 
 ```text
 Configuration family:
-  A(a, b, c) = 0^inf (21)^a 1^(2b+2) <A 1^(2(c+2)) 0^inf
+  A(a, b, c) = 0^inf (12)^a 1^(2b+2) <A 1^(2(c+2)) 0^inf
 
 Mod-6 transition rules (b = 6q + r):
   A(a,   6q,   c) -> A(a+1, 8q+c,   1)
@@ -37,7 +37,7 @@ Mod-6 transition rules (b = 6q + r):
   A(a,   6q+4, c) -> A(a,   8q+c+6, 1)
   A(a,   6q+5, c) -> A(a,   8q+c+8, 0)
 
-Start: A(2, 0, 0) at step 27
+Start: A(2, 0, 0) at step 69
 Orbit: (2,0,0) -> (3,0,1) -> (4,1,1) -> (3,5,0) -> (3,8,0) -> (3,10,3) -> (3,17,1)
     -> (3,25,0) -> (2,36,0) -> ...
 ```
@@ -60,12 +60,12 @@ abbrev target : Machine (Fin 3) (Fin 3) :=
 /-! ## Level B: Collatz-like Acceleration (`State`, `start`, `encode`, `next`) -/
 
 /-- Canonical configuration family
-$A(a, b, c) = 0^\infty\,(21)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty$. -/
+$A(a, b, c) = 0^\infty\,(12)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty$. -/
 inductive State where
   | A (a b c : ℕ)
   deriving DecidableEq, Repr
 
-/-- Initial accelerated state $A(2, 0, 0)$, reached from `init []` in 27 steps. -/
+/-- Initial accelerated state $A(2, 0, 0)$, reached from `init []` in 69 steps. -/
 def start : State := .A 2 0 0
 
 /-- Decode an accelerated `State` into its concrete Turing machine configuration. -/
@@ -823,7 +823,7 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 /-! ## Level A: Closed `TapePatternSet` (`HasCollatzReduction`) -/
 
 /-- Tape pattern for
-$A(a, b, c) = 0^\infty\,(21)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty$. -/
+$A(a, b, c) = 0^\infty\,(12)^a\,1^{2b+2}\,{<}\mathrm{A}\;1^{2(c+2)}\,0^\infty$. -/
 def pat_A : TapePattern (Fin 3) (Fin 3) :=
   { left := .sym 1 (.rep [1, 1] 1 (.rep [2, 1] 0 .default))
     head := some A
