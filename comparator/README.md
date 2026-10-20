@@ -14,10 +14,12 @@ using [`leanprover/comparator`](https://github.com/leanprover/comparator).
   target state-reduction, equivalence, and semantics theorems with `sorry`.
 - [`BusyBeaverChallenge.lean`](../BusyBeaverChallenge.lean) imports **only** Mathlib and Lean core
   (`Lean.Elab.Term`), defines the shared `BusyBeaver` Post-Turing execution model, accelerated
-  `TapePatternSet` and Collatz-like acceleration semantics (`IsClosedPatternSet`, `HasCollatzReduction`,
+  `TapePatternSet`, `StackPatternSet`, and Collatz-like acceleration semantics (`IsClosedPatternSet`,
+  `HasCollatzReduction`, `IsClosedStackPatternSet`, `HasStackedCollatzReduction`,
   `IsValidAcceleration`, `CollatzHalts`, `IsHalt`, `IsNotHalt`), and `load_rle_machine%` once,
-  and states all 212 `BB(6)` holdout theorems (`is_closed_pattern_set`, `has_collatz_reduction`,
-  `is_valid_acceleration`, and `isHalt_iff_acceleration` across the 53 machines) with `sorry`.
+  and states all 236 `BB(6)` and `BB(3, 3)` holdout theorems (`is_closed_pattern_set` /
+  `is_closed_stack_pattern_set`, `has_collatz_reduction` / `has_stacked_collatz_reduction`,
+  `is_valid_acceleration`, and `isHalt_iff_acceleration` across the 59 machines) with `sorry`.
 
 Comparator exports both the challenge module (`Challenge` or `BusyBeaverChallenge`) and the
 solution module (`Cryptids` or `BusyBeaver`) via `leanexport`, verifying in a Bubblewrap sandbox
@@ -47,7 +49,7 @@ that:
 | :--- | :--- | :--- | :--- | :--- |
 | [`constructive.json`](./constructive.json) | `Challenge` | `Cryptids` | `propext`, `Quot.sound` | All 10 constructive theorems: all 3 ZF proof-search equivalences (`zf_393`, `zf_380`, `zf_432`), direct state reductions (`Goldbach21`, `Zf380`, `Riemann104`), and `Riemann95.candidate_fewer_states` |
 | [`all.json`](./all.json) | `Challenge` | `Cryptids` | `propext`, `Quot.sound`, `Classical.choice` | All 22 conjecture-checking state-reduction, equivalence, and semantics theorems |
-| [`busy_beaver.json`](./busy_beaver.json) | `BusyBeaverChallenge` | `BusyBeaver` | `propext`, `Quot.sound`, `Classical.choice` | All 212 `BB(6)` holdout Level A and Level B theorems (`is_closed_pattern_set`, `has_collatz_reduction`, `is_valid_acceleration`, `isHalt_iff_acceleration`) |
+| [`busy_beaver.json`](./busy_beaver.json) | `BusyBeaverChallenge` | `BusyBeaver` | `propext`, `Quot.sound`, `Classical.choice` | All 236 `BB(6)` and `BB(3, 3)` holdout Level A and Level B theorems (`is_closed_pattern_set`, `has_collatz_reduction`, `is_closed_stack_pattern_set`, `has_stacked_collatz_reduction`, `is_valid_acceleration`, `isHalt_iff_acceleration`) |
 | [`goldbach_21.json`](./goldbach_21.json) | `Challenge` | `Cryptids.Goldbach21` | `propext`, `Quot.sound` | `candidate_fewer_states`, `candidate_equivalent` |
 | [`goldbach_semantics.json`](./goldbach_semantics.json) | `Challenge` | `Cryptids.Semantics.Goldbach` | `propext`, `Quot.sound`, `Classical.choice` | `halts_reference_iff_not_goldbach`, `halts_candidate_iff_not_goldbach` |
 | [`zf_380.json`](./zf_380.json) | `Challenge` | `Cryptids.Zf380` | `propext`, `Quot.sound` | `candidate_fewer_states`, `candidate_equivalent` |

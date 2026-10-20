@@ -57,15 +57,16 @@ open Turing (Dir)
 open StateTransition
 export Turing (Dir)
 
-instance (priority := 10000) instLTFinConstructive (n : ℕ) : LT (Fin n) := instLTFin
-instance (priority := 10000) instLEFinConstructive (n : ℕ) : LE (Fin n) := instLEFin
-instance (priority := 10000) instDecidableEqFinConstructive (n : ℕ) : DecidableEq (Fin n) :=
+scoped instance (priority := 10000) instLTFinConstructive (n : ℕ) : LT (Fin n) := instLTFin
+scoped instance (priority := 10000) instLEFinConstructive (n : ℕ) : LE (Fin n) := instLEFin
+scoped instance (priority := 10000) instDecidableEqFinConstructive (n : ℕ) : DecidableEq (Fin n) :=
   instDecidableEqFin n
-instance (priority := 10000) instDecidableLTFinConstructive (n : ℕ) : DecidableLT (Fin n) :=
+scoped instance (priority := 10000) instDecidableLTFinConstructive (n : ℕ) : DecidableLT (Fin n) :=
   fun a b => Fin.decLt a b
-instance (priority := 10000) instDecidableLEFinConstructive (n : ℕ) : DecidableLE (Fin n) :=
+scoped instance (priority := 10000) instDecidableLEFinConstructive (n : ℕ) : DecidableLE (Fin n) :=
   fun a b => Fin.decLe a b
-instance (priority := 10000) instLinearOrderFinConstructive (n : ℕ) : LinearOrder (Fin n) where
+scoped instance (priority := 10000) instLinearOrderFinConstructive (n : ℕ) :
+    LinearOrder (Fin n) where
   le := instLEFin.le
   lt := instLTFin.lt
   le_refl := Fin.le_refl
