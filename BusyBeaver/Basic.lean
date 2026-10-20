@@ -698,6 +698,21 @@ abbrev F : Fin 6 := 5
 
 end SixState
 
+/-! ## Standard 3-State Labels (`ThreeState`)
+
+Standard control state labels `A..C` (`0..2 : Fin 3`) for 3-state Busy Beaver machines. -/
+
+namespace ThreeState
+
+/-- State `A` (`0 : Fin 3`), the initial state. -/
+abbrev A : Fin 3 := 0
+/-- State `B` (`1 : Fin 3`). -/
+abbrev B : Fin 3 := 1
+/-- State `C` (`2 : Fin 3`). -/
+abbrev C : Fin 3 := 2
+
+end ThreeState
+
 /-! ## Concrete Step Execution Tactics (`bb_refl`, `bb_step`, `bb_steps`, `bb_halt`) -/
 
 /-- Close a reflexive `ReachesStar` goal after normalizing directed-head configurations and
@@ -815,5 +830,81 @@ theorem IsValidAcceleration.of_step {M : Machine Γ Λ} {S : Type*}
     have hs := h_step s
     rw [h] at hs
     exact hs
+
+theorem IsValidAcceleration.isClosedPatternSet {M : Machine Γ Λ} {S : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    {ps : TapePatternSet Γ Λ}
+    (h : IsValidAcceleration M start encode next)
+    (h_in : ∀ s, IsInPatternSet ps (encode s))
+    (h_of_in : ∀ cfg, IsInPatternSet ps cfg → ∃ s, cfg = encode s)
+    (h_halt_plus : ∀ s, next s = none →
+      ∃ cfg', ReachesPlus M (encode s) cfg' ∧ (step M cfg').isNone) :
+    IsClosedPatternSet M ps := by
+  refine ⟨⟨encode start, h.init_reaches, h_in start⟩, fun cfg hcfg => ?_⟩
+  obtain ⟨s, rfl⟩ := h_of_in cfg hcfg
+  rcases hnext : next s with _ | s'
+  · obtain ⟨cfg', hplus, hnone⟩ := h_halt_plus s hnext
+    exact ⟨cfg', hplus, Or.inr hnone⟩
+  · exact ⟨encode s', h.step_some s s' hnext, Or.inl (h_in s')⟩
+
+theorem IsValidAcceleration.isClosedStackPatternSet {M : Machine Γ Λ} {S : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    {ps : StackPatternSet Γ Λ}
+    (h : IsValidAcceleration M start encode next)
+    (h_in : ∀ s, IsInStackPatternSet ps (encode s))
+    (h_of_in : ∀ cfg, IsInStackPatternSet ps cfg → ∃ s, cfg = encode s)
+    (h_halt_plus : ∀ s, next s = none →
+      ∃ cfg', ReachesPlus M (encode s) cfg' ∧ (step M cfg').isNone) :
+    IsClosedStackPatternSet M ps := by
+  refine ⟨⟨encode start, h.init_reaches, h_in start⟩, fun cfg hcfg => ?_⟩
+  obtain ⟨s, rfl⟩ := h_of_in cfg hcfg
+  rcases hnext : next s with _ | s'
+  · obtain ⟨cfg', hplus, hnone⟩ := h_halt_plus s hnext
+    exact ⟨cfg', hplus, Or.inr hnone⟩
+  · exact ⟨encode s', h.step_some s s' hnext, Or.inl (h_in s')⟩
+
+omit [Inhabited Γ] in
+private theorem evalStackSeg_two_word_of_bool (a₀ a₁ : Γ) (w : List Bool) :
+    (((w.map fun b => if b then 1 else 0).map fun d =>
+        ([[a₀], [a₁]] : List (List Γ)).getD d []).flatten) =
+      w.map (fun b => if b then a₁ else a₀) := by
+  induction w with
+  | nil => rfl
+  | cons b rest ih =>
+    cases b <;> simpa using ih
+
+omit [Inhabited Γ] in
+private theorem exists_bool_of_evalStackSeg_two_word (a₀ a₁ : Γ) (ds : List ℕ) :
+    ∃ w : List Bool,
+      ((ds.map fun d => ([[a₀], [a₁]] : List (List Γ)).getD d []).flatten) =
+        w.map (fun b => if b then a₁ else a₀) := by
+  induction ds with
+  | nil => exact ⟨[], rfl⟩
+  | cons d rest ih =>
+    obtain ⟨w, hw⟩ := ih
+    rcases d with _ | _ | d
+    · refine ⟨false :: w, ?_⟩
+      simpa using hw
+    · refine ⟨true :: w, ?_⟩
+      simpa using hw
+    · refine ⟨w, ?_⟩
+      simpa using hw
+
+theorem exists_evalStackExpr_single_word_iff (a₀ a₁ : Γ) (s : ListBlank Γ) :
+    (∃ (vars : ℕ → ℕ) (stks : ℕ → List ℕ),
+      s = evalStackExpr [.word [[a₀], [a₁]] 0] vars stks) ↔
+    ∃ w : List Bool,
+      s = ListBlank.append (w.map (fun b => if b then a₁ else a₀)) default := by
+  constructor
+  · rintro ⟨vars, stks, rfl⟩
+    obtain ⟨w, hw⟩ := exists_bool_of_evalStackSeg_two_word a₀ a₁ (stks 0)
+    refine ⟨w, ?_⟩
+    dsimp only [evalStackExpr, evalStackSeg]
+    rw [hw]
+  · rintro ⟨w, rfl⟩
+    refine ⟨fun _ => 0, fun _ => w.map (fun b => if b then 1 else 0), ?_⟩
+    have hw := evalStackSeg_two_word_of_bool a₀ a₁ w
+    dsimp only [evalStackExpr, evalStackSeg]
+    rw [hw]
 
 end BusyBeaver

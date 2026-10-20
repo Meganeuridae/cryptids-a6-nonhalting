@@ -18,6 +18,8 @@ holdouts:
 - `IsNotHalt` (`IsDoesNotHalt`) — `M` never halts from the blank tape.
 - `HasCollatzReduction` — `M` is governed by a closed accelerated regular-expression tape pattern
   set.
+- `HasStackedCollatzReduction` — `M` is governed by a closed accelerated stack-word tape pattern
+  set.
 -/
 
 @[expose] public section
@@ -208,5 +210,73 @@ structure IsValidAcceleration (M : Machine Γ Λ) {S : Type*}
   step_none : ∀ s, next s = none →
     ∃ cfg', ReachesStar M (encode s) cfg' ∧ (step M cfg').isNone
 
+/-- Parametric half-tape segment for `HasStackedCollatzReduction`: in addition to single symbols
+and repeated blocks, a `.word words stack_idx` segment expands a variable-length stack word
+`stacks stack_idx : List ℕ` over a finite block vocabulary `words : List (List Γ)`. -/
+inductive StackSeg (Γ : Type*) where
+  /-- Single symbol `a`. -/
+  | sym (a : Γ)
+  /-- Finite block `blk` repeated `vars var_idx` times. -/
+  | rep (blk : List Γ) (var_idx : ℕ)
+  /-- Stack word `stacks stack_idx` expanded over block vocabulary `words`. -/
+  | word (words : List (List Γ)) (stack_idx : ℕ)
+
+/-- Parametric stack-word half-tape expression (evaluated from head to blank tail). -/
+abbrev StackExpr (Γ : Type*) := List (StackSeg Γ)
+
+/-- Evaluate a single `StackSeg Γ` under counter assignment `vars : ℕ → ℕ` and stack assignment
+`stks : ℕ → List ℕ`. -/
+def evalStackSeg {Γ : Type*} : StackSeg Γ → (ℕ → ℕ) → (ℕ → List ℕ) → List Γ
+  | .sym a, _, _ => [a]
+  | .rep blk v, vars, _ => blk ^ vars v
+  | .word words s, _, stks => ((stks s).map (fun d => words.getD d [])).flatten
+
+/-- Evaluate a `StackExpr Γ` under counter assignment `vars : ℕ → ℕ` and stack assignment
+`stks : ℕ → List ℕ`. -/
+def evalStackExpr {Γ : Type*} [Inhabited Γ] :
+    StackExpr Γ → (ℕ → ℕ) → (ℕ → List ℕ) → ListBlank Γ
+  | [], _, _ => default
+  | seg :: rest, vars, stks =>
+      ListBlank.append (evalStackSeg seg vars stks) (evalStackExpr rest vars stks)
+
+/-- Parametric stack-word full-tape configuration pattern. -/
+structure StackPattern (Γ Λ : Type*) where
+  /-- Left half-tape expression. -/
+  left : StackExpr Γ
+  /-- Control state (`some q` or `none`). -/
+  head : Option Λ
+  /-- Right half-tape expression (whose head is under the tape head). -/
+  right : StackExpr Γ
+
+/-- Evaluate a `StackPattern Γ Λ` under counter assignment `vars : ℕ → ℕ` and stack assignment
+`stks : ℕ → List ℕ`. -/
+def evalStackPattern {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
+    (p : StackPattern Γ Λ) (vars : ℕ → ℕ) (stks : ℕ → List ℕ) : Cfg Γ Λ :=
+  let r := evalStackExpr p.right vars stks
+  ⟨p.head, ⟨r.head, evalStackExpr p.left vars stks, r.tail⟩⟩
+
+/-- Finite list of guarded stack-word tape patterns. -/
+abbrev StackPatternSet (Γ Λ : Type*) := List (StackPattern Γ Λ × VarCond)
+
+/-- Membership of configuration `cfg` in a `StackPatternSet`. -/
+def IsInStackPatternSet {Γ Λ : Type*} [Inhabited Γ] [Inhabited Λ]
+    (ps : StackPatternSet Γ Λ) (cfg : Cfg Γ Λ) : Prop :=
+  ∃ entry : StackPattern Γ Λ × VarCond, entry ∈ ps ∧
+    ∃ (vars : ℕ → ℕ) (stks : ℕ → List ℕ),
+      cfg = evalStackPattern entry.1 vars stks ∧ evalVarCond entry.2 vars
+
+/-- `ps` is a closed accelerated `StackPatternSet` for `M` if `M`'s blank-tape trajectory enters
+`ps` and every member configuration of `ps` steps in `ReachesPlus` (`n > 0` steps) either to
+another member of `ps` or to a halting configuration. -/
+def IsClosedStackPatternSet (M : Machine Γ Λ) (ps : StackPatternSet Γ Λ) : Prop :=
+  (∃ cfg₀, ReachesStar M (init []) cfg₀ ∧ IsInStackPatternSet ps cfg₀) ∧
+  (∀ cfg, IsInStackPatternSet ps cfg →
+    ∃ cfg', ReachesPlus M cfg cfg' ∧
+      (IsInStackPatternSet ps cfg' ∨ (step M cfg').isNone))
+
+/-- `M`'s blank-tape trajectory enters a closed accelerated `StackPatternSet` in which every
+member configuration steps in `ReachesPlus` either to another member or to a halting state. -/
+def HasStackedCollatzReduction (M : Machine Γ Λ) : Prop :=
+  ∃ ps : StackPatternSet Γ Λ, IsClosedStackPatternSet M ps
 
 end BusyBeaver
