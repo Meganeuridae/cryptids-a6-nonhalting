@@ -54,7 +54,8 @@ This file formalizes the Layer 1 infrastructure of the 432-state ZF Turing machi
 
 namespace ConjectureMachines.Semantics.Zf.Layer1
 
-open Turing StateTransition ConjectureMachines.Semantics.Zf
+open Turing (Dir)
+open StateTransition ConjectureMachines.Semantics.Zf
 
 open ConjectureMachines.Semantics.Riemann.Layer1
   (nSteps nSteps_zero nSteps_succ nSteps_add nSteps_bind_eq step_nSteps step_one
@@ -858,11 +859,17 @@ theorem zfPrepCfg_default_eq (padTotal : ℕ) (stack : List (Fin 2)) (regs : Lis
 
 theorem zfDispatch_trans_zero (d : ℕ) (hd1 : 1 ≤ d) (hd15 : d ≤ 15) :
     refTrans (zfDispatchState d) 0 = some (0, .left, zfDispatchState (d - 1)) := by
-  revert d hd1 hd15; decide
+  match d with
+  | 0 => omega
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 => rfl
+  | _ + 16 => omega
 
 theorem zfDispatch_trans_one (d : ℕ) (hd1 : 1 ≤ d) (hd15 : d ≤ 15) :
     refTrans (zfDispatchState d) 1 = some (1, .left, zfDispatchState d) := by
-  revert d hd1 hd15; decide
+  match d with
+  | 0 => omega
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 => rfl
+  | _ + 16 => omega
 
 /-- One leftward step of `zfDispatchState d` (`1 ≤ d ≤ 15`) on symbol `a`: leaves `a` unchanged
 and decrements `d` by `1` iff `a = 0`. -/
@@ -1527,7 +1534,10 @@ theorem regDecnzStage3_trans_one (k : ℕ) (hk : k < 11) :
 
 theorem zfRegDecrChain_trans_one (m : ℕ) (hm1 : 1 ≤ m) (hm12 : m ≤ 12) :
     refTrans (zfRegDecrChain m) 1 = some (1, .right, zfRegDecrChain m) := by
-  revert m hm1 hm12; decide
+  match m with
+  | 0 => omega
+  | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 => rfl
+  | _ + 13 => omega
 
 theorem zfRegDecrChain_trans_zero (m : ℕ) (hm : m < 12) :
     refTrans (zfRegDecrChain (m + 1)) 0 = some (0, .right, zfRegDecrChain m) := by

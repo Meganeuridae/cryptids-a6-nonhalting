@@ -20,7 +20,8 @@ to the 16-register abstract machine program `program : ℕ → Instr`.
 
 namespace ConjectureMachines.Semantics.Riemann
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 
 abbrev refM : Machine 744 2 := Machines.riemann744
 
@@ -1490,10 +1491,10 @@ theorem mem_eval_regStep_iff_regNSteps {c₀ ch : RegCfg} :
     ch ∈ eval regStep c₀ ↔ ∃ n, regNSteps n c₀ = some ch ∧ regStep ch = none := by
   constructor
   · intro h
-    refine StateTransition.evalInduction h fun a ha ih => ?_
+    refine evalInduction' h fun a ha ih => ?_
     rcases hs : regStep a with _ | a'
     · have hmem : a ∈ eval regStep a :=
-        StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩
+        mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩
       have heq : ch = a := Part.mem_unique ha hmem
       subst heq
       exact ⟨0, rfl, hs⟩
@@ -1512,7 +1513,7 @@ theorem mem_eval_regStep_iff_regNSteps {c₀ ch : RegCfg} :
         · rw [hs] at hn; cases hn
         · rw [hs, Option.bind_some] at hn
           exact Relation.ReflTransGen.head hs (ih hn)
-    exact StateTransition.mem_eval.mpr ⟨hreach, hnone⟩
+    exact mem_eval'.mpr ⟨hreach, hnone⟩
 
 theorem regHalts_iff_exists_regNSteps :
     RegHalts ↔ ∃ n c, regNSteps n regInit = some c ∧ regStep c = none := by
@@ -1695,7 +1696,7 @@ theorem tm_eval_dom_of_reg_eval_dom
   rw [Part.dom_iff_mem] at hDom
   rcases hDom with ⟨ch_reg, hmem⟩
   revert hInv
-  refine StateTransition.evalInduction hmem fun a _ ih hInv => ?_
+  refine evalInduction' hmem fun a _ ih hInv => ?_
   have hsim := tm_simulates_regStep hInit hIncr hDecr hInv
   rcases hs : regStep a with _ | a'
   · rw [hs] at hsim
@@ -1734,7 +1735,7 @@ theorem reg_eval_dom_of_tm_nSteps_halt
     have hsim := tm_simulates_regStep hInit hIncr hDecr hInv
     rcases hs : regStep c with _ | c'
     · rw [Part.dom_iff_mem]
-      exact ⟨c, StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
+      exact ⟨c, mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
     · rw [hs] at hsim
       obtain ⟨s, hs_pos, hsteps⟩ := hsim
       have hle : s ≤ N := by
@@ -1749,7 +1750,7 @@ theorem reg_eval_dom_of_tm_nSteps_halt
       have hDom' := ih (N - s) (by omega) hInv' hN hnone
       have hreach : Reaches regStep c c' :=
         Relation.ReflTransGen.head hs Relation.ReflTransGen.refl
-      rwa [StateTransition.reaches_eval hreach]
+      rwa [reaches_eval' hreach]
 
 /-- Complete equivalence between `Halts refM` and `RegHalts`, given the Layer 1 leaf
 evaluation theorems. -/

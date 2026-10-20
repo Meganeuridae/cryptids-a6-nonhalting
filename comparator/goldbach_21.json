@@ -7,7 +7,6 @@
   ],
   "permitted_axioms": [
     "propext",
-    "Quot.sound",
-    "Classical.choice"
+    "Quot.sound"
   ]
 }

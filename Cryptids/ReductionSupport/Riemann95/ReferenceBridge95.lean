@@ -1253,11 +1253,11 @@ theorem reference_prewidth_execution95 (M : Nat) : StateTransition.Reaches₁ Re
       exact ⟨rfl, rfl⟩
   have hmem : (⟨[1,1,1,1], [0,M+1,0,Riemann120.shuniaDeficit (M+2),0]⟩ :
       Riemann120.Layer2.RhRegCfg) ∈ StateTransition.eval ReferencePreOldStep95
-        (Riemann104.FiniteStage.stageCfg M) := by
-    apply StateTransition.mem_eval.mpr
-    exact ⟨(original_prewidth_cut95 M).to_reflTransGen, by simp [ReferencePreOldStep95]⟩
+        (Riemann104.FiniteStage.stageCfg M) :=
+    mem_eval'.mpr ⟨(original_prewidth_cut95 M).to_reflTransGen, by simp [ReferencePreOldStep95]⟩
   obtain ⟨fresh, ⟨hlen, s, hword, hold, hreg⟩, hfresh⟩ :=
-    StateTransition.tr_eval_rev reference_prewidth_cut_transport95 hstart hmem
+    tr_eval_rev' reference_prewidth_cut_transport95 hstart hmem
+  have hreach := (mem_eval'.mp hfresh).1
   have hunique : ∀ t : Fin 89, ReferenceProgram.oldWord (t.castLE (by decide)) = [1,1,1,1] →
       t.val = 88 := by decide +kernel
   have hs : s.val = 88 := hunique s hold.symm
@@ -1275,7 +1275,6 @@ theorem reference_prewidth_execution95 (M : Nat) : StateTransition.Reaches₁ Re
   have heq : fresh = ⟨ReferenceProgram.word 88,[0,0,Riemann120.shuniaDeficit (M+2),0,M+1]⟩ := by
     cases fresh
     exact congrArg₂ Riemann120.Layer2.RhRegCfg.mk hword hbank
-  have hreach := (StateTransition.mem_eval.mp hfresh).1
   rw [heq] at hreach
   rcases Relation.reflTransGen_iff_eq_or_transGen.mp hreach with hsame | hnontrivial
   · have hstack := congrArg Riemann120.Layer2.RhRegCfg.stack hsame

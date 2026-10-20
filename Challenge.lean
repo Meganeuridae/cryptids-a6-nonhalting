@@ -12,7 +12,27 @@ public import Mathlib.NumberTheory.LSeries.RiemannZeta
 public import Mathlib.SetTheory.ZFC.Basic
 meta import Lean.Elab.Term
 
-/-! # Cryptids Challenge Specification (`Challenge`) -/
+/-!
+# Cryptids Challenge Specification (`Challenge`)
+
+Self-contained specification module audited against `Cryptids` by `leanprover/comparator`:
+
+- **Constructive gate (`comparator/constructive.json`, `goldbach_21.json`, `zf_380.json`,
+  `riemann_104.json`; `permitted_axioms = ["propext", "Quot.sound"]`):**
+  All state reductions (`Goldbach21`, `Zf380`, `Riemann104`, `Riemann95`) and all ZF
+  machine-to-proof-search equivalences (`Zf393.halts_zf393_iff_zfInconsistent`,
+  `Zf380.Semantics.halts_candidate_iff_zfInconsistent`,
+  `Semantics.Zf.halts_zf432_iff_wadeZFInconsistent`) are verified **without `Classical.choice`**.
+  Because classical Lean (`ZFSet.{0}` in `Soundness.lean`) proves `not_zfInconsistent`—and
+  `CIC + EM` proves `Con(ZF)` without choice (`digama0/ConZF`)—disallowing `Classical.choice`
+  prevents vacuous `False ↔ False` proofs of `Halts M ↔ ZFInconsistent` for arbitrary non-halting
+  machines (`ListBlank` uses primitive `Quot` rather than `Quotient` so `Halts` is choice-free).
+- **Full gate (`comparator/all.json`; `permitted_axioms = ["propext", "Quot.sound",
+  "Classical.choice"]`):**
+  Audits all 22 theorems, including classical `ZFSet.{0}` soundness/non-halting, negated-`Π₁⁰`
+  Goldbach (`¬ GoldbachConjecture`, which uses Markov's Principle), and analytic
+  `RiemannHypothesis` equivalences.
+-/
 
 meta section
 namespace ConjectureMachines.Machines
@@ -45,7 +65,102 @@ end
 
 @[expose] public section
 namespace ConjectureMachines
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
+export Turing (Dir)
+
+instance (priority := 10000) instLTFinConstructive (n : ℕ) : LT (Fin n) := instLTFin
+instance (priority := 10000) instLEFinConstructive (n : ℕ) : LE (Fin n) := instLEFin
+instance (priority := 10000) instDecidableEqFinConstructive (n : ℕ) : DecidableEq (Fin n) :=
+  instDecidableEqFin n
+instance (priority := 10000) instDecidableLTFinConstructive (n : ℕ) : DecidableLT (Fin n) :=
+  fun a b => Fin.decLt a b
+instance (priority := 10000) instDecidableLEFinConstructive (n : ℕ) : DecidableLE (Fin n) :=
+  fun a b => Fin.decLe a b
+instance (priority := 10000) instLinearOrderFinConstructive (n : ℕ) : LinearOrder (Fin n) where
+  le := instLEFin.le
+  lt := instLTFin.lt
+  le_refl := Fin.le_refl
+  le_trans := @Fin.le_trans n
+  lt_iff_le_not_ge _ _ := Nat.lt_iff_le_and_not_ge
+  le_antisymm := @Fin.le_antisymm n
+  le_total := @Fin.le_total n
+  toDecidableLE := fun a b => Fin.decLe a b
+  toDecidableEq := instDecidableEqFin n
+  toDecidableLT := fun a b => Fin.decLt a b
+  min a b := if a ≤ b then a else b
+  max a b := if a ≤ b then b else a
+  min_def _ _ := rfl
+  max_def _ _ := rfl
+  compare a b := compareOfLessAndEq a b
+  compare_eq_compareOfLessAndEq _ _ := rfl
+
+/-- Half-tape of a Turing machine, quotienting `List Γ` by trailing blank symbols
+(`Turing.BlankRel`) via Lean's primitive `Quot` rather than `Quotient (BlankRel.setoid Γ)` so that
+`ListBlank`, `Tape`, and `Halts` carry zero `Classical.choice` dependency. -/
+def ListBlank (Γ : Type*) [Inhabited Γ] :=
+  Quot (@Turing.BlankRel Γ _)
+
+instance ListBlank.inhabited {Γ : Type*} [Inhabited Γ] : Inhabited (ListBlank Γ) :=
+  ⟨Quot.mk _ []⟩
+
+/-- Quotient map turning a `List Γ` into a `ListBlank Γ`. -/
+def ListBlank.mk {Γ : Type*} [Inhabited Γ] : List Γ → ListBlank Γ :=
+  Quot.mk _
+
+/-- Lift a blank-extension-invariant function from `List Γ` to `ListBlank Γ`. -/
+protected abbrev ListBlank.liftOn {Γ : Type*} [Inhabited Γ] {α : Sort*} (l : ListBlank Γ)
+    (f : List Γ → α) (H : ∀ a b, Turing.BlankExtends a b → f a = f b) : α :=
+  Quot.liftOn l f fun a b h => h.elim (H a b) fun h' => (H b a h').symm
+
+/-- Head symbol of a `ListBlank`. -/
+def ListBlank.head {Γ : Type*} [Inhabited Γ] (l : ListBlank Γ) : Γ :=
+  l.liftOn List.headI <| by
+    rintro (_ | _) _ ⟨_ | _, rfl⟩ <;> rfl
+
+/-- Tail of a `ListBlank`. -/
+def ListBlank.tail {Γ : Type*} [Inhabited Γ] (l : ListBlank Γ) : ListBlank Γ :=
+  l.liftOn (fun l => ListBlank.mk l.tail) <| by
+    rintro (_ | _) _ ⟨i, rfl⟩
+    · rcases i with - | i <;>
+        [exact Quot.sound (Or.inl ⟨0, rfl⟩); exact Quot.sound (Or.inl ⟨i, rfl⟩)]
+    · exact Quot.sound (Or.inl ⟨i, rfl⟩)
+
+/-- Prepend a symbol onto a `ListBlank`. -/
+def ListBlank.cons {Γ : Type*} [Inhabited Γ] (a : Γ) (l : ListBlank Γ) : ListBlank Γ :=
+  l.liftOn (fun l => ListBlank.mk (a :: l)) <| by
+    rintro _ _ ⟨i, rfl⟩
+    exact Quot.sound (Or.inl ⟨i, rfl⟩)
+
+/-- Bidirectional Turing machine tape over alphabet `Γ`. -/
+structure Tape (Γ : Type*) [Inhabited Γ] where
+  head : Γ
+  left : ListBlank Γ
+  right : ListBlank Γ
+
+instance Tape.inhabited {Γ : Type*} [Inhabited Γ] : Inhabited (Tape Γ) :=
+  ⟨⟨default, default, default⟩⟩
+
+/-- Shift the tape in response to a head movement `Dir.left` or `Dir.right`. -/
+def Tape.move {Γ : Type*} [Inhabited Γ] : Dir → Tape Γ → Tape Γ
+  | Dir.left, ⟨a, L, R⟩ => ⟨L.head, L.tail, R.cons a⟩
+  | Dir.right, ⟨a, L, R⟩ => ⟨R.head, L.cons a, R.tail⟩
+
+/-- Replace the symbol under the head. -/
+def Tape.write {Γ : Type*} [Inhabited Γ] (b : Γ) (T : Tape Γ) : Tape Γ :=
+  { T with head := b }
+
+/-- Construct a tape from a left half-tape and an inclusive right half-tape. -/
+def Tape.mk' {Γ : Type*} [Inhabited Γ] (L R : ListBlank Γ) : Tape Γ :=
+  ⟨R.head, L, R.tail⟩
+
+/-- Construct a tape from left and inclusive-right `List`s. -/
+def Tape.mk₂ {Γ : Type*} [Inhabited Γ] (L R : List Γ) : Tape Γ :=
+  Tape.mk' (ListBlank.mk L) (ListBlank.mk R)
+
+/-- Construct a tape with `l` starting at the head and blanks to the left. -/
+def Tape.mk₁ {Γ : Type*} [Inhabited Γ] (l : List Γ) : Tape Γ :=
+  Tape.mk₂ [] l
 
 /-- A Turing machine transition table over `states` states and `symbols` symbols. -/
 structure Machine (states symbols : ℕ) where

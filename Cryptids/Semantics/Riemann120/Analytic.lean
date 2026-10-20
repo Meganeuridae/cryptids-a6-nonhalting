@@ -51,11 +51,16 @@ abbrev primorial : ℕ → ℕ := ConjectureMachines.Riemann120.primorial
 -/
 
 theorem primorial_eq_root_primorial (n : ℕ) : primorial n = _root_.primorial n := by
-  unfold primorial ConjectureMachines.Riemann120.primorial _root_.primorial
-  congr 1
-  ext p
-  simp only [mem_filter, Finset.mem_Icc, Finset.mem_range]
-  exact ⟨fun ⟨⟨_, h2⟩, hp⟩ ↦ ⟨by omega, hp⟩, fun ⟨h2, hp⟩ ↦ ⟨⟨hp.one_le, by omega⟩, hp⟩⟩
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    dsimp only [primorial] at ih ⊢
+    rw [ConjectureMachines.Riemann120.primorial, ih]
+    conv_rhs => rw [_root_.primorial, Finset.range_add_one, Finset.filter_insert]
+    split_ifs with hp
+    · rw [Finset.prod_insert (by simp)]
+      rfl
+    · rfl
 
 theorem primorial_pos (n : ℕ) : 0 < primorial n := by
   rw [primorial_eq_root_primorial]
@@ -69,10 +74,11 @@ theorem four_le_shuniaProd {n : ℕ} (hn : 2 ≤ n) : 4 ≤ shuniaProd n := by
     calc 2 = (2 : ℕ).factorial := rfl
       _ ≤ n.factorial := Nat.factorial_le hn
   have hprim : 2 ≤ primorial n := by
-    have hmem : 2 ∈ (Finset.Icc 1 n).filter Nat.Prime :=
-      mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨by omega, hn⟩, Nat.prime_two⟩
-    exact Nat.le_of_dvd (primorial_pos n) (dvd_prod_of_mem id hmem)
-  unfold shuniaProd primorial ConjectureMachines.Riemann120.primorial at *
+    rw [primorial_eq_root_primorial]
+    have hmem : 2 ∈ (Finset.range (n + 1)).filter Nat.Prime :=
+      mem_filter.mpr ⟨Finset.mem_range.mpr (by omega), Nat.prime_two⟩
+    exact Nat.le_of_dvd (_root_.primorial_pos n) (dvd_prod_of_mem id hmem)
+  unfold shuniaProd
   nlinarith
 
 /-- `log(P(n)) = θ(n)` for every `n : ℕ`. -/

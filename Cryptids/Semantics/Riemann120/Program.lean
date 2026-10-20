@@ -46,7 +46,8 @@ This module formalizes Layer 2 for the 121-state canonical predecessor machine `
 
 namespace ConjectureMachines.Riemann120.Layer2
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 open ConjectureMachines.Riemann120
   (rh121Trans primorial shuniaProd offsetDigits shuniaDeficit quarterClock ShuniaCounterexample)
 
@@ -146,13 +147,16 @@ theorem walkInternal_take_of_some {k : ℕ} {P : List (Fin 2)} {q q' : Fin 121}
 
 theorem walkInternal_length_le_14 {P : List (Fin 2)} {q q' : Fin 121}
     (h : walkInternal q P = some q') : P.length ≤ 14 := by
-  by_contra hgt
-  have h15 : 15 ≤ P.length := by omega
-  obtain ⟨q15, hq15⟩ := walkInternal_take_of_some (k := 15) h
-  have hmem := mem_dagExactPaths_of_walkInternal hq15
-  have hlen : (P.take 15).length = 15 := by simp; omega
-  rw [hlen, dagExactPaths_15_eq_nil q] at hmem
-  cases hmem
+  if hle : P.length ≤ 14 then
+    exact hle
+  else
+    exfalso
+    have h15 : 15 ≤ P.length := by omega
+    obtain ⟨q15, hq15⟩ := walkInternal_take_of_some (k := 15) h
+    have hmem := mem_dagExactPaths_of_walkInternal hq15
+    have hlen : (P.take 15).length = 15 := by simp; omega
+    rw [hlen, dagExactPaths_15_eq_nil q] at hmem
+    cases hmem
 
 /-- All 120 valid internal control prefixes `P` reachable from `State 27` (`main.0`). -/
 def allControlPrefixes : List (List (Fin 2)) :=
@@ -294,10 +298,34 @@ theorem rhRegTapeStep_sim {c₁ c₂ : RhRegCfg} (hsim : RhRegSim c₁ c₂) :
 
 /-! ## Section 4: Pure Mathematical Quantities & Self-Sieving Identity (`rhtm.tex`) -/
 
-theorem shuniaProd_pos (n : ℕ) : 0 < shuniaProd n := by
-  unfold shuniaProd primorial
-  exact Nat.mul_pos (Nat.factorial_pos n)
-    (Finset.prod_pos fun p hp => (Finset.mem_filter.mp hp).2.pos)
+theorem primorial_pos (n : ℕ) : 0 < primorial n := by
+  induction n with
+  | zero => decide
+  | succ n ih =>
+    unfold primorial
+    split
+    · exact Nat.mul_pos (Nat.succ_pos n) ih
+    · exact ih
+
+theorem shuniaProd_pos (n : ℕ) : 0 < shuniaProd n :=
+  Nat.mul_pos (Nat.factorial_pos n) (primorial_pos n)
+
+theorem prime_le_of_dvd_primorial {p m : ℕ} (hp : p.Prime) :
+    p ∣ primorial m → p ≤ m := by
+  induction m with
+  | zero =>
+    intro h
+    have h1 : p = 1 := Nat.eq_one_of_dvd_one h
+    have hgt := hp.one_lt
+    omega
+  | succ m ih =>
+    unfold primorial
+    split
+    · intro h
+      rcases hp.dvd_mul.mp h with h1 | h2
+      · exact Nat.le_of_dvd (by omega) h1
+      · exact Nat.le_succ_of_le (ih h2)
+    · exact fun h => Nat.le_succ_of_le (ih h)
 
 theorem prime_le_of_dvd_factorial {p m : ℕ} (hp : p.Prime) :
     p ∣ m.factorial → p ≤ m := by
@@ -335,70 +363,56 @@ theorem prime_iff_not_dvd_shuniaProd {J : ℕ} (hJ : 2 ≤ J) :
     rcases hprime.dvd_mul.mp hdvd with hfac | hprim
     · have hle := prime_le_of_dvd_factorial hprime hfac
       omega
-    · unfold primorial at hprim
-      obtain ⟨p, hp_mem, hJp⟩ := Prime.exists_mem_finset_dvd hprime.prime hprim
-      have hp_ic : p ∈ Finset.Icc 1 (J - 1) := (Finset.mem_filter.mp hp_mem).1
-      have hp_prime : p.Prime := (Finset.mem_filter.mp hp_mem).2
-      have hJp_eq : J = p := by
-        rcases (Nat.dvd_prime hp_prime).mp hJp with h1 | heq
-        · omega
-        · exact heq
-      have hple : p ≤ J - 1 := (Finset.mem_Icc.mp hp_ic).2
+    · have hle := prime_le_of_dvd_primorial hprime hprim
       omega
   · intro hnotdvd
-    by_contra hnotprime
-    apply hnotdvd
-    by_cases hJ4 : J = 4
-    · subst hJ4; decide
-    · have hfac_dvd : J ∣ (J - 1).factorial := by
-        let d := J.minFac
-        have hd_prime : d.Prime := Nat.minFac_prime (by omega)
-        have hd_gt1 : 1 < d := hd_prime.one_lt
-        have hd_dvd : d ∣ J := Nat.minFac_dvd J
-        have hd_ne : d ≠ J := fun heq => hnotprime (heq ▸ hd_prime)
-        have hd_le : d ≤ J := Nat.minFac_le (by omega)
-        have hd_lt : d < J := lt_of_le_of_ne hd_le hd_ne
-        let q := J / d
-        have hdq : d * q = J := Nat.mul_div_cancel' hd_dvd
-        have hq_lt : q < J := Nat.div_lt_self (by omega) hd_gt1
-        have hq_ge1 : 1 ≤ q := by
-          rcases q with _ | _
-          · simp at hdq; omega
-          · omega
-        by_cases heq_dq : d = q
-        · rw [← heq_dq] at hdq
-          have hd_ne2 : d ≠ 2 := by
-            intro h2
-            rw [h2] at hdq
-            omega
-          have hd_ge3 : 3 ≤ d := by omega
-          have h2d_lt : 2 * d < d * d := by nlinarith
-          have h2d_le : 2 * d ≤ J - 1 := by omega
-          have hmul := mul_dvd_factorial_of_lt (a := d) (b := 2 * d) (by omega) (by omega) h2d_le
-          have h2J : d * (2 * d) = 2 * J := by nlinarith
-          rw [h2J] at hmul
-          exact dvd_trans (dvd_mul_left J 2) hmul
-        · rcases lt_or_gt_of_ne heq_dq with hlt | hgt
-          · rw [← hdq]
-            exact mul_dvd_factorial_of_lt (by omega) hlt (by omega)
-          · have hmul : q * d ∣ (J - 1).factorial :=
-              mul_dvd_factorial_of_lt hq_ge1 hgt (by omega : d ≤ J - 1)
-            rwa [mul_comm, hdq] at hmul
-      exact dvd_mul_of_dvd_left hfac_dvd (primorial (J - 1))
+    if hnotprime : J.Prime then
+      exact hnotprime
+    else
+      exfalso
+      apply hnotdvd
+      by_cases hJ4 : J = 4
+      · subst hJ4; decide
+      · have hfac_dvd : J ∣ (J - 1).factorial := by
+          let d := J.minFac
+          have hd_prime : d.Prime := Nat.minFac_prime (by omega)
+          have hd_gt1 : 1 < d := hd_prime.one_lt
+          have hd_dvd : d ∣ J := Nat.minFac_dvd J
+          have hd_ne : d ≠ J := fun heq => hnotprime (heq ▸ hd_prime)
+          have hd_le : d ≤ J := Nat.minFac_le (by omega)
+          have hd_lt : d < J := lt_of_le_of_ne hd_le hd_ne
+          let q := J / d
+          have hdq : d * q = J := Nat.mul_div_cancel' hd_dvd
+          have hq_lt : q < J := Nat.div_lt_self (by omega) hd_gt1
+          have hq_ge1 : 1 ≤ q := by
+            rcases q with _ | _
+            · simp at hdq; omega
+            · omega
+          by_cases heq_dq : d = q
+          · rw [← heq_dq] at hdq
+            have hd_ne2 : d ≠ 2 := by
+              intro h2
+              rw [h2] at hdq
+              omega
+            have hd_ge3 : 3 ≤ d := by omega
+            have h2d_lt : 2 * d < d * d := by nlinarith
+            have h2d_le : 2 * d ≤ J - 1 := by omega
+            have hmul := mul_dvd_factorial_of_lt (a := d) (b := 2 * d) (by omega) (by omega) h2d_le
+            have h2J : d * (2 * d) = 2 * J := by nlinarith
+            rw [h2J] at hmul
+            exact dvd_trans (dvd_mul_left J 2) hmul
+          · rcases lt_or_gt_of_ne heq_dq with hlt | hgt
+            · rw [← hdq]
+              exact mul_dvd_factorial_of_lt (by omega) hlt (by omega)
+            · have hmul : q * d ∣ (J - 1).factorial :=
+                mul_dvd_factorial_of_lt hq_ge1 hgt (by omega : d ≤ J - 1)
+              rwa [mul_comm, hdq] at hmul
+        exact dvd_mul_of_dvd_left hfac_dvd (primorial (J - 1))
 
 theorem primorial_step {J : ℕ} (hJ : 2 ≤ J) :
     primorial J = if J.Prime then J * primorial (J - 1) else primorial (J - 1) := by
-  unfold primorial
-  have hIcc : Finset.Icc 1 J = insert J (Finset.Icc 1 (J - 1)) := by
-    ext x
-    simp only [Finset.mem_Icc, Finset.mem_insert]
-    omega
-  have hnotmem : J ∉ (Finset.Icc 1 (J - 1)).filter Nat.Prime := by
-    simp only [Finset.mem_filter, Finset.mem_Icc]
-    omega
-  rw [hIcc, Finset.filter_insert]
-  split_ifs with hp
-  · rw [Finset.prod_insert hnotmem, id_eq]
+  rcases J with _ | n
+  · omega
   · rfl
 
 /-- Self-sieving recurrence for $A_J$:
@@ -1781,52 +1795,49 @@ there exists an integer $n \ge 2$ satisfying `ShuniaCounterexample n`. -/
 theorem rhRegHalts_iff_exists_shuniaCounterexample :
     RhRegHalts ↔ ∃ n ≥ 2, ShuniaCounterexample n := by
   rw [rhRegHalts_iff_exists_rhRegNSteps]
+  have findBelow : ∀ B : ℕ,
+      (∀ m < B, ¬ ShuniaCounterexample (m + 2)) ∨
+        ∃ K < B, ShuniaCounterexample (K + 2) ∧ ∀ m < K, ¬ ShuniaCounterexample (m + 2) := by
+    intro B
+    induction B with
+    | zero => exact Or.inl (fun _ hm => absurd hm (Nat.not_lt_zero _))
+    | succ B ih =>
+      rcases ih with hnone | ⟨K, hKB, hK, hmin⟩
+      · if hB : ShuniaCounterexample (B + 2) then
+          exact Or.inr ⟨B, Nat.lt_succ_self B, hB, hnone⟩
+        else
+          exact Or.inl (fun m hm => by
+            rcases Nat.lt_succ_iff_lt_or_eq.mp hm with hlt | rfl
+            · exact hnone m hlt
+            · exact hB)
+      · exact Or.inr ⟨K, Nat.lt_succ_of_lt hKB, hK, hmin⟩
+  have hreach_upto : ∀ K : ℕ, (∀ m < K, ¬ ShuniaCounterexample (m + 2)) →
+      ∃ T ≥ K, rhRegNSteps T rhRegInit = some ⟨[], [K, 0, 0, 0, 0]⟩ := by
+    intro K
+    induction K with
+    | zero => intro _; exact ⟨0, le_refl 0, rfl⟩
+    | succ K ih =>
+      intro hnone
+      obtain ⟨T, hT, hsteps_T⟩ := ih (fun m hm => hnone m (by omega))
+      obtain ⟨s, hs, hstep_s⟩ := (main_stage_step K).1 (hnone K (by omega))
+      exact ⟨T + s, by omega, rhRegNSteps_bind_eq hsteps_T hstep_s⟩
   constructor
   · rintro ⟨N, ch, hN, hnone⟩
-    by_contra hnone_ce
-    push Not at hnone_ce
-    have hreach_all : ∀ K : ℕ, ∃ T ≥ K,
-        rhRegNSteps T rhRegInit = some ⟨[], [K, 0, 0, 0, 0]⟩ := by
-      intro K
-      induction K with
-      | zero => exact ⟨0, le_refl 0, rfl⟩
-      | succ K ih =>
-        obtain ⟨T, hT, hsteps_T⟩ := ih
-        obtain ⟨s, hs, hstep_s⟩ := (main_stage_step K).1 (hnone_ce (K + 2) (by omega))
-        exact ⟨T + s, by omega, rhRegNSteps_bind_eq hsteps_T hstep_s⟩
-    obtain ⟨T, hT_ge, hT_steps⟩ := hreach_all (N + 1)
-    have hsplit : T = N + (T - N) := by omega
-    have hrem_pos : T - N = (T - N - 1) + 1 := by omega
-    rw [hsplit, rhRegNSteps_add, hN, Option.bind_some, hrem_pos, rhRegNSteps_succ,
-      hnone] at hT_steps
-    cases hT_steps
+    rcases findBelow (N + 1) with hsafe | ⟨K, _, hK, _⟩
+    · obtain ⟨T, hT_ge, hT_steps⟩ := hreach_upto (N + 1) hsafe
+      have hsplit : T = N + (T - N) := by omega
+      have hrem_pos : T - N = (T - N - 1) + 1 := by omega
+      rw [hsplit, rhRegNSteps_add, hN, Option.bind_some, hrem_pos, rhRegNSteps_succ,
+        hnone] at hT_steps
+      cases hT_steps
+    · exact ⟨K + 2, by omega, hK⟩
   · rintro ⟨n, hn, hce⟩
-    have least_stage : ∀ M : ℕ, ShuniaCounterexample (M + 2) →
-        ∃ K ≤ M, (∀ j < K, ¬ ShuniaCounterexample (j + 2)) ∧ ShuniaCounterexample (K + 2) := by
-      intro M
-      induction M using Nat.strong_induction_on with
-      | h M ih =>
-        intro hM
-        by_cases hprev : ∃ j < M, ShuniaCounterexample (j + 2)
-        · obtain ⟨j, hj, hcj⟩ := hprev
-          obtain ⟨K, hKj, hall, hK⟩ := ih j hj hcj
-          exact ⟨K, by omega, hall, hK⟩
-        · push Not at hprev
-          exact ⟨M, le_refl M, hprev, hM⟩
-    obtain ⟨K, _, hall, hK⟩ := least_stage (n - 2) (by convert hce; omega)
-    have hreach_K : ∀ m ≤ K, ∃ T,
-        rhRegNSteps T rhRegInit = some ⟨[], [m, 0, 0, 0, 0]⟩ := by
-      intro m
-      induction m with
-      | zero => intro _; exact ⟨0, rfl⟩
-      | succ m ih =>
-        intro hm
-        obtain ⟨T, hT⟩ := ih (by omega)
-        obtain ⟨s, _, hs⟩ := (main_stage_step m).1 (hall m (by omega))
-        exact ⟨T + s, rhRegNSteps_bind_eq hT hs⟩
-    obtain ⟨T, hT⟩ := hreach_K K (le_refl K)
-    obtain ⟨s, ch, hs, hnone⟩ := (main_stage_step K).2 hK
-    exact ⟨T + s, ch, rhRegNSteps_bind_eq hT hs, hnone⟩
+    have hce' : ShuniaCounterexample ((n - 2) + 2) := by convert hce; omega
+    rcases findBelow (n - 1) with hsafe | ⟨K, _, hK, hall⟩
+    · exact False.elim (hsafe (n - 2) (by omega) hce')
+    · obtain ⟨T, _, hT⟩ := hreach_upto K hall
+      obtain ⟨s, ch, hs, hnone⟩ := (main_stage_step K).2 hK
+      exact ⟨T + s, ch, rhRegNSteps_bind_eq hT hs, hnone⟩
 
 end ConjectureMachines.Riemann120.Layer2
 

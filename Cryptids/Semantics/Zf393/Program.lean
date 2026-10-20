@@ -28,8 +28,11 @@ This standalone module proves:
 
 namespace ConjectureMachines.Zf393.Layer2
 
-open Turing StateTransition ConjectureMachines ConjectureMachines.Zf393
+open Turing (Dir)
+open StateTransition ConjectureMachines ConjectureMachines.Zf393
 open ConjectureMachines.Semantics.Zf
+
+attribute [-simp] Nat.add_eq_right
 
 set_option maxRecDepth 200000
 
@@ -144,8 +147,19 @@ theorem rev11_getD_set {regs : List ℕ} (hlen : regs.length = 11) (k : Fin 11) 
   rcases regs with _ | ⟨r0, _ | ⟨r1, _ | ⟨r2, _ | ⟨r3, _ | ⟨r4, _ | ⟨r5, _ |
     ⟨r6, _ | ⟨r7, _ | ⟨r8, _ | ⟨r9, _ | ⟨r10, _ | _⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩⟩ <;>
     try (simp at hlen; done)
-  rcases k with ⟨_ | _ | _ | _ | _ | _ | _ | _ | _ | _ | _ | n, hn⟩ <;> try omega
-  all_goals exact ⟨rfl, fun _ => rfl⟩
+  rcases k with ⟨_ | _ | _ | _ | _ | _ | _ | _ | _ | _ | _ | n, hn⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exact ⟨rfl, fun _ => rfl⟩
+  · exfalso; omega
 
 theorem zf393RegStep_eq_zfReg11Step (ip : List (Fin 2)) {regs : List ℕ}
     (hlen : regs.length = 11) :
@@ -2445,7 +2459,7 @@ theorem subEval_85 (Q : List (Fin 2)) (hQ : walkInternal 99 Q = some 85) :
         have hset_eq : (regs₁.set 9 0).set 10 0 = (regs.set 9 0).set 10 0 := by
           dsimp only [regs₁]
           rw [set_comm_of_ne (regs.set 9 v) w 0 (by decide), List.set_set, List.set_set]
-        have heq_iff : (v = w) ↔ (v + 1 = w + 1) := by omega
+        have heq_iff : (v = w) ↔ (v + 1 = w + 1) := ⟨congrArg (· + 1), Nat.succ.inj⟩
         rw [hw₁, hset_eq] at hsteps_ih
         have hcond_eq : (if v = w then retStack Q else (popBreakRev 1 Q.reverse).reverse) =
             (if v + 1 = w + 1 then retStack Q else (popBreakRev 1 Q.reverse).reverse) := by
@@ -4023,114 +4037,128 @@ theorem zf393MainNext_prooflist_lt {c : ZfMainCfg} (hpos : 0 < c.prooflist) :
     cantorUnpair_snd_le (cantorUnpair (cantorUnpair (cantorUnpair (c.prooflist - 1)).2).2).2
   exact ⟨by omega, trivial⟩
 
-private theorem step393_some_of_not_halts {n : ℕ} {c : ZfMainCfg}
-    (hNotHalts : ¬ Zf393MainHalts) (hn : zf393MainNSteps n zfMainInit = some c) :
-    zf393MainStep c = some (zf393MainNext c) := by
+private theorem step393_or_halts {n : ℕ} {c : ZfMainCfg}
+    (hn : zf393MainNSteps n zfMainInit = some c) :
+    Zf393MainHalts ∨ zf393MainStep c = some (zf393MainNext c) := by
   rcases hs : zf393MainStep c with _ | c'
-  · exact False.elim (hNotHalts ⟨n, c, hn, hs⟩)
+  · exact Or.inl ⟨n, c, hn, hs⟩
   · unfold zf393MainStep at hs
     split_ifs at hs with h1
-    exact hs.symm
+    exact Or.inr hs.symm
 
-private theorem drain393_prooflist_of_not_halts (hNotHalts : ¬ Zf393MainHalts) (pl : ℕ) :
+private theorem drain393_prooflist_or_halts (pl : ℕ) :
     ∀ {n : ℕ} {c : ZfMainCfg},
       zf393MainNSteps n zfMainInit = some c →
       c.prooflist = pl →
-      ∃ m c',
-        zf393MainNSteps m zfMainInit = some c' ∧ c'.prooflist = 0 ∧ c'.nextproof = c.nextproof := by
+      Zf393MainHalts ∨
+        ∃ m c',
+          zf393MainNSteps m zfMainInit = some c' ∧
+            c'.prooflist = 0 ∧ c'.nextproof = c.nextproof := by
   induction pl using Nat.strong_induction_on with
   | h pl ih =>
     intro n c hn hpl
-    by_cases hzero : pl = 0
-    · exact ⟨n, c, hn, hpl.trans hzero, rfl⟩
-    · have hpos : 0 < c.prooflist := by omega
-      have hstep := step393_some_of_not_halts hNotHalts hn
-      have hn1 : zf393MainNSteps (n + 1) zfMainInit = some (zf393MainNext c) :=
-        zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
-      obtain ⟨hlt, hnp⟩ := zf393MainNext_prooflist_lt hpos
-      rw [hpl] at hlt
-      obtain ⟨m, c', hm, hpl', hnp'⟩ := ih (zf393MainNext c).prooflist hlt hn1 rfl
-      exact ⟨m, c', hm, hpl', hnp'.trans hnp⟩
+    cases pl with
+    | zero => exact Or.inr ⟨n, c, hn, hpl, rfl⟩
+    | succ pl' =>
+      have hpos : 0 < c.prooflist := by omega
+      rcases step393_or_halts hn with hH | hstep
+      · exact Or.inl hH
+      · have hn1 : zf393MainNSteps (n + 1) zfMainInit = some (zf393MainNext c) :=
+          zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
+        obtain ⟨hlt, hnp⟩ := zf393MainNext_prooflist_lt hpos
+        rw [hpl] at hlt
+        rcases ih (zf393MainNext c).prooflist hlt hn1 rfl with hH | ⟨m, c', hm, hpl', hnp'⟩
+        · exact Or.inl hH
+        · exact Or.inr ⟨m, c', hm, hpl', hnp'.trans hnp⟩
 
-private theorem reaches393_nextproof_of_not_halts (hNotHalts : ¬ Zf393MainHalts) (N : ℕ) :
-    ∃ n c, zf393MainNSteps n zfMainInit = some c ∧ c.prooflist = 0 ∧ c.nextproof = N := by
+private theorem reaches393_nextproof_or_halts (N : ℕ) :
+    Zf393MainHalts ∨
+      ∃ n c, zf393MainNSteps n zfMainInit = some c ∧ c.prooflist = 0 ∧ c.nextproof = N := by
   induction N with
-  | zero => exact ⟨0, zfMainInit, rfl, rfl, rfl⟩
+  | zero => exact Or.inr ⟨0, zfMainInit, rfl, rfl, rfl⟩
   | succ N ih =>
-    obtain ⟨n, c, hn, hpl0, hnp⟩ := ih
-    have hstep := step393_some_of_not_halts hNotHalts hn
-    have hn1 : zf393MainNSteps (n + 1) zfMainInit = some (zf393MainNext c) :=
-      zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
-    have hnp_next : (zf393MainNext c).nextproof = N + 1 := by
-      unfold zf393MainNext; simp [hpl0, hnp]
-    obtain ⟨m, c', hm, hpl', hnp'⟩ :=
-      drain393_prooflist_of_not_halts hNotHalts (zf393MainNext c).prooflist hn1 rfl
-    exact ⟨m, c', hm, hpl', hnp'.trans hnp_next⟩
+    rcases ih with hH | ⟨n, c, hn, hpl0, hnp⟩
+    · exact Or.inl hH
+    · rcases step393_or_halts hn with hH | hstep
+      · exact Or.inl hH
+      · have hn1 : zf393MainNSteps (n + 1) zfMainInit = some (zf393MainNext c) :=
+          zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
+        have hnp_next : (zf393MainNext c).nextproof = N + 1 := by
+          unfold zf393MainNext; simp [hpl0, hnp]
+        rcases drain393_prooflist_or_halts (zf393MainNext c).prooflist hn1 rfl with
+          hH | ⟨m, c', hm, hpl', hnp'⟩
+        · exact Or.inl hH
+        · exact Or.inr ⟨m, c', hm, hpl', hnp'.trans hnp_next⟩
 
-private theorem exec393_encodeProofList_of_not_halts (hNotHalts : ¬ Zf393MainHalts)
-    (L : List ProofStep) :
+private theorem exec393_prefix_or_halts (LInit : List ProofStep) (sLast : ProofStep) :
     ∀ {n : ℕ} {np top stk : ℕ},
-      zf393MainNSteps n zfMainInit = some ⟨encodeProofList L, np, top, stk⟩ →
-      zf393MainNSteps (n + L.length) zfMainInit =
-        some ⟨0, np, (execList393 L (top, stk)).1, (execList393 L (top, stk)).2⟩ := by
-  induction L with
+      zf393MainNSteps n zfMainInit = some ⟨encodeProofList (LInit ++ [sLast]), np, top, stk⟩ →
+      Zf393MainHalts ∨
+        zf393MainNSteps (n + LInit.length) zfMainInit =
+          some ⟨encodeProofList [sLast], np,
+            (execList393 LInit (top, stk)).1, (execList393 LInit (top, stk)).2⟩ := by
+  induction LInit with
   | nil =>
     intro n np top stk hn
-    exact hn
+    exact Or.inr hn
   | cons s rest ih =>
     intro n np top stk hn
-    have hstep := step393_some_of_not_halts hNotHalts hn
-    rw [encodeProofList_cons, zf393MainNext_packProofStep] at hstep
-    have hn1 : zf393MainNSteps (n + 1) zfMainInit =
-        some ⟨encodeProofList rest, np,
-          (execStep393 s (top, stk)).1, (execStep393 s (top, stk)).2⟩ :=
-      zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
-    have hrest := ih hn1
-    have hlen : n + 1 + rest.length = n + (s :: rest).length := by simp; omega
-    rwa [hlen] at hrest
+    rcases step393_or_halts hn with hH | hstep
+    · exact Or.inl hH
+    · rw [List.cons_append, encodeProofList_cons, zf393MainNext_packProofStep] at hstep
+      have hn1 : zf393MainNSteps (n + 1) zfMainInit =
+          some ⟨encodeProofList (rest ++ [sLast]), np,
+            (execStep393 s (top, stk)).1, (execStep393 s (top, stk)).2⟩ :=
+        zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep])
+      rcases ih hn1 with hH | hrest
+      · exact Or.inl hH
+      · have hlen : n + 1 + rest.length = n + (s :: rest).length := by simp; omega
+        rw [hlen] at hrest
+        exact Or.inr hrest
 
+/-- **Completeness of `zf393MainStep` (constructive, without `Classical.choice`)**:
+if `ZFInconsistent` holds, then `Zf393MainHalts`. -/
 theorem zf393MainHalts_of_zfInconsistent (hInc : ZFInconsistent) : Zf393MainHalts := by
-  by_contra hNotHalts
   obtain ⟨L, hL_ne, hL_eval⟩ := exists_proofList393_of_zfProvable hInc
   let s₀ : ProofStep := (0, 0, 0, 0)
   let P : ℕ := encodeProofList (s₀ :: L) - 1
   have hP_succ : P + 1 = packProofStep s₀ (encodeProofList L) := by
     simp only [P, encodeProofList_cons, packProofStep]; omega
-  obtain ⟨n, c, hn, hpl0, hnp⟩ := reaches393_nextproof_of_not_halts hNotHalts P
-  have hc_eq : c = ⟨0, P, c.topwff, c.wffstack⟩ := by
-    cases c
-    dsimp at hpl0 hnp
-    subst hpl0 hnp
-    rfl
-  rw [hc_eq] at hn
-  have hstep0 := step393_some_of_not_halts hNotHalts hn
-  have hnext0 : zf393MainNext ⟨0, P, c.topwff, c.wffstack⟩ =
-      ⟨encodeProofList L, P + 1, (execStep393 s₀ (c.topwff, c.wffstack)).1,
-        (execStep393 s₀ (c.topwff, c.wffstack)).2⟩ := by
-    rw [zf393MainNext_zero_prooflist, hP_succ]
-    exact zf393MainNext_packProofStep s₀ (encodeProofList L) (P + 1) c.topwff c.wffstack
-  rw [hnext0] at hstep0
-  have hn1 : zf393MainNSteps (n + 1) zfMainInit =
-      some ⟨encodeProofList L, P + 1, (execStep393 s₀ (c.topwff, c.wffstack)).1,
-            (execStep393 s₀ (c.topwff, c.wffstack)).2⟩ :=
-    zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep0])
-  have hL_ne_nil : ∃ LInit sLast, L = LInit ++ [sLast] :=
-    ⟨L.dropLast, L.getLast hL_ne, (List.dropLast_append_getLast hL_ne).symm⟩
-  obtain ⟨LInit, sLast, rfl⟩ := hL_ne_nil
-  have hn_all := exec393_encodeProofList_of_not_halts hNotHalts (LInit ++ [sLast]) hn1
-  rw [hL_eval] at hn_all
-  have hlen_split : n + 1 + (LInit ++ [sLast]).length = (n + 1 + LInit.length) + 1 := by
-    simp; omega
-  rw [hlen_split, zf393MainNSteps_add] at hn_all
-  rcases hmid : zf393MainNSteps (n + 1 + LInit.length) zfMainInit with _ | cmid
-  · rw [hmid] at hn_all; cases hn_all
-  · rw [hmid, Option.bind_some, zf393MainNSteps_succ] at hn_all
-    unfold zf393MainStep at hn_all
-    split_ifs at hn_all with h1
-    · cases hn_all
-    · simp only [Option.bind_some, zf393MainNSteps_zero, Option.some.injEq] at hn_all
-      have htop : (zf393MainNext cmid).topwff = zfMem 0 0 := by rw [hn_all]
-      exact h1 htop
+  rcases reaches393_nextproof_or_halts P with hH | ⟨n, c, hn, hpl0, hnp⟩
+  · exact hH
+  · have hc_eq : c = ⟨0, P, c.topwff, c.wffstack⟩ := by
+      cases c; dsimp at hpl0 hnp; subst hpl0 hnp; rfl
+    rw [hc_eq] at hn
+    rcases step393_or_halts hn with hH | hstep0
+    · exact hH
+    · have hnext0 : zf393MainNext ⟨0, P, c.topwff, c.wffstack⟩ =
+          ⟨encodeProofList L, P + 1, (execStep393 s₀ (c.topwff, c.wffstack)).1,
+            (execStep393 s₀ (c.topwff, c.wffstack)).2⟩ := by
+        rw [zf393MainNext_zero_prooflist, hP_succ]
+        exact zf393MainNext_packProofStep s₀ (encodeProofList L) (P + 1) c.topwff c.wffstack
+      rw [hnext0] at hstep0
+      have hn1 : zf393MainNSteps (n + 1) zfMainInit =
+          some ⟨encodeProofList L, P + 1, (execStep393 s₀ (c.topwff, c.wffstack)).1,
+                (execStep393 s₀ (c.topwff, c.wffstack)).2⟩ :=
+        zf393MainNSteps_bind_eq hn (by simp [zf393MainNSteps, hstep0])
+      obtain ⟨LInit, sLast, rfl⟩ : ∃ LInit sLast, L = LInit ++ [sLast] :=
+        ⟨L.dropLast, L.getLast hL_ne, (List.dropLast_append_getLast hL_ne).symm⟩
+      rcases exec393_prefix_or_halts LInit sLast hn1 with hH | hmid
+      · exact hH
+      · let cmid : ZfMainCfg :=
+          ⟨encodeProofList [sLast], P + 1,
+            (execList393 LInit (execStep393 s₀ (c.topwff, c.wffstack))).1,
+            (execList393 LInit (execStep393 s₀ (c.topwff, c.wffstack))).2⟩
+        have htop : (zf393MainNext cmid).topwff = zfMem 0 0 := by
+          dsimp only [cmid]
+          rw [encodeProofList_cons, zf393MainNext_packProofStep]
+          simpa [execList393] using congrArg Prod.fst
+            (hL_eval (execStep393 s₀ (c.topwff, c.wffstack)).1
+              (execStep393 s₀ (c.topwff, c.wffstack)).2)
+        have hhalt : zf393MainStep cmid = none := by
+          unfold zf393MainStep
+          simp [htop]
+        exact ⟨n + 1 + LInit.length, cmid, hmid, hhalt⟩
 
 /-- Layer 3 main equivalence: `Zf393MainHalts ↔ ZFInconsistent`. -/
 theorem zf393MainHalts_iff_zfInconsistent :

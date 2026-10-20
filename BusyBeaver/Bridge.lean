@@ -95,9 +95,43 @@ end BusyBeaver
 
 namespace ConjectureMachines
 
-open Relation Turing StateTransition
+open Relation StateTransition
 
 variable {states symbols : ℕ} [NeZero states] [NeZero symbols]
+
+/-- Embed `ConjectureMachines.ListBlank Γ` into Mathlib's `Turing.ListBlank Γ`. -/
+def ListBlank.toTuring {Γ : Type*} [Inhabited Γ] (l : ListBlank Γ) : Turing.ListBlank Γ :=
+  l.liftOn Turing.ListBlank.mk fun _ _ h => Quotient.sound' (Or.inl h)
+
+@[simp]
+theorem ListBlank.toTuring_inj {Γ : Type*} [Inhabited Γ] {l₁ l₂ : ListBlank Γ} :
+    l₁.toTuring = l₂.toTuring ↔ l₁ = l₂ :=
+  ⟨l₁.induction_on fun _ => l₂.induction_on fun _ h => Quot.sound (Quotient.exact' h),
+   congrArg _⟩
+
+@[simp]
+theorem ListBlank.toTuring_head {Γ : Type*} [Inhabited Γ] (l : ListBlank Γ) :
+    l.toTuring.head = l.head :=
+  l.induction_on fun _ => rfl
+
+@[simp]
+theorem ListBlank.toTuring_tail {Γ : Type*} [Inhabited Γ] (l : ListBlank Γ) :
+    l.toTuring.tail = l.tail.toTuring :=
+  l.induction_on fun _ => rfl
+
+@[simp]
+theorem ListBlank.toTuring_cons {Γ : Type*} [Inhabited Γ] (a : Γ) (l : ListBlank Γ) :
+    l.toTuring.cons a = (l.cons a).toTuring :=
+  l.induction_on fun _ => rfl
+
+/-- Embed `ConjectureMachines.Tape Γ` into Mathlib's `Turing.Tape Γ`. -/
+def Tape.toTuring {Γ : Type*} [Inhabited Γ] (T : Tape Γ) : Turing.Tape Γ :=
+  ⟨T.head, T.left.toTuring, T.right.toTuring⟩
+
+@[simp]
+theorem Tape.toTuring_inj {Γ : Type*} [Inhabited Γ] {T₁ T₂ : Tape Γ} :
+    T₁.toTuring = T₂.toTuring ↔ T₁ = T₂ := by
+  cases T₁; cases T₂; simp [Tape.toTuring]
 
 /-- Convert a `ConjectureMachines.Machine states symbols` into a
 `BusyBeaver.Machine (Fin symbols) (Fin states)`. -/
@@ -109,7 +143,7 @@ def Machine.toBB (M : Machine states symbols) :
 `BusyBeaver.Cfg (Fin symbols) (Fin states)`. -/
 def Cfg.toBB (c : Cfg states symbols) :
     BusyBeaver.Cfg (Fin symbols) (Fin states) :=
-  ⟨some c.state, c.tape⟩
+  ⟨some c.state, c.tape.toTuring⟩
 
 omit [NeZero states] in
 @[simp]
@@ -127,8 +161,12 @@ theorem init_toBB :
 theorem step_toBB (M : Machine states symbols) (c : Cfg states symbols) :
     BusyBeaver.step M.toBB c.toBB = (ConjectureMachines.step M c).map Cfg.toBB := by
   obtain ⟨q, T⟩ := c
-  simp only [Cfg.toBB, BusyBeaver.step, Machine.toBB, ConjectureMachines.step, Option.map_map]
-  rcases M.transition q T.head with _ | ⟨a, d, q'⟩ <;> rfl
+  simp only [Cfg.toBB, BusyBeaver.step, Machine.toBB, ConjectureMachines.step, Option.map_map,
+    Tape.toTuring]
+  rcases M.transition q T.head with _ | ⟨a, d, q'⟩
+  · rfl
+  · cases d <;>
+      simp [Cfg.toBB, Tape.move, Tape.write, Turing.Tape.move, Turing.Tape.write, Tape.toTuring]
 
 theorem step_toBB_isNone_iff (M : Machine states symbols) (c : Cfg states symbols) :
     (BusyBeaver.step M.toBB c.toBB).isNone ↔ ConjectureMachines.step M c = none := by

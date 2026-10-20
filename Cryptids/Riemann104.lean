@@ -19,7 +19,8 @@ set_option maxRecDepth 200000
 
 namespace ConjectureMachines.Riemann104
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 
 /-- 120-state Riemann Hypothesis reference machine (`riemann_120`, Shunia 2026). -/
 abbrev reference : BundledMachine 2 := Machines.riemann120.bundle
@@ -38,7 +39,8 @@ theorem candidate_fewer_states : candidate.states < reference.states := by
 
 
 section
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Riemann120
 open ConjectureMachines.Riemann120.Layer2
 
@@ -87,7 +89,7 @@ theorem halts_candidate_iff_halts_edited121 :
     · dsimp only
       rw [hs] at hst; simp only [Option.map_some] at hst
       exact ⟨embedCfg c₁', rfl, Relation.TransGen.single hst.symm⟩
-  exact (StateTransition.tr_eval_dom hrel rfl).symm
+  exact (tr_eval_dom' hrel rfl).symm
 
 
 def inCompare (bits : List (Fin 2)) : Bool :=
@@ -228,7 +230,7 @@ theorem rhRegHalts_true_iff_false : RhRegHaltsOf true ↔ RhRegHaltsOf false := 
         have hs_true : rhRegStepOf true c₁ = some c₁' := by rw [heq_step, hs]
         exact ⟨c₁', ⟨rhRegInv_step hinv hs, rfl⟩,
           Relation.TransGen.single hs_true⟩
-  exact StateTransition.tr_eval_dom hrel ⟨rhRegInv_init, rfl⟩
+  exact tr_eval_dom' hrel ⟨rhRegInv_init, rfl⟩
 
 
 end

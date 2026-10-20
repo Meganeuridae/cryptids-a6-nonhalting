@@ -16,7 +16,8 @@ public import Cryptids.Machines
 
 namespace ConjectureMachines.Goldbach21
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 
 abbrev refM : Machine 25 2 := Machines.goldbach25
 abbrev candM : Machine 21 2 := Machines.goldbach21
@@ -92,7 +93,7 @@ theorem respects_embed :
 
 theorem candidate_iff_edited :
     Halts candM ↔ (eval (step edited) ⟨2, default⟩).Dom :=
-  (StateTransition.tr_eval_dom respects_embed rfl).symm
+  (tr_eval_dom' respects_embed rfl).symm
 
 def nSteps (M : Machine 25 2) (n : ℕ) : Cfg 25 2 → Option (Cfg 25 2) :=
   Nat.rec (motive := fun _ => Cfg 25 2 → Option (Cfg 25 2))
@@ -125,7 +126,7 @@ theorem nSteps_reaches {M : Machine 25 2} {n : ℕ} {c c' : Cfg 25 2}
 theorem nSteps_eval_dom {M : Machine 25 2} {n : ℕ} {c c' : Cfg 25 2}
     (h : nSteps M n c = some c') :
     (eval (step M) c).Dom ↔ (eval (step M) c').Dom := by
-  rw [StateTransition.reaches_eval (nSteps_reaches h)]
+  rw [reaches_eval' (nSteps_reaches h)]
 
 theorem nSteps_add {M : Machine 25 2} (m n : ℕ) (c : Cfg 25 2) :
     nSteps M (m + n) c = (nSteps M m c).bind (nSteps M n) := by
@@ -151,7 +152,7 @@ theorem step_one {M : Machine 25 2} {c c₁ : Cfg 25 2} (h : step M c = some c�
 
 theorem mk_append_replicate_zero (l : List (Fin 2)) (n : ℕ) :
     ListBlank.mk (l ++ List.replicate n 0) = ListBlank.mk l :=
-  Quotient.sound' (Or.inr ⟨n, rfl⟩)
+  Quot.sound (Or.inr ⟨n, rfl⟩)
 
 theorem boot_reference_47 :
     nSteps refM 47 init =
@@ -707,8 +708,32 @@ theorem sim_state5_to_0_left_from_0_ref (p1 p2 : ℕ) (L_blank R_end : ListBlank
 def NoFactorFrom (k p : ℕ) : Prop :=
   ∀ d, k + 2 ≤ d → d < p → ¬ d ∣ p
 
+def decNoFactorAux (p : ℕ) : ∀ (rem d : ℕ), Decidable (∀ x, d ≤ x → x < d + rem → ¬ x ∣ p)
+  | 0, d => isTrue (fun x _ hx2 => absurd hx2 (by omega))
+  | rem + 1, d =>
+    if hd : d ∣ p then
+      isFalse (fun h => h d (Nat.le_refl d) (by omega) hd)
+    else
+      match decNoFactorAux p rem (d + 1) with
+      | isTrue hrest => isTrue (fun x hx1 hx2 => by
+          rcases Nat.eq_or_lt_of_le hx1 with rfl | hgt
+          · exact hd
+          · exact hrest x (by omega) (by omega))
+      | isFalse hn => isFalse (fun h => hn (fun x hx1 hx2 => h x (by omega) (by omega)))
+
+instance instDecidableNoFactorFrom (k p : ℕ) : Decidable (NoFactorFrom k p) :=
+  if hkp : k + 2 < p then
+    match decNoFactorAux p (p - (k + 2)) (k + 2) with
+    | isTrue h => isTrue (fun d hd1 hd2 => h d hd1 (by omega))
+    | isFalse hn => isFalse (fun h => hn (fun d hd1 hd2 => h d hd1 (by omega)))
+  else
+    isTrue (fun d _ hd2 => absurd hd2 (by omega))
+
 def IsPrime (p : ℕ) : Prop :=
   2 ≤ p ∧ NoFactorFrom 0 p
+
+instance instDecidableIsPrime (p : ℕ) : Decidable (IsPrime p) :=
+  inferInstanceAs (Decidable (2 ≤ p ∧ NoFactorFrom 0 p))
 
 theorem not_isPrime_zero : ¬ IsPrime 0 := by
   intro ⟨h, _⟩; omega
@@ -721,6 +746,40 @@ theorem isPrime_two : IsPrime 2 := by
 
 def HasGoldbachPair (n : ℕ) : Prop :=
   ∃ a b : ℕ, IsPrime a ∧ IsPrime b ∧ a + b = n
+
+def decGoldbachAux (n : ℕ) : ∀ a : ℕ, Decidable (∃ x ≤ a, IsPrime x ∧ IsPrime (n - x))
+  | 0 => isFalse (fun ⟨x, hx, ⟨h2, _⟩, _⟩ => absurd (Nat.le_trans h2 hx) (by decide))
+  | a + 1 =>
+    if ha : IsPrime (a + 1) ∧ IsPrime (n - (a + 1)) then
+      isTrue ⟨a + 1, Nat.le_refl _, ha.1, ha.2⟩
+    else
+      match decGoldbachAux n a with
+      | isTrue h => isTrue (let ⟨x, hx, hp1, hp2⟩ := h; ⟨x, Nat.le_succ_of_le hx, hp1, hp2⟩)
+      | isFalse hn => isFalse (fun ⟨x, hx, hp1, hp2⟩ => by
+          rcases Nat.eq_or_lt_of_le hx with rfl | hlt
+          · exact ha ⟨hp1, hp2⟩
+          · exact hn ⟨x, Nat.le_of_lt_succ hlt, hp1, hp2⟩)
+
+instance instDecidableHasGoldbachPair (n : ℕ) : Decidable (HasGoldbachPair n) :=
+  match decGoldbachAux n n with
+  | isTrue h => isTrue (let ⟨x, hx, hp1, hp2⟩ := h; ⟨x, n - x, hp1, hp2, Nat.add_sub_of_le hx⟩)
+  | isFalse hn => isFalse (fun ⟨a, b, hp1, hp2, hab⟩ => hn ⟨a, hab ▸ Nat.le_add_right a b, hp1, by
+      have : n - a = b := by omega
+      rwa [this]⟩)
+
+theorem counterexample_or_all_stages :
+    ∀ N : ℕ, (∃ w, ¬ HasGoldbachPair (2 * w + 4)) ∨ ∀ w < N, HasGoldbachPair (2 * w + 4)
+  | 0 => Or.inr (fun _ hw => absurd hw (Nat.not_lt_zero _))
+  | N + 1 =>
+    match counterexample_or_all_stages N with
+    | Or.inl h => Or.inl h
+    | Or.inr hall =>
+      if hN : HasGoldbachPair (2 * N + 4) then
+        Or.inr (fun w hw => match Nat.eq_or_lt_of_le (Nat.le_of_lt_succ hw) with
+          | Or.inl h_eq => h_eq ▸ hN
+          | Or.inr hlt => hall w hlt)
+      else
+        Or.inl ⟨N, hN⟩
 
 def LBase1 : Bool → ℕ → ListBlank (Fin 2)
   | true, q => ListBlank.append (List.replicate (q + 1) 1) B0
@@ -862,7 +921,6 @@ theorem cfg6_pass_succ_not_dvd (is_right : Bool) (q k r' : ℕ)
       simpa [List.replicate_zero, ListBlank.append, h_k] using h_fin
     exact ⟨_, by omega, nSteps_bind_eq hs₀ (nSteps_bind_eq hs₁ h_fin')⟩
 
-open Classical in
 theorem cfg6_eval (is_right : Bool) (q k r : ℕ) :
     ∃ s, 1 ≤ s ∧
       nSteps refM s (cfg6 is_right q k r) =
@@ -914,7 +972,6 @@ theorem cfg6_eval (is_right : Bool) (q k r : ℕ) :
       rw [h_dec]
       exact ⟨s₁ + s₂, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
-open Classical in
 theorem cfg0_eval (is_right : Bool) (q p : ℕ) (hp : 1 ≤ p) :
     ∃ s, 1 ≤ s ∧
       nSteps refM s (cfg0 is_right q p) =
@@ -1058,7 +1115,6 @@ theorem cfgExit_ff_one (q : ℕ) :
 def stageCfg (w : ℕ) : Cfg 25 2 :=
   cfg0 true (2 * w + 2) 1
 
-open Classical in
 theorem cfg0_partner_pass (w q p : ℕ) (hp : 1 ≤ p) (hsum : q + p = 2 * w + 3)
     (hp_prime : IsPrime p) (hq_prime : IsPrime (q + 1)) :
     ∃ s, 1 ≤ s ∧ nSteps refM s (cfg0 true q p) = some (stageCfg (w + 1)) := by
@@ -1080,7 +1136,6 @@ theorem cfg0_partner_pass (w q p : ℕ) (hp : 1 ≤ p) (hsum : q + p = 2 * w + 3
     nSteps_bind_eq hs₁ (nSteps_bind_eq hs₂ (nSteps_bind_eq hs₃
       (nSteps_bind_eq hs₄ (nSteps_bind_eq hs₅ hs₆))))⟩
 
-open Classical in
 theorem cfg0_partner_fail_succ (q' p : ℕ) (hp : 1 ≤ p)
     (hfail : ¬ (IsPrime p ∧ IsPrime (q' + 2))) :
     ∃ s, 1 ≤ s ∧ nSteps refM s (cfg0 true (q' + 1) p) = some (cfg0 true q' (p + 1)) := by
@@ -1097,7 +1152,6 @@ theorem cfg0_partner_fail_succ (q' p : ℕ) (hp : 1 ≤ p)
     obtain ⟨s₂, _, hs₂⟩ := cfgExit_tf_succ q' p
     exact ⟨_, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
-open Classical in
 theorem cfg0_partner_fail_zero (p : ℕ) (hp : 1 ≤ p) :
     ∃ s c, nSteps refM s (cfg0 true 0 p) = some c ∧ step refM c = none := by
   obtain ⟨s₁, _, hs₁⟩ := cfg0_eval true 0 p hp
@@ -1184,13 +1238,13 @@ theorem nSteps_eq_none_of_step_none {M : Machine 25 2} {k : ℕ} (s : ℕ) {a b 
   have hs : s = k + ((s - k - 1) + 1) := by omega
   rw [hs, nSteps_add, hk, Option.bind_some, nSteps_succ, hnone, Option.bind_none]
 
-theorem stage_iter_all (hall : ∀ w, HasGoldbachPair (2 * w + 4)) (N : ℕ) :
+theorem stage_iter_bounded (N : ℕ) (hall : ∀ w < N, HasGoldbachPair (2 * w + 4)) :
     ∃ s, N ≤ s ∧ nSteps refM s (stageCfg 0) = some (stageCfg N) := by
   induction N with
   | zero => exact ⟨0, le_rfl, rfl⟩
   | succ N ih =>
-    obtain ⟨s₁, _, hs₁⟩ := ih
-    obtain ⟨s₂, _, hs₂⟩ := stage_advance N (hall N)
+    obtain ⟨s₁, _, hs₁⟩ := ih (fun w hw => hall w (Nat.lt_succ_of_lt hw))
+    obtain ⟨s₂, _, hs₂⟩ := stage_advance N (hall N (Nat.lt_succ_self N))
     exact ⟨s₁ + s₂, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
 theorem stage_reach_or_halt (w : ℕ) :
@@ -1224,17 +1278,17 @@ theorem halts_reference_iff_exists_counterexample :
   rw [nSteps_eval_dom boot_chk0_ref]
   constructor
   · intro hdom
-    by_contra hall
-    push Not at hall
     rw [Part.dom_iff_mem] at hdom
     obtain ⟨b, hb⟩ := hdom
-    rw [StateTransition.mem_eval] at hb
+    rw [mem_eval'] at hb
     obtain ⟨hreach, hnone⟩ := hb
     obtain ⟨k, hk⟩ := reaches_imp_nSteps hreach
-    obtain ⟨s, hks, hs⟩ := stage_iter_all hall (k + 1)
-    have h_eq_none := nSteps_eq_none_of_step_none s hk hnone (by omega)
-    rw [h_eq_none] at hs
-    cases hs
+    rcases counterexample_or_all_stages (k + 1) with hce | hall
+    · exact hce
+    · obtain ⟨s, hks, hs⟩ := stage_iter_bounded (k + 1) hall
+      have h_eq_none := nSteps_eq_none_of_step_none s hk hnone (by omega)
+      rw [h_eq_none] at hs
+      cases hs
   · rintro ⟨w, hw⟩
     have h_halt : ∃ s c, nSteps refM s (stageCfg 0) = some c ∧ step refM c = none := by
       rcases stage_reach_or_halt w with ⟨s₁, hs₁⟩ | hhalt
@@ -1243,7 +1297,7 @@ theorem halts_reference_iff_exists_counterexample :
       · exact hhalt
     obtain ⟨s, c, hs, hnone⟩ := h_halt
     rw [Part.dom_iff_mem]
-    exact ⟨c, StateTransition.mem_eval.mpr ⟨nSteps_reaches hs, hnone⟩⟩
+    exact ⟨c, mem_eval'.mpr ⟨nSteps_reaches hs, hnone⟩⟩
 
 /-!
 ## `edited` Semantics (`L`-First Goldbach Machine)
@@ -1408,7 +1462,6 @@ theorem cfg6E_pass_succ_not_dvd (is_right : Bool) (q k r' : ℕ)
       simpa [List.replicate_zero, ListBlank.append, h_k] using h_fin
     exact ⟨_, by omega, nSteps_bind_eq hs₀ (nSteps_bind_eq hs₁ h_fin')⟩
 
-open Classical in
 theorem cfg6E_eval (is_right : Bool) (q k r : ℕ) :
     ∃ s, 1 ≤ s ∧
       nSteps edited s (cfg6E is_right q k r) =
@@ -1457,7 +1510,6 @@ theorem cfg6E_eval (is_right : Bool) (q k r : ℕ) :
       rw [h_dec]
       exact ⟨s₁ + s₂, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
-open Classical in
 theorem cfg0E_eval (is_right : Bool) (q p : ℕ) (hp : 1 ≤ p) :
     ∃ s, 1 ≤ s ∧
       nSteps edited s (cfg0E is_right q p) =
@@ -1640,7 +1692,6 @@ theorem cfgExitE_tt (w p q0 : ℕ) (hsum : p + (q0 + 1) = 2 * w + 4) :
 def stageCfgE (w : ℕ) : Cfg 25 2 :=
   cfg0E false 2 (2 * w + 2)
 
-open Classical in
 theorem cfg0E_partner_fail_succ (q p0 : ℕ) (hq : 1 ≤ q)
     (hfail : ¬ (IsPrime (p0 + 2) ∧ IsPrime q)) :
     ∃ s, 1 ≤ s ∧
@@ -1659,7 +1710,6 @@ theorem cfg0E_partner_fail_succ (q p0 : ℕ) (hq : 1 ≤ q)
     obtain ⟨s₂, _, hs₂⟩ := cfgExitE_ff q (p0 + 1)
     exact ⟨_, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
-open Classical in
 theorem cfg0E_partner_pass (w q0 p : ℕ) (hp : 1 ≤ p) (hsum : p + (q0 + 1) = 2 * w + 4)
     (hp_prime : IsPrime p) (hq_prime : IsPrime (q0 + 1)) :
     ∃ s, 1 ≤ s ∧ nSteps edited s (cfg0E false (q0 + 1) p) = some (stageCfgE (w + 1)) := by
@@ -1685,7 +1735,6 @@ theorem cfg0E_partner_pass (w q0 p : ℕ) (hp : 1 ≤ p) (hsum : p + (q0 + 1) = 
     nSteps_bind_eq hs₁ (nSteps_bind_eq hs₂ (nSteps_bind_eq hs₃
       (nSteps_bind_eq hs₄ (nSteps_bind_eq hs₅ (nSteps_bind_eq hs₆ hs₇)))))⟩
 
-open Classical in
 theorem cfg0E_partner_fail_one (q : ℕ) :
     ∃ s c, nSteps edited s (cfg0E false q 1) = some c ∧ step edited c = none := by
   obtain ⟨s₁, _, hs₁⟩ := cfg0E_eval false q 1 (by omega)
@@ -1753,13 +1802,13 @@ theorem stageE_halt (w : ℕ) (h : ¬ HasGoldbachPair (2 * w + 4)) :
   intro p' hp' ⟨hp1, hq1⟩
   exact h ⟨2 * w + 4 - (p' + 1), p' + 1, hq1, hp1, by omega⟩
 
-theorem stageE_iter_all (hall : ∀ w, HasGoldbachPair (2 * w + 4)) (N : ℕ) :
+theorem stageE_iter_bounded (N : ℕ) (hall : ∀ w < N, HasGoldbachPair (2 * w + 4)) :
     ∃ s, N ≤ s ∧ nSteps edited s (stageCfgE 0) = some (stageCfgE N) := by
   induction N with
   | zero => exact ⟨0, le_rfl, rfl⟩
   | succ N ih =>
-    obtain ⟨s₁, _, hs₁⟩ := ih
-    obtain ⟨s₂, _, hs₂⟩ := stageE_advance N (hall N)
+    obtain ⟨s₁, _, hs₁⟩ := ih (fun w hw => hall w (Nat.lt_succ_of_lt hw))
+    obtain ⟨s₂, _, hs₂⟩ := stageE_advance N (hall N (Nat.lt_succ_self N))
     exact ⟨s₁ + s₂, by omega, nSteps_bind_eq hs₁ hs₂⟩
 
 theorem stageE_reach_or_halt (w : ℕ) :
@@ -1789,17 +1838,17 @@ theorem halts_edited_iff_exists_counterexample :
   rw [nSteps_eval_dom boot_chk0_edit]
   constructor
   · intro hdom
-    by_contra hall
-    push Not at hall
     rw [Part.dom_iff_mem] at hdom
     obtain ⟨b, hb⟩ := hdom
-    rw [StateTransition.mem_eval] at hb
+    rw [mem_eval'] at hb
     obtain ⟨hreach, hnone⟩ := hb
     obtain ⟨k, hk⟩ := reaches_imp_nSteps hreach
-    obtain ⟨s, hks, hs⟩ := stageE_iter_all hall (k + 1)
-    have h_eq_none := nSteps_eq_none_of_step_none s hk hnone (by omega)
-    rw [h_eq_none] at hs
-    cases hs
+    rcases counterexample_or_all_stages (k + 1) with hce | hall
+    · exact hce
+    · obtain ⟨s, hks, hs⟩ := stageE_iter_bounded (k + 1) hall
+      have h_eq_none := nSteps_eq_none_of_step_none s hk hnone (by omega)
+      rw [h_eq_none] at hs
+      cases hs
   · rintro ⟨w, hw⟩
     have h_halt : ∃ s c, nSteps edited s (stageCfgE 0) = some c ∧ step edited c = none := by
       rcases stageE_reach_or_halt w with ⟨s₁, hs₁⟩ | hhalt
@@ -1808,7 +1857,7 @@ theorem halts_edited_iff_exists_counterexample :
       · exact hhalt
     obtain ⟨s, c, hs, hnone⟩ := h_halt
     rw [Part.dom_iff_mem]
-    exact ⟨c, StateTransition.mem_eval.mpr ⟨nSteps_reaches hs, hnone⟩⟩
+    exact ⟨c, mem_eval'.mpr ⟨nSteps_reaches hs, hnone⟩⟩
 
 theorem candidate_equivalent : Halts candidate ↔ Halts reference :=
   candidate_iff_edited.trans

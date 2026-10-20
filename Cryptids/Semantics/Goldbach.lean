@@ -36,7 +36,8 @@ written as the sum of two primes).
 
 namespace ConjectureMachines.Goldbach21.Semantics
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 open ConjectureMachines.Goldbach21
 
 /-- Equivalence between `IsPrime` in `Cryptids.Goldbach21` and Mathlib's `Nat.Prime`. -/

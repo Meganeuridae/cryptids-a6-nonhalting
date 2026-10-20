@@ -14,7 +14,8 @@ public import Cryptids.Semantics.Zf.Boot
 
 namespace ConjectureMachines.Riemann120
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Semantics.Riemann.Layer1
   (nSteps nSteps_zero nSteps_succ nSteps_add nSteps_bind_eq step_nSteps step_one
    nSteps_reaches nSteps_eval_dom nSteps_of_halt mem_eval_iff_nSteps
@@ -1542,14 +1543,15 @@ theorem halts_riemann120_iff_halts_riemann121 :
       rw [hs] at hst; simp only [Option.map_some] at hst
       exact ⟨projCfg c₁', ⟨win5Inv_step hinv hs, rfl⟩,
         Relation.TransGen.single hst.symm⟩
-  exact StateTransition.tr_eval_dom hrel ⟨win5Inv_init, rfl⟩
+  exact tr_eval_dom' hrel ⟨win5Inv_init, rfl⟩
 
 
 
 
 /-- Product of all primes `p ≤ n`. -/
-def primorial (n : ℕ) : ℕ :=
-  ((Finset.Icc 1 n).filter Nat.Prime).prod id
+def primorial : ℕ → ℕ
+  | 0 => 1
+  | n + 1 => if Nat.Prime (n + 1) then (n + 1) * primorial n else primorial n
 
 /-- Self-sieving sequence `A_n = n! * P(n)`. -/
 def shuniaProd (n : ℕ) : ℕ :=
@@ -1575,6 +1577,9 @@ def quarterClock : ℕ → ℕ
 /-- Counterexample predicate `(q_n + 1) * 2 ^ q_n ≤ Δ_n`. -/
 def ShuniaCounterexample (n : ℕ) : Prop :=
   (quarterClock (n - 1) + 1) * 2 ^ quarterClock (n - 1) ≤ shuniaDeficit n
+
+instance instDecidableShuniaCounterexample (n : ℕ) : Decidable (ShuniaCounterexample n) :=
+  inferInstanceAs (Decidable (_ ≤ _))
 
 end ConjectureMachines.Riemann120
 

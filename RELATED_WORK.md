@@ -10,7 +10,7 @@ All baselines and candidate reductions in this repository adhere to the standard
 1. **Tape:** Two-way infinite binary tape ($\Gamma = \{0, 1\}$), initialized entirely to the blank symbol $0$.
 2. **Initial State:** Deterministic start state $q_0 = 0$.
 3. **Transition Function:** Partial function $\delta : \text{Fin}(Q) \times \text{Fin}(2) \to \text{Option}(\text{Fin}(2) \times \{\text{L}, \text{R}\} \times \text{Fin}(Q))$, where `none` (`---`) denotes an immediate halting transition.
-4. **Formal Equivalence Requirement:** The candidate machine must satisfy `Halts candidate <-> Halts reference` from the blank tape, proved in Lean 4 without custom axioms.
+4. **Formal Equivalence Requirement:** The candidate machine must satisfy `Halts candidate <-> Halts reference` from the blank tape, proved constructively in Lean 4 using only `["propext", "Quot.sound"]` (no `Classical.choice` or custom axioms). Likewise, for `ZF` consistency (`zf_380`, `zf_393`, `zf_432`), all machine-to-proof-search equivalences (`Halts M <-> ZFInconsistent`) are proved constructively without `Classical.choice`, preventing vacuous `False <-> False` proofs via Lean's proof of `Con(ZF)` (`Cryptids/Semantics/Zf/Soundness.lean`; see also Mario Carneiro's [`digama0/ConZF`](https://github.com/digama0/ConZF) and [`Cryptids/Semantics/README.md`](Cryptids/Semantics/README.md#foundational-note-conzf-in-lean-and-constructive-equivalence)).
 
 ---
 

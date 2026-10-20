@@ -24,7 +24,8 @@ Formalizes the execution backend of Andrew Wade's 393-state ZF consistency Turin
 
 namespace ConjectureMachines.Zf393.Layer1
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Zf393
 open ConjectureMachines.Semantics.Riemann.Layer1
   (nSteps nSteps_zero nSteps_succ nSteps_add nSteps_bind_eq step_nSteps step_one
@@ -777,7 +778,7 @@ theorem popBreakRev_overflow (k : ℕ) (rev : List (Fin 2)) (h : rev.count 0 ≤
         have hrep : List.replicate (k' + 2) (0 : Fin 2) = List.replicate (k' + 1) 0 ++ [0] :=
           List.replicate_succ'
         have hcnt : k' + 1 ≤ (xs ++ [1] ++ List.replicate (k' + 1) 0).count 0 := by
-          simp
+          simp; omega
         rw [hrep, ← List.append_assoc, popBreakRev_append_of_le k' _ [0] hcnt, h2,
           List.cons_append, ← List.replicate_succ']
     · obtain ⟨h1, h2⟩ := ih k (by simpa using h)
@@ -828,7 +829,7 @@ theorem break_k_reaches_main0 (k : ℕ) (hk2 : k ≤ 2) (slot : ℕ) (P : List (
       rw [append_cons_snoc, ← ListBlank.append_assoc, hip'_snoc, ← ListBlank.append_assoc,
         ← List.append_assoc, List.append_assoc ip', ← List.replicate_add, hpad]
     rw [hR] at hs₂
-    have hbs : breakSlot k slot P = slot := by unfold breakSlot; simp [hlt]
+    have hbs : breakSlot k slot P = slot := by unfold breakSlot; split <;> omega
     rw [hbs]
     exact ⟨s₁ + s₂, by omega, nSteps_bind_eq hs₁ hs₂⟩
   · have hle : P.reverse.count 0 ≤ k := by rw [List.count_reverse]; omega
@@ -841,7 +842,7 @@ theorem break_k_reaches_main0 (k : ℕ) (hk2 : k ≤ 2) (slot : ℕ) (P : List (
       rw [ListBlank.append_assoc, ListBlank.append_assoc]
       simp only [ListBlank.append, append_replicate_zero_default]
     have hfull0 : k + 1 ≤ full_rev.count 0 := by
-      unfold full_rev; simp
+      unfold full_rev; simp; omega
     rw [hL_eq]
     obtain ⟨s₁, hs₁_pos, hs₁⟩ := break_scan_to_64 k hk2 full_rev hfull0 default
       (ListBlank.append (List.replicate (slot - P.length) 0 ++ encodeRegs pre) (regsTape regs))
@@ -864,7 +865,7 @@ theorem break_k_reaches_main0 (k : ℕ) (hk2 : k ≤ 2) (slot : ℕ) (P : List (
         (ListBlank.append (List.replicate (slot - P.length) 0 ++ encodeRegs pre)
           (regsTape regs))))
     have hbs : breakSlot k slot P = slot + (k - P.count 0) + 1 := by
-      unfold breakSlot; simp [hlt]
+      unfold breakSlot; split <;> omega
     have hpad : P.length + (k - P.count 0) + 1 + (slot - P.length) =
         slot + (k - P.count 0) + 1 := by omega
     rw [hip'_nil, hbs]
@@ -5258,14 +5259,15 @@ theorem walkTape_zeros_props (q : Fin 393) (walked : List (Fin 2)) (k : ℕ)
   | zero =>
     have hedge := checkDagEdge_ok q 0
     dsimp only [checkDagEdge] at hedge
-    have htz_f : ¬ ((dagInfo q).1 > 8) := by omega
+    have htz_f : ¬ ((dagInfo q).1 > 8) := Nat.not_lt.mpr hq
     simp only [htz_f, ↓reduceIte, Bool.and_eq_true] at hedge
     have h1 : 1 ≤ (dagInfo q).2.2.2 := of_decide_eq_true hedge.1.1
+    exfalso
     omega
   | succ k' ih =>
     have hedge := checkDagEdge_ok q 0
     dsimp only [checkDagEdge] at hedge
-    have htz_f : ¬ ((dagInfo q).1 > 8) := by omega
+    have htz_f : ¬ ((dagInfo q).1 > 8) := Nat.not_lt.mpr hq
     simp only [htz_f, ↓reduceIte, Bool.and_eq_true] at hedge
     have hedge2 := hedge.2
     simp only [List.replicate_succ, walkTape]
@@ -5368,14 +5370,14 @@ theorem walkTape_dag_props (q : Fin 393) (walked ip : List (Fin 2))
   | nil =>
     have hedge := checkDagEdge_ok q 0
     dsimp only [checkDagEdge] at hedge
-    have htz_f : ¬ ((dagInfo q).1 > 8) := by omega
+    have htz_f : ¬ ((dagInfo q).1 > 8) := Nat.not_lt.mpr hq
     simp only [htz_f, ↓reduceIte, Bool.and_eq_true] at hedge
     have hfwd9 : (dagInfo q).2.2.2 ≤ 9 := of_decide_eq_true hedge.1.2
     exact walkTape_zeros_props q walked 10 hq (by omega) htz hones hlen hok
   | cons b ip' ih =>
     have hedge := checkDagEdge_ok q b
     dsimp only [checkDagEdge] at hedge
-    have htz_f : ¬ ((dagInfo q).1 > 8) := by omega
+    have htz_f : ¬ ((dagInfo q).1 > 8) := Nat.not_lt.mpr hq
     simp only [htz_f, ↓reduceIte, Bool.and_eq_true] at hedge
     have hedge2 := hedge.2
     simp only [List.cons_append, walkTape]
@@ -5440,7 +5442,13 @@ theorem walkTape_dag_props (q : Fin 393) (walked ip : List (Fin 2))
             rw [List.count_append]
             have hno : (dagInfo q').2.1 ≤ (dagInfo q).2.1 + (if w == 1 then 1 else 0) :=
               of_decide_eq_true hedge2.2.1.1.1.1.1.2
-            rcases fin2_cases w with rfl | rfl <;> simp at hno ⊢ <;> omega
+            rcases fin2_cases w with rfl | rfl
+            · change (dagInfo q').2.1 ≤ (dagInfo q).2.1 + 0 at hno
+              change (dagInfo q').2.1 ≤ walked.count 1 + 0
+              omega
+            · change (dagInfo q').2.1 ≤ (dagInfo q).2.1 + 1 at hno
+              change (dagInfo q').2.1 ≤ walked.count 1 + 1
+              omega
           have hlen' : (walked ++ [w]).length ≤ (dagInfo q').2.2.1 := by
             have hl1 : (dagInfo q).2.2.1 + 1 ≤ (dagInfo q').2.2.1 :=
               of_decide_eq_true hedge2.2.1.1.1.1.2
@@ -6789,29 +6797,30 @@ theorem halts_from_rootCfg_iff :
       step zf393 ch = none) ↔ Zf393RegHalts := by
   constructor
   · rintro ⟨ch, T, hT, hhalt⟩
-    by_contra hnot
-    have hinf : ∀ n : ℕ, ∃ slot s c, n ≤ s ∧
+    have hinf : ∀ n : ℕ, Zf393RegHalts ∨ ∃ slot s c, n ≤ s ∧
         zf393RegNSteps n zf393RegInit = some c ∧ Zf393Inv slot c ∧
         nSteps zf393 s (@rootCfg pre 19 [] (List.replicate 11 0)) =
           some (@rootCfg pre slot c.ip c.regs) := by
       intro n
       induction n with
       | zero =>
-        exact ⟨19, 0, zf393RegInit, le_refl 0, rfl, zf393Inv_init, rfl⟩
+        exact Or.inr ⟨19, 0, zf393RegInit, le_refl 0, rfl, zf393Inv_init, rfl⟩
       | succ n ih =>
-        obtain ⟨slot, s, c, hns, hreg, hinv, hsteps⟩ := ih
-        have hsim := tm_simulates_zf393RegStep (pre := pre) hinv
-        rcases hst : zf393RegStep c with _ | c'
-        · exact False.elim (hnot ⟨n, c, hreg, hst⟩)
-        · rw [hst] at hsim
-          obtain ⟨slot', ds, hds1, hinv', hds⟩ := hsim
-          exact ⟨slot', s + ds, c', by omega,
-            zf393RegNSteps_snoc n zf393RegInit c c' hreg hst,
-            hinv', nSteps_bind_eq hsteps hds⟩
-    obtain ⟨slot, s, c, hTs, _, _, hsteps⟩ := hinf (T + 1)
-    have hsplit : s = T + (s - T) := by omega
-    rw [hsplit, nSteps_add, hT, Option.bind_some, nSteps_of_halt hhalt (by omega)] at hsteps
-    cases hsteps
+        rcases ih with hReg | ⟨slot, s, c, hns, hreg, hinv, hsteps⟩
+        · exact Or.inl hReg
+        · have hsim := tm_simulates_zf393RegStep (pre := pre) hinv
+          rcases hst : zf393RegStep c with _ | c'
+          · exact Or.inl ⟨n, c, hreg, hst⟩
+          · rw [hst] at hsim
+            obtain ⟨slot', ds, hds1, hinv', hds⟩ := hsim
+            exact Or.inr ⟨slot', s + ds, c', by omega,
+              zf393RegNSteps_snoc n zf393RegInit c c' hreg hst,
+              hinv', nSteps_bind_eq hsteps hds⟩
+    rcases hinf (T + 1) with hReg | ⟨slot, s, c, hTs, _, _, hsteps⟩
+    · exact hReg
+    · have hsplit : s = T + (s - T) := by omega
+      rw [hsplit, nSteps_add, hT, Option.bind_some, nSteps_of_halt hhalt (by omega)] at hsteps
+      cases hsteps
   · rintro ⟨n, c, hn, hnone⟩
     obtain ⟨slot, s₁, hinv, hs₁⟩ :=
       tm_simulates_zf393RegNSteps_from (pre := pre) n 19 zf393RegInit c zf393Inv_init hn

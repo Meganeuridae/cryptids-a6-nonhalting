@@ -20,7 +20,8 @@ continuations (`6.continue.0..3`, `6.break.0..2`), and two-pass register dispatc
 
 namespace ConjectureMachines.Semantics.Zf.Layer2
 
-open Turing StateTransition ConjectureMachines.Semantics.Zf
+open Turing (Dir)
+open StateTransition ConjectureMachines.Semantics.Zf
 
 export ConjectureMachines.Semantics.Zf.Layer1
   (refTrans refTrans_eq step_mk'_right step_mk'_left step_mkL_left step_mkL_right
@@ -253,7 +254,8 @@ theorem popBreakRev_suffix (k : ℕ) (rev : List (Fin 2)) :
       rcases fin2_cases b with rfl | rfl
       · refine Or.inr ⟨xs, rfl, by simp, ?_⟩
         have hlen : xs.length ≤ xs.reverse.length := by simp
-        simp [List.take_append_of_le_length hlen]
+        rw [List.reverse_cons, List.take_append_of_le_length hlen]
+        simp
       · rcases ih 0 with hnil | ⟨rest, h1, hlt, htake⟩
         · exact Or.inl hnil
         · refine Or.inr ⟨rest, h1, by simp; omega, ?_⟩
@@ -290,7 +292,8 @@ theorem popContinueRev_suffix (k : ℕ) (rev : List (Fin 2)) :
           rw [List.reverse_cons, List.take_append_of_le_length hle, htake]
       · refine Or.inr ⟨xs, rfl, by simp, ?_⟩
         have hlen : xs.length ≤ xs.reverse.length := by simp
-        simp [List.take_append_of_le_length hlen]
+        rw [List.reverse_cons, List.take_append_of_le_length hlen]
+        simp
     | succ k =>
       rcases fin2_cases b with rfl | rfl
       · rcases ih (k + 1) with hnil | ⟨rest, h1, hlt, htake⟩
@@ -1346,7 +1349,8 @@ theorem walkInternal_bounds {q q_end : Fin 432} {pref : List (Fin 2)}
             rcases fin2_cases w with rfl | rfl <;>
               (simp only [List.length_cons, List.count_cons, beq_self_eq_true,
                 ↓reduceIte] at hmax0 hmin1 hmin0 ⊢;
-               change _ at hmax0 hmin1 hmin0 ⊢; omega)
+               change _ at hmax0 hmin1 hmin0 ⊢;
+               exact ⟨by omega, by omega, by omega, by omega⟩)
           · cases h
     · cases h
 
@@ -1358,7 +1362,7 @@ theorem walkInternal_root_bounds {q_end : Fin 432} {pref : List (Fin 2)}
     nodeMin0 q_end ≤ pref.count 0 := by
   have hb := walkInternal_bounds h
   have hr := tree_root_bounds
-  omega
+  exact ⟨by omega, by omega, by omega, by omega⟩
 
 theorem walkTape_of_walkInternal {q q_end : Fin 432} {pref : List (Fin 2)}
     (h : walkInternal q pref = some q_end) (walked rem : List (Fin 2)) :
@@ -1494,7 +1498,7 @@ theorem validStack_bounds {bits : List (Fin 2)} (h : validStack bits = true) :
       simpa using congrArg List.reverse hrev
     rw [hbits, List.length_append, List.count_append]
     change revPref.reverse.length + 1 ≤ 148 ∧ revPref.reverse.count 0 + 0 ≤ 11
-    omega
+    exact ⟨by omega, by omega⟩
 
 theorem validStack_applyBreak {bits : List (Fin 2)} {pos n : ℕ} (k : ℕ)
     (hn : pos ≤ n + 1) (h : (walkInternal 126 ((padTo bits pos).take n)).isSome = true) :
@@ -2072,10 +2076,10 @@ theorem mem_eval_zfRegStep_iff_zfRegNSteps {c₀ ch : ZfRegCfg} :
     ch ∈ eval zfRegStep c₀ ↔ ∃ n, zfRegNSteps n c₀ = some ch ∧ zfRegStep ch = none := by
   constructor
   · intro h
-    refine StateTransition.evalInduction h fun a ha ih => ?_
+    refine evalInduction' h fun a ha ih => ?_
     rcases hs : zfRegStep a with _ | a'
     · have hmem : a ∈ eval zfRegStep a :=
-        StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩
+        mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩
       have heq : ch = a := Part.mem_unique ha hmem
       subst heq
       exact ⟨0, rfl, hs⟩
@@ -2094,7 +2098,7 @@ theorem mem_eval_zfRegStep_iff_zfRegNSteps {c₀ ch : ZfRegCfg} :
         · rw [hs] at hn; cases hn
         · rw [hs, Option.bind_some] at hn
           exact Relation.ReflTransGen.head hs (ih hn)
-    exact StateTransition.mem_eval.mpr ⟨hreach, hnone⟩
+    exact mem_eval'.mpr ⟨hreach, hnone⟩
 
 theorem zfRegHalts_iff_exists_zfRegNSteps :
     ZfRegHalts ↔ ∃ n c, zfRegNSteps n zfRegInit = some c ∧ zfRegStep c = none := by
@@ -2488,7 +2492,7 @@ theorem tm_eval_dom_of_zfReg_eval_dom
   rw [Part.dom_iff_mem] at hDom
   rcases hDom with ⟨ch_reg, hmem⟩
   revert hInv
-  refine StateTransition.evalInduction hmem fun a _ ih hInv => ?_
+  refine evalInduction' hmem fun a _ ih hInv => ?_
   have hsim := tm_simulates_zfRegStep hInc hDecZero hDecPos hpad hInv
   rcases hs : zfRegStep a with _ | a'
   · rw [hs] at hsim
@@ -2534,7 +2538,7 @@ theorem zfReg_eval_dom_of_tm_nSteps_halt
     have hsim := tm_simulates_zfRegStep hInc hDecZero hDecPos hpad hInv
     rcases hs : zfRegStep c with _ | c'
     · rw [Part.dom_iff_mem]
-      exact ⟨c, StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
+      exact ⟨c, mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
     · rw [hs] at hsim
       obtain ⟨s, hs_pos, hsteps⟩ := hsim
       have hle : s ≤ N := by
@@ -2549,7 +2553,7 @@ theorem zfReg_eval_dom_of_tm_nSteps_halt
       have hDom' := ih (N - s) (by omega) hInv' hN hnone
       have hreach : Reaches zfRegStep c c' :=
         Relation.ReflTransGen.head hs Relation.ReflTransGen.refl
-      rwa [StateTransition.reaches_eval hreach]
+      rwa [reaches_eval' hreach]
 
 /-- Bisimulation relation on `ZfRegCfg` agreeing on `stack` and the first 11 registers. -/
 def ZfRegSim (c₁ c₂ : ZfRegCfg) : Prop :=
