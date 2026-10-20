@@ -4603,7 +4603,7 @@ abbrev target : Machine (Fin 3) (Fin 3) :=
 
 inductive State where
   | A (a c : ℕ)
-  deriving DecidableEq
+  deriving DecidableEq, Repr
 
 def start : State := .A 1 1
 
@@ -4846,7 +4846,7 @@ abbrev target : Machine (Fin 3) (Fin 3) :=
 
 inductive State where
   | A (a c : ℕ)
-  deriving DecidableEq
+  deriving DecidableEq, Repr
 
 def start : State := .A 0 1
 

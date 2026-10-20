@@ -1,17 +1,7 @@
 /-
-Copyright 2026 The Formal Conjectures Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright (c) 2026 Google LLC. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Google DeepMind
 -/
 
 module
@@ -22,12 +12,41 @@ public import BusyBeaver.Bridge
 @[expose] public section
 
 /-!
-# BB(3, 3) machine `1RB2LC1RC_2LC---2RB_2LA0LB0RA` (See-Saw)
+# Cryptid `1RB2LC1RC_2LC---2RB_2LA0LB0RA` (BB(3, 3) See-Saw Counter Machine)
 
-We prove that the halting problem for the 3-state, 3-symbol Turing machine
-`1RB2LC1RC_2LC---2RB_2LA0LB0RA` is equivalent to a 2-counter Collatz-like iteration
-on configurations `A(a, c) : 0^∞ 1 2^a <C (20)^c 0^∞`, reached after 2 steps from the
-blank tape at `A(0, 1)`.
+This file formalizes the Collatz-like reduction for the 3-state, 3-symbol Busy Beaver holdout
+Turing machine `1RB2LC1RC_2LC---2RB_2LA0LB0RA` (one of the two See-Saw holdout machines analyzed
+by `@dyuan01` and `@LegionMammal978`).
+
+## Canonical Configuration (`State`)
+
+Every macro configuration is parameterized by two natural numbers `(a, c) : ℕ²`:
+$$A(a, c) := 0^\infty\, 1\, 2^a\, {<}\mathrm{C}\; (20)^c\, 0^\infty$$
+The machine enters $A(0, 1)$ from the blank tape after 2 steps.
+
+## Accelerated Transition Function (`next`)
+
+Contracting `@dyuan01`'s 11-rule 3-counter system on $A_1(a, b, c)$, $A_2(a, b, c)$, and $B(a, b)$
+back to $A(a, c) = A_1(a, 0, c)$ yields `@LegionMammal978`'s 10-rule 2-counter map on
+$\mathbb{N}^2$:
+
+| Regime | Parities / Condition | Next State |
+| :--- | :--- | :--- |
+| $a \le c$ | $a \equiv 0 \pmod 2,\; c \equiv 0 \pmod 2$ | **Halt** (`none`) |
+| $a \le c$ | $a \equiv 0 \pmod 2,\; c \equiv 1 \pmod 2$ | $A(1,\; a/2 + c + 2)$ |
+| $a \le c$ | $a \equiv 1 \pmod 2,\; c \equiv 0 \pmod 2$ | $A(3a,\; c - a + 4)$ |
+| $a \le c$ | $a \equiv 1 \pmod 2,\; c \equiv 1 \pmod 2$ | $A(3a + 2,\; c - a + 1)$ |
+| $a > c$ | $c \equiv 0, 2 \pmod 4$ | $A(a - c - 1,\; 3\lfloor c/2 \rfloor + 2)$ |
+| $a > c$ | $c \equiv 1 \pmod 4,\; a = c + 1$ | **Halt** (`none`) |
+| $a > c$ | $c \equiv 1 \pmod 4,\; a \ge c + 2$ | $A(a - c - 2,\; 3\lfloor c/2 \rfloor + 5)$ |
+| $a > c$ | $c \equiv 3 \pmod 4,\; a = c + 1 \text{ or } c + 3$ | **Halt** (`none`) |
+| $a > c$ | $c \equiv 3 \pmod 4,\; a = c + 2$ | $A(3c + 8,\; 1)$ |
+| $a > c$ | $c \equiv 3 \pmod 4,\; a \ge c + 4$ | $A(a - c - 4,\; 3\lfloor c/2 \rfloor + 8)$ |
+
+## References
+
+* <https://wiki.bbchallenge.org/wiki/1RB2LC1RC_2LC---2RB_2LA0LB0RA>
+* <https://wiki.bbchallenge.org/wiki/BB(3,3)>
 -/
 
 namespace BusyBeaver.M_1RB2LC1RC_2LCHHH2RB_2LA0LB0RA
@@ -45,7 +64,7 @@ abbrev target : Machine (Fin 3) (Fin 3) :=
 /-- Canonical two-counter configuration `A(a, c)` representing `0^∞ 1 2^a <C (20)^c 0^∞`. -/
 inductive State where
   | A (a c : ℕ)
-  deriving DecidableEq
+  deriving DecidableEq, Repr
 
 /-- The initial accelerated state `A(0, 1)`, reached after 2 steps from the blank tape. -/
 def start : State := .A 0 1

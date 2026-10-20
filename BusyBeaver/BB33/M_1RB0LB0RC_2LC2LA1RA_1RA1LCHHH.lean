@@ -1,17 +1,7 @@
 /-
-Copyright 2026 The Formal Conjectures Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright (c) 2026 Google LLC. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Google DeepMind
 -/
 
 module
@@ -22,13 +12,24 @@ public import BusyBeaver.Bridge
 @[expose] public section
 
 /-!
-# BB(3, 3) machine `1RB0LB0RC_2LC2LA1RA_1RA1LC---` (See-Saw conjugate)
+# Cryptid `1RB0LB0RC_2LC2LA1RA_1RA1LC---` (BB(3, 3) See-Saw Conjugate)
 
-We prove that the halting problem for the 3-state, 3-symbol Turing machine
-`1RB0LB0RC_2LC2LA1RA_1RA1LC---` is equivalent to the same 2-counter Collatz-like
-See-Saw iteration as `1RB2LC1RC_2LC---2RB_2LA0LB0RA`, starting from `A(1, 1)`
-(reached after 4 steps from the blank tape) on configurations
-`A(a, c) : 0^∞ (01)^c A> 1^a 2 0^∞`.
+This file formalizes the Collatz-like reduction for the 3-state, 3-symbol Busy Beaver holdout
+Turing machine `1RB0LB0RC_2LC2LA1RA_1RA1LC---` (the mirror-symmetric See-Saw holdout machine
+analyzed by `@dyuan01` and `@LegionMammal978`).
+
+## Canonical Configuration (`State`)
+
+Under state/symbol/direction conjugation (`A ↔ C`, `1 ↔ 2`, `L ↔ R`), every macro configuration is
+parameterized by two natural numbers `(a, c) : ℕ²`:
+$$A(a, c) := 0^\infty\, (01)^c\, \mathrm{A}{>}\; 1^a\, 2\, 0^\infty$$
+The machine enters $A(1, 1)$ from the blank tape after 4 steps and obeys the exact same 10-rule
+2-counter transition function `next` as `1RB2LC1RC_2LC---2RB_2LA0LB0RA`.
+
+## References
+
+* <https://wiki.bbchallenge.org/wiki/1RB0LB0RC_2LC2LA1RA_1RA1LC--->
+* <https://wiki.bbchallenge.org/wiki/BB(3,3)>
 -/
 
 namespace BusyBeaver.M_1RB0LB0RC_2LC2LA1RA_1RA1LCHHH
@@ -46,7 +47,7 @@ abbrev target : Machine (Fin 3) (Fin 3) :=
 /-- Canonical two-counter configuration `A(a, c)` representing `0^∞ (01)^c A> 1^a 2 0^∞`. -/
 inductive State where
   | A (a c : ℕ)
-  deriving DecidableEq
+  deriving DecidableEq, Repr
 
 /-- The initial accelerated state `A(1, 1)`, reached after 4 steps from the blank tape. -/
 def start : State := .A 1 1

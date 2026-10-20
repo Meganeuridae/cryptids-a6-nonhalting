@@ -800,20 +800,25 @@ scoped notation3 c₁ " [" M "]⊢⁺ " c₂ => ReachesPlus M c₁ c₂
 
 /-! ## Additional Half-Tape Power Lemmas -/
 
+/-- Reversed addition law for repeated block appendages on a `ListBlank`. -/
 theorem ListBlank.append_pow_add_rev (s : ListBlank Γ) (u : List Γ) (m n : ℕ) :
     ListBlank.append (u ^ (m + n)) s = ListBlank.append (u ^ n) (ListBlank.append (u ^ m) s) := by
   rw [Nat.add_comm, ListBlank.append_pow_add]
 
+/-- Absorb one trailing copy of `u` into `u ^ k` on a `ListBlank`. -/
 theorem ListBlank.append_pow_succ' (u : List Γ) (k : ℕ) (r : ListBlank Γ) :
     ListBlank.append (u ^ k) (ListBlank.append u r) = ListBlank.append (u ^ (k + 1)) r := by
   rw [ListBlank.append_append, list_pow_succ']
 
+/-- Shift `[0, 1] ^ c` on the blank half-tape into `0 :: [1, 0] ^ c`. -/
 theorem default_append_01_pow (c : ℕ) :
     ListBlank.append (([0, 1] : List (Fin 2)) ^ c) default =
       ListBlank.cons 0 (ListBlank.append (([1, 0] : List (Fin 2)) ^ c) default) := by
   conv_lhs => rw [ListBlank.default_eq_append_zero]
   exact append_01_pow_zero c default
 
+/-- Construct `IsValidAcceleration` from an initial reachability proof and a unified step theorem
+dispatching on `next s`. -/
 theorem IsValidAcceleration.of_step {M : Machine Γ Λ} {S : Type*}
     {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
     (h_init : ReachesStar M (init []) (encode start))
@@ -831,6 +836,9 @@ theorem IsValidAcceleration.of_step {M : Machine Γ Λ} {S : Type*}
     rw [h] at hs
     exact hs
 
+/-- Derive `IsClosedPatternSet M ps` from a valid acceleration `IsValidAcceleration M start encode
+next` whose image `encode` characterizes `ps` and whose halting states step in `ReachesPlus` to a
+halting configuration. -/
 theorem IsValidAcceleration.isClosedPatternSet {M : Machine Γ Λ} {S : Type*}
     {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
     {ps : TapePatternSet Γ Λ}
@@ -847,6 +855,9 @@ theorem IsValidAcceleration.isClosedPatternSet {M : Machine Γ Λ} {S : Type*}
     exact ⟨cfg', hplus, Or.inr hnone⟩
   · exact ⟨encode s', h.step_some s s' hnext, Or.inl (h_in s')⟩
 
+/-- Derive `IsClosedStackPatternSet M ps` from a valid acceleration `IsValidAcceleration M start
+encode next` whose image `encode` characterizes `ps` and whose halting states step in `ReachesPlus`
+to a halting configuration. -/
 theorem IsValidAcceleration.isClosedStackPatternSet {M : Machine Γ Λ} {S : Type*}
     {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
     {ps : StackPatternSet Γ Λ}
@@ -890,6 +901,8 @@ private theorem exists_bool_of_evalStackSeg_two_word (a₀ a₁ : Γ) (ds : List
     · refine ⟨w, ?_⟩
       simpa using hw
 
+/-- Characterize a single two-symbol `.word [[a₀], [a₁]] 0` `StackExpr` as the image of a
+`List Bool` word `w` mapped by `fun b => if b then a₁ else a₀`. -/
 theorem exists_evalStackExpr_single_word_iff (a₀ a₁ : Γ) (s : ListBlank Γ) :
     (∃ (vars : ℕ → ℕ) (stks : ℕ → List ℕ),
       s = evalStackExpr [.word [[a₀], [a₁]] 0] vars stks) ↔
