@@ -19,17 +19,20 @@ Self-contained specification module audited against `Cryptids` by `leanprover/co
 
 - **Constructive gate (`comparator/constructive.json`, `goldbach_21.json`, `zf_380.json`,
   `riemann_104.json`; `permitted_axioms = ["propext", "Quot.sound"]`):**
-  All state reductions (`Goldbach21`, `Zf380`, `Riemann104`, `Riemann95`) and all ZF
+  The direct simulation state reductions (`Goldbach21`, `Zf380`, `Riemann104`), all four
+  `candidate_fewer_states` theorems (including `Riemann95.candidate_fewer_states`), and all ZF
   machine-to-proof-search equivalences (`Zf393.halts_zf393_iff_zfInconsistent`,
   `Zf380.Semantics.halts_candidate_iff_zfInconsistent`,
-  `Semantics.Zf.halts_zf432_iff_wadeZFInconsistent`) are verified **without `Classical.choice`**.
-  Because classical Lean (`ZFSet.{0}` in `Soundness.lean`) proves `not_zfInconsistent`—and
+  `Semantics.Zf.halts_zf432_iff_wadeZFInconsistent`) are verified **without `Classical.choice`**
+  (`ListBlank` uses primitive `Quot` rather than `Quotient` so `Halts` is choice-free). Because
+  `Zf/Soundness.lean` proves `not_zfInconsistent` via `ZFSet.{0}` (`Classical.choice`)—and
   `CIC + EM` proves `Con(ZF)` without choice (`digama0/ConZF`)—disallowing `Classical.choice`
-  prevents vacuous `False ↔ False` proofs of `Halts M ↔ ZFInconsistent` for arbitrary non-halting
-  machines (`ListBlank` uses primitive `Quot` rather than `Quotient` so `Halts` is choice-free).
+  blocks classical `Con(ZF)` shortcuts for `Halts M ↔ ZFInconsistent` (though Lean's type theory
+  remains stronger than `PA`/`ZF`; see `Cryptids/Semantics/README.md`).
 - **Full gate (`comparator/all.json`; `permitted_axioms = ["propext", "Quot.sound",
   "Classical.choice"]`):**
-  Audits all 22 theorems, including classical `ZFSet.{0}` soundness/non-halting, negated-`Π₁⁰`
+  Audits all 22 theorems, including `Riemann95.candidate_equivalent` (which uses
+  `Classical.choice` via `Nat.Prime`), classical `ZFSet.{0}` soundness/non-halting, negated-`Π₁⁰`
   Goldbach (`¬ GoldbachConjecture`, which uses Markov's Principle), and analytic
   `RiemannHypothesis` equivalences.
 -/

@@ -34,8 +34,10 @@ that:
      `Zf380.Semantics.halts_candidate_iff_zfInconsistent`,
      `halts_zf432_iff_wadeZFInconsistent`), the direct simulation reductions (`Goldbach21`, `Zf380`,
      `Riemann104`), and all four `candidate_fewer_states` theorems (10 theorems total). Disallowing
-     `Classical.choice` blocks vacuous `False ↔ False` proofs of `Halts M ↔ ZFInconsistent` via
-     classical `Con(ZF)` (`not_zfInconsistent` in `ZFSet.{0}` or `CIC + EM`; see
+     `Classical.choice` blocks classical `Con(ZF)` shortcuts (`not_zfInconsistent` in `ZFSet.{0}` or
+     `Classical.em` + `digama0/ConZF`) for `Halts M ↔ ZFInconsistent`, though Lean's constructive
+     type theory remains stronger than `PA`/`ZF` and does not by itself internalize the reduction
+     inside `PA`/`ZF` (see
      [`Cryptids/Semantics/README.md`](../Cryptids/Semantics/README.md#foundational-note-conzf-in-lean-and-constructive-equivalence)).
    - **`["propext", "Quot.sound", "Classical.choice"]`:** allowed in [`all.json`](./all.json),
      [`busy_beaver.json`](./busy_beaver.json), and the classical model-theoretic / arithmetic-stage /

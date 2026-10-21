@@ -120,8 +120,11 @@ status:
     and the state-reduction halting equivalences for goldbach_21, zf_380, and
     riemann_104 (along with all four candidate_fewer_states theorems, 10
     theorems total) are proved constructively using only propext and Quot.sound
-    (zero Classical.choice, audited via comparator/constructive.json so vacuous
-    False <-> False proofs via Con(ZF) are excluded). The classical end-to-end
+    (zero Classical.choice, audited via comparator/constructive.json so
+    classical Con(ZF) shortcuts such as Soundness.lean's not_zfInconsistent are
+    excluded; this establishes a constructive meta-level correspondence in Lean
+    rather than internalizing the reduction inside PA/ZF). The classical
+    end-to-end
     semantics—unconditional ZF non-halting via soundness in Mathlib's ZFSet.{0}
     (Cryptids/Semantics/Zf/Soundness.lean), negated-Pi_1^0 Goldbach semantics
     (Cryptids/Semantics/Goldbach.lean), and complex-analytic Riemann Hypothesis
