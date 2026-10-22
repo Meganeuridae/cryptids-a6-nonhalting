@@ -1298,17 +1298,24 @@ theorem is_valid_highLevel_acceleration :
       · rcases b with _ | b
         · exact CollatzStepsTo.head rfl (stepsTo_drain_c 1 0 0 5)
         · exact CollatzStepsTo.head rfl (stepsTo_drain_c 1 0 0 (2 * b + 3))
-      · dsimp [highLevelNext]
+      · dsimp only [highLevelNext]
         split_ifs with h1 h2 h3 h4
         · have h0 : next (.A 0 b 0 (d + 2)) =
               some (.A (3 * d + 2) 1 2 (2 * b - 2 * d - 1)) := by
-            simp [next, h1]
+            simp only [next, h1, ↓reduceIte]
           exact CollatzStepsTo.head h0
             (stepsTo_drain_c 1 (3 * d + 2) 1 (2 * b - 2 * d - 1))
-        · exact CollatzStepsTo.of_eq (by simp [next, toState, h2])
-        · exact CollatzStepsTo.of_eq (by simp [next, toState, h3])
-        · exact CollatzStepsTo.of_eq (by simp [next, toState, h4])
-        · exact CollatzStepsTo.of_eq (by simp [next, toState, h1, h2, h3, h4])
+        · refine CollatzStepsTo.of_eq ?_
+          simp only [next, toState, Option.map, h1, ↓reduceIte]
+          simp only [h2, ↓reduceIte]
+        · refine CollatzStepsTo.of_eq ?_
+          simp only [next, toState, Option.map, h1, h2, ↓reduceIte]
+          simp only [h3, ↓reduceIte]
+        · refine CollatzStepsTo.of_eq ?_
+          simp only [next, toState, Option.map, h1, h2, h3, ↓reduceIte]
+          simp only [h4, ↓reduceIte]
+        · refine CollatzStepsTo.of_eq ?_
+          simp only [next, toState, Option.map, h1, h2, h3, h4, ↓reduceIte]
     · rcases b with _ | b
       · exact CollatzStepsTo.of_eq rfl
       · have h1 := stepsTo_drain_c (b + 1) 1 1 d
