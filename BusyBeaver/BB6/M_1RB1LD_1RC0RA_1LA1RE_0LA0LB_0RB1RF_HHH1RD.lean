@@ -10,37 +10,24 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_---1RD`
 
-Formal `IsClosedPatternSet`, `HasCollatzReduction`, and `IsValidAcceleration` proofs for the
-6-state, 2-symbol Busy Beaver holdout `1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_---1RD`.
+We define the configuration for $a, b, d \ge 0$:
+$$C(a, b, d) := 0^\infty\,1^a\,(10)^b\,\mathrm{A}{>}\,1^d\,0^\infty.$$
 
-Starting from the blank tape (`init []`), the trajectory begins immediately in the canonical
-configuration family
-$$A(a, b, c, d) := 0^\infty\,1^a\,(10)^b\,\mathrm{A}{>}\,(01)^c\,1^d\,0^\infty$$
-at $A(0, 0, 0, 0)$, and every member configuration advances in `ReachesPlus` either to another
-member of the pattern set or to a halting configuration (when $a = 0, c = 0, d = b + 2$).
-
-## Collatz-like Acceleration Rules
-
-```text
-Consider:
-A(a, b, c, d) = 0^inf 1^a 10^b A> 01^c 1^d 0^inf
-
-A(a, b, c, d) -> A(a, b+1, c-1, d) if c > 0
-A(a, b, 0, 0) -> A(a+1, 0, 0, 2b+2)
-A(a, b, 0, d) -> A(a-3, b+2, 0, d-1) if d > 0 and a >= 3
-A(2, b, 0, d) -> A(0, 0, b+1, d-1) if d > 0
-A(1, b, 0, d) -> A(1, 1, b+1, d-1) if d > 0 and b > 0
-A(1, 0, 0, d) -> A(0, 0, 0, d+2) if d > 0
-A(0, 0, 0, 1) -> A(0, 0, 2, 5)
-A(0, b, 0, 1) -> A(0, 0, 2, 2b+1) if b > 0
-A(0, b, 0, d) -> A(3d-4, 1, 2, 2b-2d+3) if d >= 2 and b >= d-1
-A(0, b, 0, b+3) -> A(3b+2, 0, 0, 6)
-A(0, b, 0, b+4) -> A(3b+4, 0, 0, 4)
-A(0, b, 0, d) -> A(3b+3, 2, 0, d-b-5) if d >= b+5
-A(0, b, 0, b+2) -> Halt
-
-Start: A(0, 0, 0, 0), already present on the initial blank tape
-```
+Starting from $C(0, 0, 0)$, the machine follows the map $T$:
+$$T(C(a, b, d)) = \begin{cases}
+  C(a+1, 0, 2b+2) & \text{if } d = 0, \\
+  C(a-3, b+2, d-1) & \text{if } a \ge 3,\; d \ge 1, \\
+  C(0, b+1, d-1) & \text{if } a = 2,\; d \ge 1, \\
+  C(1, b+3, d-1) & \text{if } a = 1,\; b \ge 1,\; d \ge 1, \\
+  C(0, 0, d+2) & \text{if } a = 1,\; b = 0,\; d \ge 1, \\
+  C(0, 2, 5) & \text{if } a = 0,\; b = 0,\; d = 1, \\
+  C(0, 2, 2b+1) & \text{if } a = 0,\; b \ge 1,\; d = 1, \\
+  C(3d-4, 3, 2b-2d+3) & \text{if } a = 0,\; d \ge 2,\; b \ge d-1, \\
+  \text{Halt} & \text{if } a = 0,\; d = b+2, \\
+  C(3b+2, 0, 6) & \text{if } a = 0,\; d = b+3, \\
+  C(3b+4, 0, 4) & \text{if } a = 0,\; d = b+4, \\
+  C(3b+3, 2, d-b-5) & \text{if } a = 0,\; d \ge b+5.
+\end{cases}$$
 -/
 
 @[expose] public section
@@ -1243,5 +1230,100 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next whe
 from `start`. -/
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- Single-family high-level symbolic configuration state space for
+`1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_---1RD`. -/
+inductive HighLevelState where
+  /-- $C(a, b, d) := 0^\infty\,1^a\,(10)^b\,\mathrm{A}{>}\,1^d\,0^\infty$. -/
+  | C (a b d : ℕ)
+
+/-- Initial high-level symbolic state $C(0, 0, 0)$. -/
+def highLevelStart : HighLevelState := .C 0 0 0
+
+/-- Embed a `HighLevelState` into `State`. -/
+def toState : HighLevelState → State
+  | .C a b d => .A a b 0 d
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+/-- High-level accelerated transition function on $C(a, b, d)$, obtained by contracting the
+$(01)^c$ shift transitions. -/
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C a b 0 => some (.C (a + 1) 0 (2 * b + 2))
+  | .C (a + 3) b (d + 1) => some (.C a (b + 2) d)
+  | .C 2 b (d + 1) => some (.C 0 (b + 1) d)
+  | .C 1 (b + 1) (d + 1) => some (.C 1 (b + 3) d)
+  | .C 1 0 (d + 1) => some (.C 0 0 (d + 3))
+  | .C 0 0 1 => some (.C 0 2 5)
+  | .C 0 (b + 1) 1 => some (.C 0 2 (2 * b + 3))
+  | .C 0 b (d + 2) =>
+    if b ≥ d + 1 then some (.C (3 * d + 2) 3 (2 * b - 2 * d - 1))
+    else if d = b then none
+    else if d = b + 1 then some (.C (3 * b + 2) 0 6)
+    else if d = b + 2 then some (.C (3 * b + 4) 0 4)
+    else some (.C (3 * b + 3) 2 (d - b - 3))
+
+private theorem stepsTo_drain_c : ∀ (c a b d : ℕ),
+    CollatzStepsTo next (.A a b (c + 1) d) (some (.A a (b + c + 1) 0 d))
+  | 0, a, b, d => by
+    simp only [Nat.add_zero]
+    exact CollatzStepsTo.of_eq rfl
+  | c + 1, a, b, d => by
+    have ih := stepsTo_drain_c c a (b + 1) d
+    have h_eq : b + 1 + c + 1 = b + (c + 1) + 1 := by omega
+    rw [h_eq] at ih
+    exact CollatzStepsTo.head rfl ih
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by
+  refine is_valid_acceleration.of_collatz (embed := toState)
+    (CollatzReachesStar.refl next start) ?_
+  rintro ⟨a, b, d⟩
+  rcases d with _ | d
+  · exact CollatzStepsTo.of_eq rfl
+  · rcases a with _ | _ | _ | a
+    · rcases d with _ | d
+      · rcases b with _ | b
+        · exact CollatzStepsTo.head rfl (stepsTo_drain_c 1 0 0 5)
+        · exact CollatzStepsTo.head rfl (stepsTo_drain_c 1 0 0 (2 * b + 3))
+      · dsimp [highLevelNext]
+        split_ifs with h1 h2 h3 h4
+        · have h0 : next (.A 0 b 0 (d + 2)) =
+              some (.A (3 * d + 2) 1 2 (2 * b - 2 * d - 1)) := by
+            simp [next, h1]
+          exact CollatzStepsTo.head h0
+            (stepsTo_drain_c 1 (3 * d + 2) 1 (2 * b - 2 * d - 1))
+        · exact CollatzStepsTo.of_eq (by simp [next, toState, h2])
+        · exact CollatzStepsTo.of_eq (by simp [next, toState, h3])
+        · exact CollatzStepsTo.of_eq (by simp [next, toState, h4])
+        · exact CollatzStepsTo.of_eq (by simp [next, toState, h1, h2, h3, h4])
+    · rcases b with _ | b
+      · exact CollatzStepsTo.of_eq rfl
+      · have h1 := stepsTo_drain_c (b + 1) 1 1 d
+        have hb : 1 + (b + 1) + 1 = b + 3 := by omega
+        rw [hb] at h1
+        exact CollatzStepsTo.head rfl h1
+    · have h1 := stepsTo_drain_c b 0 0 d
+      rw [Nat.zero_add] at h1
+      exact CollatzStepsTo.head rfl h1
+    · exact CollatzStepsTo.of_eq rfl
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_HHH1RD

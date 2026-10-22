@@ -10,32 +10,29 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`
 
-## Collatz-like Acceleration Rules
+We define the configuration for $p \in \{0, 1\}$ and $k, j, c \ge 0$:
+$$S(p, k, j, c) := 0^\infty\,(1110)^p\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty.$$
 
-The canonical configuration family is parameterized by left prefix
-$l \in \{0^\infty, 0^\infty 1^3 0\}$ and non-negative integers $k, j, c \ge 0$:
-$$S(l, k, j, c) \equiv l \, 1^k \; \text{\{\{D\}\}>} \; 1^2 \, (01)^j \, 1^c \, 0^\infty$$
-together with the intermediate scan family:
-$$C_{001}(l, a, b) \equiv l \; \text{\{\{C\}\}>} \; 001 \, (01)^a \, 1^b \, 0^\infty$$
-
-Starting from the blank tape, the machine reaches $S(0^\infty, 2, 0, 0)$. The accelerated rules are:
-
-```text
-S(l, k + 3, j, c + 1) -> S(l, k, j + 2, c)
-S(l, k + 2, j, 0)     -> S(l, k, 0, 2j + 5)
-S(0^inf, 2, j, c + 1) -> C_001(0^inf, j + 2, c)
-S(0^inf, 1, j, c + 1) -> C_001(0^inf, j + 1, c)
-S(0^inf, 1, j, 0)     -> S(0^inf, 0, 0, 2j + 3)
-S(0^inf, 0, j + 1, c) -> C_001(0^inf 1^3 0, j, c)
-S(0^inf, 0, 0, c)     -> C_001(0^inf, 0, c + 2)
-
-C_001(l, 2m, 0)       -> Halt
-C_001(l, 2m, 1)       -> S(l, 4m + 2, 0, 0)
-C_001(l, 2m, 2)       -> S(l, 4m + 2, 0, 3)
-C_001(l, 2m, c + 3)   -> S(l, 4m + 4, 0, c)
-C_001(l, 2m + 1, 0)   -> S(l, 4m + 4, 0, 1)
-C_001(l, 2m + 1, c+1) -> S(l, 4m + 3, 0, c + 1)
-```
+Starting from $S(0, 2, 0, 0)$, the machine follows the map $T$ (where $\Phi(2m, 0) = \text{Halt}$,
+$\Phi(2m, 1) = (4m + 2, 0, 0)$, $\Phi(2m, 2) = (4m + 2, 0, 3)$,
+$\Phi(2m, c + 3) = (4m + 4, 0, c)$, $\Phi(2m + 1, 0) = (4m + 4, 0, 1)$, and
+$\Phi(2m + 1, c + 1) = (4m + 3, 0, c + 1)$):
+$$T(S(p, k, j, c)) = \begin{cases}
+  S(p, k', j + 2, c') & \text{if } k = k' + 3,\; c = c' + 1, \\
+  S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\; c = 0, \\
+  S(0, \Phi(j + 2, c')) & \text{if } p = 0,\; k = 2,\; c = c' + 1, \\
+  S(0, 0, 0, 2j + 5) & \text{if } p = 0,\; k = 2,\; c = 0, \\
+  S(0, \Phi(j + 1, c')) & \text{if } p = 0,\; k = 1,\; c = c' + 1, \\
+  S(0, 0, 0, 2j + 3) & \text{if } p = 0,\; k = 1,\; c = 0, \\
+  S(1, \Phi(j', c)) & \text{if } p = 0,\; k = 0,\; j = j' + 1, \\
+  S(0, \Phi(0, c + 2)) & \text{if } p = 0,\; k = 0,\; j = 0, \\
+  S(0, 1, j + 3, c') & \text{if } p = 1,\; k = 2,\; c = c' + 1, \\
+  S(1, 0, 0, 2j + 5) & \text{if } p = 1,\; k = 2,\; c = 0, \\
+  S(0, (3, 0, 0) + \Phi(j + 1, c')) & \text{if } p = 1,\; k = 1,\; c = c' + 1, \\
+  S(0, 1, 1, 2j + 5) & \text{if } p = 1,\; k = 1,\; c = 0, \\
+  S(0, 6, j' + 1, c) & \text{if } p = 1,\; k = 0,\; j = j' + 1, \\
+  S(0, 2, 0, c + 2) & \text{if } p = 1,\; k = 0,\; j = 0.
+\end{cases}$$
 -/
 
 @[expose] public section
@@ -926,5 +923,119 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- High-level symbolic configuration state space for `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`,
+parameterizing $S(p, k, j, c) := 0^\infty\,(1110)^p\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty$
+for $p \in \{0, 1\}$. -/
+inductive HighLevelState where
+  /-- $S(0, k, j, c) := 0^\infty\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty$. -/
+  | S_def (k j c : ℕ)
+  /-- $S(1, k, j, c) := 0^\infty\,1110\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty$. -/
+  | S_hat (k j c : ℕ)
+
+/-- Initial high-level symbolic state $S(0, 2, 0, 0)$. -/
+def highLevelStart : HighLevelState := .S_def 2 0 0
+
+/-- Embed a `HighLevelState` into `State`. -/
+def toState : HighLevelState → State
+  | .S_def k j c => .S_def k j c
+  | .S_hat k j c => .S_hat k j c
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+/-- Helper evaluating a $C_{001}(l, a, b)$ transition into `HighLevelState`. -/
+def evalC (mk : ℕ → ℕ → ℕ → HighLevelState) (a b : ℕ) : Option HighLevelState :=
+  if a % 2 = 0 then
+    Nat.casesOn b none fun b =>
+    Nat.casesOn b (some (mk (4 * (a / 2) + 2) 0 0)) fun b =>
+    Nat.casesOn b (some (mk (4 * (a / 2) + 2) 0 3)) fun c =>
+    some (mk (4 * (a / 2) + 4) 0 c)
+  else
+    Nat.casesOn b (some (mk (4 * (a / 2) + 4) 0 1)) fun c =>
+    some (mk (4 * (a / 2) + 3) 0 (c + 1))
+
+/-- High-level accelerated transition function on $S(p, k, j, c)$, obtained by composing out
+$C_{001}$. -/
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .S_def 0 0 c => evalC .S_def 0 (c + 2)
+  | .S_def 0 (j + 1) c => evalC .S_hat j c
+  | .S_def 1 j 0 => some (.S_def 0 0 (2 * j + 3))
+  | .S_def 1 j (c + 1) => evalC .S_def (j + 1) c
+  | .S_def 2 j 0 => some (.S_def 0 0 (2 * j + 5))
+  | .S_def 2 j (c + 1) => evalC .S_def (j + 2) c
+  | .S_def (k + 3) j 0 => some (.S_def (k + 1) 0 (2 * j + 5))
+  | .S_def (k + 3) j (c + 1) => some (.S_def k (j + 2) c)
+  | .S_hat 0 0 c => some (.S_def 2 0 (c + 2))
+  | .S_hat 0 (j + 1) c => some (.S_def 6 (j + 1) c)
+  | .S_hat 1 j 0 => some (.S_def 1 1 (2 * j + 5))
+  | .S_hat 1 j (c + 1) => evalC (fun k j' c' => .S_def (3 + k) j' c') (j + 1) c
+  | .S_hat 2 j 0 => some (.S_hat 0 0 (2 * j + 5))
+  | .S_hat 2 j (c + 1) => some (.S_def 1 (j + 3) c)
+  | .S_hat (k + 3) j 0 => some (.S_hat (k + 1) 0 (2 * j + 5))
+  | .S_hat (k + 3) j (c + 1) => some (.S_hat k (j + 2) c)
+
+private theorem stepsTo_C_def (a b : ℕ) :
+    CollatzStepsTo next (.C_def a b) ((evalC .S_def a b).map toState) := by
+  dsimp [evalC]
+  split_ifs with ha
+  · rcases b with _ | _ | _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+  · rcases b with _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+
+private theorem stepsTo_C_hat (a b : ℕ) :
+    CollatzStepsTo next (.C_hat a b) ((evalC .S_hat a b).map toState) := by
+  dsimp [evalC]
+  split_ifs with ha
+  · rcases b with _ | _ | _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+  · rcases b with _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+
+private theorem stepsTo_C_ones3 (a b : ℕ) :
+    CollatzStepsTo next (.C_ones3 a b)
+      ((evalC (fun k j' c' => .S_def (3 + k) j' c') a b).map toState) := by
+  dsimp [evalC]
+  split_ifs with ha
+  · rcases b with _ | _ | _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+  · rcases b with _ | c <;> exact CollatzStepsTo.of_eq (by simp [next, toState, ha])
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by
+  refine is_valid_acceleration.of_collatz (embed := toState)
+    (CollatzReachesStar.refl next start) ?_
+  rintro (⟨k, j, c⟩ | ⟨k, j, c⟩)
+  · rcases k with _ | _ | _ | k
+    · rcases j with _ | j
+      · exact CollatzStepsTo.head rfl (stepsTo_C_def 0 (c + 2))
+      · exact CollatzStepsTo.head rfl (stepsTo_C_hat j c)
+    · rcases c with _ | c
+      · exact CollatzStepsTo.of_eq rfl
+      · exact CollatzStepsTo.head rfl (stepsTo_C_def (j + 1) c)
+    · rcases c with _ | c
+      · exact CollatzStepsTo.of_eq rfl
+      · exact CollatzStepsTo.head rfl (stepsTo_C_def (j + 2) c)
+    · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
+  · rcases k with _ | _ | _ | k
+    · rcases j with _ | j <;> exact CollatzStepsTo.of_eq rfl
+    · rcases c with _ | c
+      · exact CollatzStepsTo.of_eq rfl
+      · exact CollatzStepsTo.head rfl (stepsTo_C_ones3 (j + 1) c)
+    · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
+    · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_HHH0RD

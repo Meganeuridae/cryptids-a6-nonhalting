@@ -10,60 +10,19 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1LF_0RC1RD_1LA1LD_1LE0RA_---1LC_0LA1LA`
 
-Formal `IsClosedPatternSet`, `HasCollatzReduction`, and `IsValidAcceleration` proofs for the
-6-state, 2-symbol Busy Beaver holdout `1RB1LF_0RC1RD_1LA1LD_1LE0RA_---1LC_0LA1LA`.
+We define the configuration for $a \ge 0$, $b \ge 6$:
+$$C(a, b) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^b\,0^\infty.$$
 
-Starting from the blank tape (`init []`), the trajectory reaches the guarded configuration family
-$$C(a, b) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^b\,0^\infty \quad (b \ge 6)$$
-at $C(0, 9)$, and every $C(a, b)$ with $b \ge 6$ advances in `ReachesPlus` either to another
-$C(a', b')$ with $b' \ge 6$ or to a halting configuration.
-
-## Collatz-like Acceleration Rules
-
-```text
-Consider:
-C(a, b) = 0^inf 110 A> 11^a 0 1^b 0^inf with b >= 6
-M_3(a, c, d) = 0^inf 110 A> 11^a 01 11^c 0 1^d 0^inf
-M_4(a, b, c, d) = 0^inf 11^{a+1} 110 A> 11^b 01 11^c 0 1^d 0^inf
-
-Notice that C(a, 2c+1) = M_3(a, c, 0)
-
-C(0, 2k+6) -> C(k+1, 9)
-C(a+1, 2k+6) -> M_4(a, k+1, 4, 0)
-
-M_3(0, 0, d) -> Halt
-M_3(1, 0, d) -> Halt
-M_3(a+2, 0, d) -> C(a+1, d+9)
-M_3(0, c+1, d) -> C(c+1, d+6)
-M_3(a+1, c+1, d) -> M_3(a, c, d+6)
-
-M_4(a, 0, c, d) -> C(a+c+1, d+6)
-M_4(0, 1, 0, d) -> Halt
-M_4(a+1, 1, 0, d) -> C(a+1, d+12)
-M_4(a, b+2, 0, d) -> M_3(a, b, d+9)
-M_4(a, b+1, c+1, d) -> M_4(a, b, c, d+6)
-
-Start: C(0, 9), reached after 74 raw TM steps
-```
-
-This initial acceleration can be simplified by composing transitions through $M_3$ and $M_4$,
-yielding a system expressed in terms of the configuration $C$:
-
-```text
-Consider:
-C(a, b) = 0^inf 110 A> 11^a 0 1^b 0^inf with b >= 6
-
-C(0, 2k+6) -> C(k+1, 9)
-C(a+1, 2k+6) -> C(a-k+4, 6k+12) if k <= a+3
-C(a+1, 2k+6) -> Halt if k = a+4 or k = a+5
-C(a+1, 2k+6) -> C(k-a-5, 6a+39) if k >= a+6
-
-C(a, 2k+1) -> C(k-a, 6a+6) if k > a
-C(a, 2k+1) -> Halt if a = k or a = k+1
-C(a, 2k+1) -> C(a-k-1, 6k+9) if a >= k+2
-
-Start: C(0, 9), reached after 74 raw TM steps
-```
+Starting from $C(0, 9)$, the machine follows the map $T$:
+$$T(C(a, b)) = \begin{cases}
+  C(k+1, 9) & \text{if } a = 0,\; b = 2k+6, \\
+  C(a-k+3, 6k+12) & \text{if } a \ge 1,\; b = 2k+6,\; k \le a+2, \\
+  \text{Halt} & \text{if } a \ge 1,\; b = 2k+6,\; k \in \{a+3, a+4\}, \\
+  C(k-a-4, 6a+33) & \text{if } a \ge 1,\; b = 2k+6,\; k \ge a+5, \\
+  C(k-a, 6a+6) & \text{if } b = 2k+1,\; k > a, \\
+  \text{Halt} & \text{if } b = 2k+1,\; a \in \{k, k+1\}, \\
+  C(a-k-1, 6k+9) & \text{if } b = 2k+1,\; a \ge k+2.
+\end{cases}$$
 -/
 
 @[expose] public section
@@ -1265,5 +1224,187 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next whe
 from `start`. -/
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- Single-family high-level symbolic configuration state space for
+`1RB1LF_0RC1RD_1LA1LD_1LE0RA_---1LC_0LA1LA`. -/
+inductive HighLevelState where
+  /-- $C(a, b + 6) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^{b+6}\,0^\infty$. -/
+  | C (a b : ℕ)
+
+/-- Initial high-level symbolic state $C(0, 9)$. -/
+def highLevelStart : HighLevelState := .C 0 3
+
+/-- Embed a `HighLevelState` into `State`. -/
+def toState : HighLevelState → State
+  | .C a b => .C a b
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+/-- High-level accelerated transition function on $C(a, b + 6)$, obtained by composing transitions
+through $M_3$ and $M_4$. -/
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C 0 b =>
+    if b % 2 = 0 then some (.C (b / 2 + 1) 3)
+    else some (.C (b / 2 + 3) 0)
+  | .C (a + 1) b =>
+    if b % 2 = 0 then
+      let k := b / 2
+      if k ≤ a + 3 then some (.C (a + 4 - k) (6 * k + 6))
+      else if k ≤ a + 5 then none
+      else some (.C (k - a - 5) (6 * a + 33))
+    else
+      let k := b / 2 + 2
+      if k > a then some (.C (k - a) (6 * a + 6))
+      else if a ≤ k + 1 then none
+      else some (.C (a - k - 1) (6 * k + 9))
+
+private theorem next_M3_succ (a c d : ℕ) :
+    next (.M_3 (a + 1) (c + 1) d) = some (.M_3 a c (d + 6)) := by
+  simp [next]
+
+private theorem next_M4_zero (a c d : ℕ) :
+    next (.M_4 a 0 c d) = some (.C (a + c + 1) d) := by
+  simp [next]
+
+private theorem next_M4_ge2_zero (a b d : ℕ) :
+    next (.M_4 a (b + 2) 0 d) = some (.M_3 a b (d + 9)) := by
+  simp [next]
+
+private theorem next_M4_succ (a b c d : ℕ) :
+    next (.M_4 a (b + 1) (c + 1) d) = some (.M_4 a b c (d + 6)) := by
+  simp [next]
+
+private def evalM3 (a c d : ℕ) : Option HighLevelState :=
+  if c > a then some (.C (c - a) (d + 6 * a))
+  else if a ≤ c + 1 then none
+  else some (.C (a - c - 1) (d + 6 * c + 3))
+
+private theorem stepsTo_M3 : ∀ (a c d : ℕ),
+    CollatzStepsTo next (.M_3 a c d) ((evalM3 a c d).map toState)
+  | 0, 0, _d => by
+    dsimp [evalM3]
+    exact CollatzStepsTo.of_eq rfl
+  | 1, 0, _d => by
+    dsimp [evalM3]
+    exact CollatzStepsTo.of_eq rfl
+  | a + 2, 0, d => by
+    have h1 : ¬ (0 > a + 2) := by omega
+    have h2 : ¬ (a + 2 ≤ 0 + 1) := by omega
+    simp only [evalM3, h1, h2, ↓reduceIte, Nat.sub_zero, Nat.mul_zero, Nat.add_zero]
+    exact CollatzStepsTo.of_eq rfl
+  | 0, c + 1, d => by
+    have h1 : c + 1 > 0 := by omega
+    simp only [evalM3, h1, ↓reduceIte, Nat.sub_zero, Nat.mul_zero, Nat.add_zero]
+    exact CollatzStepsTo.of_eq rfl
+  | a + 1, c + 1, d => by
+    have ih := stepsTo_M3 a c (d + 6)
+    have heq : evalM3 (a + 1) (c + 1) d = evalM3 a c (d + 6) := by
+      dsimp [evalM3]
+      split_ifs <;> first | rfl | omega | (congr 1; congr 1 <;> omega)
+    rw [heq]
+    exact CollatzStepsTo.head (next_M3_succ a c d) ih
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by
+  refine is_valid_acceleration.of_collatz (embed := toState)
+    (CollatzReachesStar.refl next start) ?_
+  rintro ⟨a, b⟩
+  rcases a with _ | a
+  · dsimp [highLevelNext]
+    split_ifs with hb
+    · exact CollatzStepsTo.of_eq (by simp [next, toState, hb])
+    · exact CollatzStepsTo.of_eq (by simp [next, toState, hb])
+  · by_cases hb : b % 2 = 0
+    · simp only [highLevelNext, hb, ↓reduceIte]
+      have h_step0 : next (.C (a + 1) b) = some (.M_4 a (b / 2 + 1) 4 0) := by simp [next, hb]
+      generalize b / 2 = k at h_step0 ⊢
+      rcases k with _ | _ | _ | _ | _ | u
+      · exact CollatzStepsTo.head h_step0
+          (CollatzStepsTo.head (next_M4_succ a 0 3 0)
+            (CollatzStepsTo.of_eq (next_M4_zero a 3 6)))
+      · have hle : 1 ≤ a + 3 := by omega
+        have ha : a + 4 - 1 = a + 2 + 1 := by omega
+        simp only [hle, ↓reduceIte, ha]
+        exact CollatzStepsTo.head h_step0
+          (CollatzStepsTo.head (next_M4_succ a 1 3 0)
+            (CollatzStepsTo.head (next_M4_succ a 0 2 6)
+              (CollatzStepsTo.of_eq (next_M4_zero a 2 12))))
+      · have hle : 2 ≤ a + 3 := by omega
+        have ha : a + 4 - 2 = a + 1 + 1 := by omega
+        simp only [hle, ↓reduceIte, ha]
+        exact CollatzStepsTo.head h_step0
+          (CollatzStepsTo.head (next_M4_succ a 2 3 0)
+            (CollatzStepsTo.head (next_M4_succ a 1 2 6)
+              (CollatzStepsTo.head (next_M4_succ a 0 1 12)
+                (CollatzStepsTo.of_eq (next_M4_zero a 1 18)))))
+      · have hle : 3 ≤ a + 3 := by omega
+        have ha : a + 4 - 3 = a + 0 + 1 := by omega
+        simp only [hle, ↓reduceIte, ha]
+        exact CollatzStepsTo.head h_step0
+          (CollatzStepsTo.head (next_M4_succ a 3 3 0)
+            (CollatzStepsTo.head (next_M4_succ a 2 2 6)
+              (CollatzStepsTo.head (next_M4_succ a 1 1 12)
+                (CollatzStepsTo.head (next_M4_succ a 0 0 18)
+                  (CollatzStepsTo.of_eq (next_M4_zero a 0 24))))))
+      · rcases a with _ | a'
+        · exact CollatzStepsTo.head h_step0
+            (CollatzStepsTo.head (next_M4_succ 0 4 3 0)
+              (CollatzStepsTo.head (next_M4_succ 0 3 2 6)
+                (CollatzStepsTo.head (next_M4_succ 0 2 1 12)
+                  (CollatzStepsTo.head (next_M4_succ 0 1 0 18)
+                    (CollatzStepsTo.of_eq rfl)))))
+        · have hle : 4 ≤ a' + 1 + 3 := by omega
+          have ha : a' + 1 + 4 - 4 = a' + 1 := by omega
+          simp only [hle, ↓reduceIte, ha]
+          exact CollatzStepsTo.head h_step0
+            (CollatzStepsTo.head (next_M4_succ (a' + 1) 4 3 0)
+              (CollatzStepsTo.head (next_M4_succ (a' + 1) 3 2 6)
+                (CollatzStepsTo.head (next_M4_succ (a' + 1) 2 1 12)
+                  (CollatzStepsTo.head (next_M4_succ (a' + 1) 1 0 18)
+                    (CollatzStepsTo.of_eq rfl)))))
+      · have h_m3 := stepsTo_M3 a u 33
+        have heq :
+            (if u + 5 ≤ a + 3 then some (.C (a + 4 - (u + 5)) (6 * (u + 5) + 6))
+             else if u + 5 ≤ a + 5 then none
+             else some (.C (u + 5 - a - 5) (6 * a + 33))) = evalM3 a u 33 := by
+          dsimp [evalM3]
+          split_ifs <;> first | rfl | omega | (congr 1; congr 1 <;> omega)
+        rw [heq]
+        exact CollatzStepsTo.head h_step0
+          (CollatzStepsTo.head (next_M4_succ a (u + 5) 3 0)
+            (CollatzStepsTo.head (next_M4_succ a (u + 4) 2 6)
+              (CollatzStepsTo.head (next_M4_succ a (u + 3) 1 12)
+                (CollatzStepsTo.head (next_M4_succ a (u + 2) 0 18)
+                  (CollatzStepsTo.head (next_M4_ge2_zero a u 24) h_m3)))))
+    · simp only [highLevelNext, hb, ↓reduceIte]
+      have h_step0 : next (.C (a + 1) b) = some (.M_3 a (b / 2 + 2) 6) := by simp [next, hb]
+      have h_m3 := stepsTo_M3 a (b / 2 + 2) 6
+      have heq :
+          (if b / 2 + 2 > a then some (.C (b / 2 + 2 - a) (6 * a + 6))
+           else if a ≤ b / 2 + 2 + 1 then none
+           else some (.C (a - (b / 2 + 2) - 1) (6 * (b / 2 + 2) + 9))) =
+            evalM3 a (b / 2 + 2) 6 := by
+        dsimp [evalM3]
+        split_ifs <;> first | rfl | omega | (congr 1; congr 1; omega)
+      rw [heq]
+      exact CollatzStepsTo.head h_step0 h_m3
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1LF_0RC1RD_1LA1LD_1LE0RA_HHH1LC_0LA1LA

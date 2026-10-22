@@ -8,37 +8,46 @@ public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
 
 /-!
-# Collatz Reduction for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
+# Busy Beaver Holdout `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
 
-We analyze canonical configurations in state `A` facing the blank right half-tape `default`, with
-left half-tape consisting of `n` blocks of `U4 = [0, 0, 1, 1]` (`LA n := default <+ U4^n`) followed
-by one of five canonical suffixes:
-- `R1 (n)`: `(LA n <+ [0, 0, 1]) {{A}}> default`
-- `R2 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1]) {{A}}> default`
-- `Q (n)`:  `(LA n <+ [0, 0, 1, 1, 1, 1]) {{A}}> default`
-- `S4 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]) {{A}}> default`
-- `S6 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default`
+We define the configurations for $n \ge 0$ (where $L(n) := 0^\infty\,(1100)^n$):
+$$\begin{aligned}
+  R_1(n) &:= L(n)\,100\,\mathrm{A}{>}\,0^\infty, \\
+  R_2(n) &:= L(n)\,100100\,\mathrm{A}{>}\,0^\infty, \\
+  Q(n)   &:= L(n)\,111100\,\mathrm{A}{>}\,0^\infty, \\
+  S_4(n) &:= L(n)\,111100100100\,\mathrm{A}{>}\,0^\infty, \\
+  S_6(n) &:= L(n)\,11111100100100\,\mathrm{A}{>}\,0^\infty.
+\end{aligned}$$
 
-Starting from the blank tape `init []`, the machine reaches `S6 1` in 66 steps.
-The accelerated Collatz-like map `next : State → Option State` evolves the five canonical families
-as follows:
-- **`R1 (n)`**:
-  - `R1 0 ↦ R1 4`
-  - `R1 1 ↦ R1 6`
-  - `R1 (n' + 2) ↦ R1 (n' + 7)`
-- **`R2 (n)`**:
-  - `R2 0 ↦ R1 4`
-  - `R2 (n' + 1)` drains `n'` blocks of `U4` in pairs (`w = ⌊n'/2⌋`) into
-    `W8 = [1, 0, 1, 1, 0, 1, 1, 0]` blocks (`HubTail 7 w r_R2`), which consumes `W8` blocks in
-    groups of 5 (`w ↦ w - 5`, `k ↦ k + 31`)
-    and branches on `w mod 5` into `R1`, `R2`, `Q`, or `R3 ↦ T1 ↦ R1`.
-- **`Q (n)`, `S4 (n)`, `S6 (n)`**:
-  - Small values of `n` (`n = 0, 1`) transition directly to `R1`, `R2`, or `HubTail`.
-  - General values `n ≥ 1` (`Q`, `S4`) or `n ≥ 2` (`S6`) sweep left in state `D`, converting each
-    `U4` block into `B4 = [1, 1, 1, 0]` on the right tape (`Scan 6 b p0010110 rend`), then scan
-    across `B4^b` via the 7-prefix finite transducer (`ScanBundle`) interleaved with `D`-drains
-    (`HubW8` and `HubTail`), halting on two specific remainder prefixes (`rem_halt_1`, `rem_halt_2`)
-    or returning to `{R1, R2, Q, S4, S6}`.
+Starting from $S_6(1)$, the machine follows the map $T$:
+$$\begin{aligned}
+  T(R_1(n)) &= \begin{cases}
+    R_1(4) & \text{if } n = 0, \\
+    R_1(6) & \text{if } n = 1, \\
+    R_1(n+5) & \text{if } n \ge 2,
+  \end{cases} \\[4pt]
+  T(R_2(n)) &= \begin{cases}
+    R_1(4) & \text{if } n = 0, \\
+    H_{R_2}(0, \lfloor (n-1)/2 \rfloor) & \text{if } n \ge 1,
+  \end{cases} \\[4pt]
+  T(Q(n)) &= \begin{cases}
+    R_1(6) & \text{if } n = 0, \\
+    \Phi_Q(n-1)_{0010110}(2) & \text{if } n \ge 1,
+  \end{cases} \\[4pt]
+  T(S_4(n)) &= \begin{cases}
+    R_1(10) & \text{if } n = 0, \\
+    \Phi_{S_4}(n-1)_{0010110}(2) & \text{if } n \ge 1,
+  \end{cases} \\[4pt]
+  T(S_6(n)) &= \begin{cases}
+    R_1(9) & \text{if } n = 0, \\
+    R_2(23) & \text{if } n = 1, \\
+    \Phi_{S_6}(n-2)_{0010110}(2) & \text{if } n \ge 2,
+  \end{cases}
+\end{aligned}$$
+where $H_{R_2}, H_3, H_4, H_5$ and the 7-prefix scan bundles
+$\Phi_Q(b), \Phi_{S_4}(b), \Phi_{S_6}(b)$ are defined in `next_HubTail_r_R2`, `next_HubTail_r_3`,
+`next_HubTail_r_4`, `next_HubTail_r_5`, `next_ScanBundle_r_Q`, `next_ScanBundle_r_S4`, and
+`next_ScanBundle_r_S6`.
 -/
 
 @[expose] public section
@@ -2962,5 +2971,37 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- Symbolic state space for the high-level Collatz-like acceleration. -/
+abbrev HighLevelState := State
+
+/-- Initial state $S_6(1)$ for the high-level Collatz-like acceleration. -/
+def highLevelStart : HighLevelState := start
+
+/-- Decode a high-level symbolic state into a concrete Turing machine configuration. -/
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+/-- High-level accelerated Collatz-like transition function. -/
+def highLevelNext : HighLevelState → Option HighLevelState := next
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext :=
+  is_valid_acceleration
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA

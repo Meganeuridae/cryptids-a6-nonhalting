@@ -10,37 +10,24 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE`
 
-Formal `IsClosedPatternSet`, `HasCollatzReduction`, and `IsValidAcceleration` proofs for the
-6-state, 2-symbol Busy Beaver holdout `1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE`.
+We define the configuration for $k \ge 1$, $m \ge 1$, $f \ge 1$:
+$$C(2k, 2m, f) := 0^\infty\,(11)^k\,0\,(11)^m\,0\,\mathrm{D}{>}\,1\,1^f\,0^\infty.$$
 
-Starting from the blank tape (`init []`), the trajectory reaches the guarded configuration family
-$$C(2k, 2m, f) := 0^\infty\,(11)^k\,0\,(11)^m\,0\,\mathrm{D}{>}\,1\,1^f\,0^\infty
-  \quad (k \ge 1,\; m \ge 1,\; f \ge 1)$$
-at $C(6, 2, 2)$ in 76 steps, and every member configuration advances in `ReachesPlus` either to
-another member of the pattern set or to a halting configuration.
-
-## Collatz-like Acceleration Rules
-
-```text
-Consider:
-C(a, c, f) = 0^inf 1^a 0 1^c 0 1 <D 1^f 0^inf where a, c are even, a >= 2, c >= 2, f >= 1
-
-C(2k, 2m, f) -> C(2, 2m-2k+2, f+6k-6) if 2 <= k < m, f >= 1
-C(2k, 2m, f) -> C(2k-2m+2, 2, f+6m-6) if 2 <= m < k, f >= 1
-C(2k, 2k, f) -> C(2, 2, f+6k-6) if k >= 2, f >= 1
-C(2k, 2, 2j)   -> C(2k-4, 2j+8, 2) if k >= 3, j >= 1
-C(2k, 2, 2j+1) -> C(2k-4, 2j+8, 5) if k >= 3, j >= 0
-C(4, 2, 2j)    -> C(2j+4, 6, 5) if j >= 1
-C(4, 2, 2j+1)  -> C(2j+8, 2, 2) if j >= 0
-C(2, 2m, 2j)   -> C(2m-6, 2j+10, 5) if m >= 4, j >= 1
-C(2, 2m, 2j+1) -> C(2m-6, 2j+12, 2) if m >= 4, j >= 0
-C(2, 6, 2j)    -> C(2j+10, 2, 2) if j >= 1
-C(2, 6, 2j+1)  -> C(2j+8, 6, 5) if j >= 0
-C(2, 4, f) -> Halt if f >= 1
-C(2, 2, f) -> Halt if f >= 1
-
-Start: C(6, 2, 2), reached after 76 raw TM steps
-```
+Starting from $C(6, 2, 2)$, the machine follows the map $T$:
+$$T(C(2k, 2m, f)) = \begin{cases}
+  C(2, 2m-2k+2, f+6k-6) & \text{if } 2 \le k < m, \\
+  C(2k-2m+2, 2, f+6m-6) & \text{if } 2 \le m < k, \\
+  C(2, 2, f+6k-6) & \text{if } k = m \ge 2, \\
+  C(2k-4, 2j+8, 2) & \text{if } k \ge 3,\; m = 1,\; f = 2j \text{ with } j \ge 1, \\
+  C(2k-4, 2j+8, 5) & \text{if } k \ge 3,\; m = 1,\; f = 2j+1 \text{ with } j \ge 0, \\
+  C(2j+4, 6, 5) & \text{if } k = 2,\; m = 1,\; f = 2j \text{ with } j \ge 1, \\
+  C(2j+8, 2, 2) & \text{if } k = 2,\; m = 1,\; f = 2j+1 \text{ with } j \ge 0, \\
+  C(2m-6, 2j+10, 5) & \text{if } k = 1,\; m \ge 4,\; f = 2j \text{ with } j \ge 1, \\
+  C(2m-6, 2j+12, 2) & \text{if } k = 1,\; m \ge 4,\; f = 2j+1 \text{ with } j \ge 0, \\
+  C(2j+10, 2, 2) & \text{if } k = 1,\; m = 3,\; f = 2j \text{ with } j \ge 1, \\
+  C(2j+8, 6, 5) & \text{if } k = 1,\; m = 3,\; f = 2j+1 \text{ with } j \ge 0, \\
+  \text{Halt} & \text{if } k = 1,\; m \in \{1, 2\}.
+\end{cases}$$
 -/
 
 @[expose] public section
@@ -849,5 +836,38 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next whe
 from `start`. -/
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- High-level symbolic configuration state space for
+`1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE`. -/
+abbrev HighLevelState := State
+
+/-- Initial high-level symbolic state $C(6, 2, 2)$. -/
+def highLevelStart : HighLevelState := start
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+/-- High-level accelerated transition function on $C(2(k+1), 2(m+1), f+1)$. -/
+def highLevelNext : HighLevelState → Option HighLevelState := next
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext :=
+  is_valid_acceleration
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1RB_1LC0RE_HHH1LD_0RA1LB_1RA1LF_0LE1LE

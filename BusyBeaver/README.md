@@ -29,7 +29,7 @@ All proofs in `BusyBeaver/` target machine-checked behavioral predicates over th
 
 ## Foundational Lemmas ([`Basic.lean`](./Basic.lean))
 
-[`BusyBeaver/Basic.lean`](./Basic.lean) provides clean-room multi-step and reachability lemmas (`multiStep`, `ReachesIn`, `ReachesStar`, `ReachesPlus` with `Trans` instances), closed-invariant non-halting theorems (`NeverHaltsFrom.of_reachesPlus_invariant`, `IsNotHalt.of_reachesPlus_invariant`), certified acceleration halting equivalence and pattern-set closure bridges (`IsValidAcceleration.isHalt_iff`, `IsValidAcceleration.of_step`, `IsValidAcceleration.isClosedPatternSet`, `IsValidAcceleration.isClosedStackPatternSet`), finite block repetition (`l ^ n`) and `ListBlank` identities, standard 6-state (`BusyBeaver.SixState.A..F`) and 3-state (`BusyBeaver.ThreeState.A..C`) labels, directed-head (`Cfg.headRight` / `Cfg.headLeft`) step transitions, scoped directed-head and reachability notations (`l {{q}}> r`, `l <{{q}} r`, `s <+ l`, `l +> s`, `c₁ [M]⊢⁺ c₂`, ...), and concrete execution/halting tactics (`bb_steps`, `bb_halt`).
+[`BusyBeaver/Basic.lean`](./Basic.lean) provides clean-room multi-step and reachability lemmas (`multiStep`, `ReachesIn`, `ReachesStar`, `ReachesPlus` with `Trans` instances), closed-invariant non-halting theorems (`NeverHaltsFrom.of_reachesPlus_invariant`, `IsNotHalt.of_reachesPlus_invariant`), certified acceleration halting equivalence, higher-level Collatz composition, and pattern-set closure bridges (`IsValidAcceleration.isHalt_iff`, `IsValidAcceleration.collatzHalts_iff`, `IsValidAcceleration.of_step`, `IsValidAcceleration.of_collatz`, `IsValidAcceleration.isClosedPatternSet`, `IsValidAcceleration.isClosedStackPatternSet`), finite block repetition (`l ^ n`) and `ListBlank` identities, standard 6-state (`BusyBeaver.SixState.A..F`) and 3-state (`BusyBeaver.ThreeState.A..C`) labels, directed-head (`Cfg.headRight` / `Cfg.headLeft`) step transitions, scoped directed-head and reachability notations (`l {{q}}> r`, `l <{{q}} r`, `s <+ l`, `l +> s`, `c₁ [M]⊢⁺ c₂`, ...), and concrete execution/halting tactics (`bb_steps`, `bb_halt`).
 
 ## Certificate Checker ([`Cert.lean`](./Cert.lean))
 
@@ -59,7 +59,7 @@ theorem isNotHalt_toBB_iff_not_halts (M : ConjectureMachines.Machine states symb
 
 ## Formalized Machine Catalogs
 
-- **[`BB(6)` Holdouts (`BusyBeaver/BB6/`)](./BB6/README.md)** — 53 6-state 2-symbol holdouts (212 theorems).
+- **[`BB(6)` Holdouts (`BusyBeaver/BB6/`)](./BB6/README.md)** — 53 6-state 2-symbol holdouts (275 theorems).
 - **[`BB(3, 3)` Holdouts (`BusyBeaver/BB33/`)](./BB33/README.md)** — 6 3-state 3-symbol holdouts (24 theorems).
 
 ## Building and Verifying
