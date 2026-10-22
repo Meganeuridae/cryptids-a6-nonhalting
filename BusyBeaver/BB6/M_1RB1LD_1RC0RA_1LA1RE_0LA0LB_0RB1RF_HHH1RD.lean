@@ -16,7 +16,7 @@ $$
 C(a, b, d) := 0^\infty \ 1^a \ (10)^b \ \mathrm{A}{>} \ 1^d \ 0^\infty.
 $$
 
-Starting from $C(0, 0, 0)$, the machine follows the map $T$:
+Starting from $C(0, 0, 0)$ (the blank tape, 0 steps), the machine follows the map $T$:
 
 $$
 T(C(a, b, d)) = \begin{cases}

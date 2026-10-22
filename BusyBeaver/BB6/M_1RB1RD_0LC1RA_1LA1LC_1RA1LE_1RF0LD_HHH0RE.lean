@@ -16,7 +16,8 @@ $$
 P_1(a, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 1^c \ 0^\infty.
 $$
 
-Starting from $P_1(2, 1)$, the machine follows the map $T$:
+Starting from $P_1(2, 1)$ (reached after 6 steps from the blank tape), the machine follows the map
+$T$:
 
 $$
 T(P_1(a, c)) = \begin{cases}
@@ -350,7 +351,7 @@ private theorem rule_6 (m d : Nat) :
     bb_steps
   exact ReachesPlus.trans h1 h2
 
-/-- Common lemma for Rules 7 and 8 (`P2, c = 0`): `(((l << 1) << 0) <+ [1,
+/-- Common helper for Rules 7 and 8 (`P2, c = 0`): `(((l << 1) << 0) <+ [1,
   1]^m) A> default -> l A> ([1]^(2m + 3) +> default)`. -/
 private theorem rule_P2_c0 (l : ListBlank (Fin 2)) (m : Nat) :
     (((((l << 1) << 0) <+ ([1, 1] : List (Fin 2))^m) {{A}}> default)) [target]⊢⁺
@@ -404,7 +405,7 @@ private theorem rule_9 (k m : Nat) :
     1] : List (Fin 2)) m 1]
   bb_steps
 
-/-- Common lemma for Rules 10 and 11 (`P2, c = d + 2`): `(((l << 1) << 0) <+ [1,
+/-- Common helper for Rules 10 and 11 (`P2, c = d + 2`): `(((l << 1) << 0) <+ [1,
   1]^m) A> ([1]^(d + 2) +> default) -> (l <+ [1, 1]^(m + 2)) A> ([1]^d +> default)`. -/
 private theorem rule_P2_c2 (l : ListBlank (Fin 2)) (m d : Nat) :
     (((((l << 1) << 0) <+ ([1,
@@ -620,7 +621,8 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 
 /-- Single-family state space $P_1(a, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,1^c\,0^\infty$ for the
 high-level Collatz-like acceleration. -/
-inductive HighLevelState
+inductive HighLevelState where
+  /-- $P_1(a, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,1^c\,0^\infty$. -/
   | P_1 (a c : ℕ)
 
 /-- Initial state $P_1(2, 1)$ for the high-level Collatz-like acceleration. -/

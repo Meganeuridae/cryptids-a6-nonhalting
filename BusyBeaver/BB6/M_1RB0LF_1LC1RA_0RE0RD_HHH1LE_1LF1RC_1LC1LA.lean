@@ -16,7 +16,8 @@ $$
 C(a, b) := 0^\infty \ \mathrm{E}{>} \ (10)^a \ 1^b \ 0^\infty.
 $$
 
-Starting from $C(0, 3)$, the machine follows the map $T$:
+Starting from $C(0, 3)$ (reached after 7 steps from the blank tape), the machine follows the map
+$T$:
 
 $$
 T(C(a, b)) = \begin{cases}
@@ -624,7 +625,7 @@ inductive HighLevelState where
   /-- $C(a, b + 1) := 0^\infty\,\mathrm{E}{>}\,(10)^a\,1^{b+1}\,0^\infty$. -/
   | C (a b : ℕ)
 
-/-- Initial high-level symbolic state $C(0, 3)$. -/
+/-- Initial high-level symbolic state `.C 0 2`, encoding $C(0, 3)$. -/
 def highLevelStart : HighLevelState := .C 0 2
 
 /-- Embed a `HighLevelState` into `State`. -/
@@ -635,8 +636,7 @@ def toState : HighLevelState → State
 def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
   encode (toState s)
 
-/-- Helper evaluating the $P(k, n, p + 1)$ scan phase down to $C$. -/
-def evalP : ℕ → ℕ → ℕ → HighLevelState
+private def evalP : ℕ → ℕ → ℕ → HighLevelState
   | 0, n, 0 => .C (n + 1) 2
   | 0, n, 1 => .C (n + 1) 0
   | 0, n, p + 2 => .C (n + 2) p
@@ -644,11 +644,63 @@ def evalP : ℕ → ℕ → ℕ → HighLevelState
   | k + 1, n, 1 => evalP k (n + 1) 0
   | k + 1, n, p + 2 => evalP k (n + 2) p
 
-/-- High-level accelerated transition function on $C(a, b + 1)$, obtained by composing out $P$. -/
+private theorem evalP_eq (k n p : ℕ) :
+    evalP k n p =
+      if p ≥ 2 * k + 2 then .C (n + 2 * k + 2) (p - 2 * k - 2)
+      else if p % 2 = 1 then
+        .C ((4 * n + 6 * k + p + 3) / 4) ((4 * n + 6 * k + p + 3) % 4)
+      else
+        .C ((4 * n + 6 * k + p + 6) / 4) ((4 * n + 6 * k + p + 6) % 4) := by
+  induction k generalizing n p with
+  | zero =>
+    rcases p with _ | _ | p <;> simp [evalP] <;> omega
+  | succ k ih =>
+    rcases p with _ | _ | p
+    · rw [evalP, ih]
+      rcases k with _ | k <;> simp <;> omega
+    · rw [evalP, ih]
+      simp
+      omega
+    · rw [evalP, ih]
+      by_cases h : p ≥ 2 * k + 2
+      · have h' : p + 2 ≥ 2 * (k + 1) + 2 := by omega
+        simp only [h, h', ↓reduceIte, HighLevelState.C.injEq]
+        omega
+      · have h' : ¬(p + 2 ≥ 2 * (k + 1) + 2) := by omega
+        by_cases hp : p % 2 = 1
+        · have hp' : (p + 2) % 2 = 1 := by omega
+          simp only [h, h', hp, hp', ↓reduceIte, HighLevelState.C.injEq]
+          omega
+        · have hp' : ¬((p + 2) % 2 = 1) := by omega
+          simp only [h, h', hp, hp', ↓reduceIte, HighLevelState.C.injEq]
+          omega
+
+/-- High-level accelerated transition function on `.C a b` (encoding $C(a, b + 1)$). -/
 def highLevelNext : HighLevelState → Option HighLevelState
   | .C a 0 => some (.C 2 (2 * a + 1))
   | .C _ 1 => none
-  | .C a (d + 2) => some (evalP a 0 (d + 2))
+  | .C a (d + 2) =>
+    if d ≥ 2 * a then some (.C (2 * a + 2) (d - 2 * a))
+    else if d % 2 = 1 then
+      some (.C ((6 * a + d + 5) / 4) ((6 * a + d + 5) % 4))
+    else
+      some (.C ((6 * a + d + 8) / 4) ((6 * a + d + 8) % 4))
+
+private theorem highLevelNext_ge2 (a d : ℕ) :
+    highLevelNext (.C a (d + 2)) = some (evalP a 0 (d + 2)) := by
+  rw [highLevelNext, evalP_eq]
+  by_cases h : d ≥ 2 * a
+  · have h' : d + 2 ≥ 2 * a + 2 := by omega
+    simp only [h, h', ↓reduceIte, Option.some.injEq, HighLevelState.C.injEq]
+    omega
+  · have h' : ¬(d + 2 ≥ 2 * a + 2) := by omega
+    by_cases hd : d % 2 = 1
+    · have hd' : (d + 2) % 2 = 1 := by omega
+      simp only [h, h', hd, hd', ↓reduceIte, Option.some.injEq, HighLevelState.C.injEq]
+      omega
+    · have hd' : ¬((d + 2) % 2 = 1) := by omega
+      simp only [h, h', hd, hd', ↓reduceIte, Option.some.injEq, HighLevelState.C.injEq]
+      omega
 
 private theorem stepsTo_P : ∀ (k n p : ℕ),
     CollatzStepsTo next (.P k n p) (some (toState (evalP k n p)))
@@ -669,7 +721,8 @@ theorem is_valid_highLevel_acceleration :
   rcases b with _ | _ | d
   · exact CollatzStepsTo.of_eq rfl
   · exact CollatzStepsTo.of_eq rfl
-  · exact CollatzStepsTo.head rfl (stepsTo_P a 0 (d + 2))
+  · rw [highLevelNext_ge2]
+    exact CollatzStepsTo.head rfl (stepsTo_P a 0 (d + 2))
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

@@ -16,7 +16,8 @@ $$
 D(a, b, w) := 0^\infty \ (10)^a \ 1^b \ \mathrm{D}{>} \ 1^{w+1} \ 0^\infty.
 $$
 
-Starting from $D(0, 1, 1)$, the machine follows the map $T$:
+Starting from $D(0, 1, 1)$ (reached after 13 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(D(a, b, w)) = \begin{cases}

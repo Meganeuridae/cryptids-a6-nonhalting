@@ -16,7 +16,8 @@ $$
 C(2k, 2m, f) := 0^\infty \ (11)^k \ 0 \ (11)^m \ 0 \ \mathrm{D}{>} \ 1 \ 1^f \ 0^\infty.
 $$
 
-Starting from $C(6, 2, 2)$, the machine follows the map $T$:
+Starting from $C(6, 2, 2)$ (reached after 76 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(C(2k, 2m, f)) = \begin{cases}
@@ -846,10 +847,10 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 /-! ## High-Level Collatz-Like Acceleration -/
 
 /-- High-level symbolic configuration state space for
-`1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE`. -/
+`1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE` (`.C k m f` encodes $C(2(k+1), 2(m+1), f+1)$). -/
 abbrev HighLevelState := State
 
-/-- Initial high-level symbolic state $C(6, 2, 2)$. -/
+/-- Initial high-level symbolic state `.C 2 0 1`, encoding $C(6, 2, 2)$. -/
 def highLevelStart : HighLevelState := start
 
 /-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/

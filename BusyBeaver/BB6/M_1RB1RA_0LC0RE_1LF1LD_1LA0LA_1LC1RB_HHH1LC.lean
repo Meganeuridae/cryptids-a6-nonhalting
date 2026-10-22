@@ -16,7 +16,8 @@ $$
 A(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
 $$
 
-Starting from $A(0, 0, 0, 1)$, the machine follows the map $T$:
+Starting from $A(0, 0, 0, 1)$ (reached after 27 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(A(a, k, d, c)) = \begin{cases}
@@ -500,7 +501,8 @@ theorem has_collatz_reduction : HasCollatzReduction target :=
 
 /-! ## Collatz-Like Acceleration (Level B) -/
 
-inductive State
+inductive State where
+  /-- $A(a, k, d, c) := 0^\infty\,(10)^a\,(11)^k\,\mathrm{C}{>}\,(11)^d\,(10)^c\,1111\,0^\infty$. -/
   | mk (a k d c : ℕ)
 
 def start : State := .mk 0 0 0 1

@@ -22,8 +22,9 @@ $$
 \end{aligned}
 $$
 
-Starting from $S_6(1)$, the machine follows the map $T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$
-for $n \ge 1$ and $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+Starting from $S_6(1)$ (reached after 169 steps from the blank tape), the machine follows the map
+$T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$ for $n \ge 1$ and
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
 
 $$
 \begin{aligned}
@@ -45,22 +46,46 @@ $$
 $$
 
 and for $H(n) \in \lbrace Q(n), S_4(n), S_6(n) \rbrace$ with $b_0 = n - \delta_H \ge 0$
-($\delta_Q = \delta_{S_4} = 1$, $\delta_{S_6} = 2$), the transition initializes
-$(k, b) = (26, b_0 - 3)$ and iterates the base $31/10$ step while $b \ge 8$ (writing
-$\lfloor (k - 1)/2 \rfloor = 5q + r$ with $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+($\delta_Q = \delta_{S_4} = 1$, $\delta_{S_6} = 2$):
 
 $$
-(k, b) \mapsto (31q + c_r,\ b - \Delta b_r), \quad (c_r, \Delta b_r) = \begin{cases}
-  (8, 2) & \text{if } r = 0, \\
-  (18, 4) & \text{if } r = 1, \\
-  (30, 5) & \text{if } r = 2, \\
-  (48, 8) & \text{if } r = 3, \\
-  (38, 3) & \text{if } r = 4,
+T(H(n)) = \begin{cases}
+  E_H(4 - b_0,\ 25) & \text{if } b_0 \le 3, \\
+  \Phi_H(b_0 - 4,\ 25) & \text{if } b_0 \ge 4,
 \end{cases}
 $$
 
-until $b < 8$, where the terminal remainder $(r, b)$ selects $\text{Halt}$ (for $S_6$ at $r = 3$,
-$b \in \lbrace 1, 2 \rbrace$) or the next configuration in $\lbrace R_1, R_2, Q, S_4, S_6 \rbrace$.
+where for $\lfloor (k - 1)/2 \rfloor = 5q + r$ ($r \in \lbrace 0, 1, 2, 3, 4 \rbrace$) and
+$(c_r, \Delta b_r) = ((8, 2), (18, 4), (30, 5), (50, 8), (38, 3))$:
+
+$$
+\Phi_H(b, k) = \begin{cases}
+  E_H(0,\ k) & \text{if } b = 0, \\
+  E_H(7,\ k) & \text{if } b = 1, \\
+  \Phi_H(b - \Delta b_r,\ 31q + c_r) & \text{if } b \ge \Delta b_r, \\
+  E_H(\Delta b_r - b,\ 31q + c_r) & \text{if } 2 \le b < \Delta b_r,
+\end{cases}
+$$
+
+with terminal exit table $E_H(d, m)$ ($d \in \lbrace 0, \dots, 7 \rbrace$) and tail maps
+$\tau_3, \tau_4, \tau_5$ (for $w = 5p + s$ with $s \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
+  E_Q(d, m) &= \bigl(R_1(m),\ S_6(m-4),\ S_6(m-6),\ R_1(m-10),\ S_6(m-15),\ R_1(m-19),\
+    R_2(m-24),\ S_6(m-2)\bigr)_d, \\
+  E_{S_4}(d, m) &= \bigl(R_2(m+3),\ R_1(m-1),\ Q(m-2),\ R_1(m-3),\ S_4(m-14),\ R_1(m-15),\
+    R_1(m-19),\ \tau_5(\lfloor(m-1)/2\rfloor)\bigr)_d, \\
+  E_{S_6}(d, m) &= \bigl(S_4(m+5),\ R_1(m+8),\ R_1(m+3),\ R_2(m-3),\ \text{Halt},\
+    \tau_3(\lfloor(m-20)/2\rfloor),\ R_1(m-18),\ \tau_4(\lfloor(m-1)/2\rfloor)\bigr)_d, \\
+  \tau_3(5p + s) &= \bigl(R_1(31p+10),\ Q(31p+16),\ R_2(31p+23),\ \text{Halt},\
+    R_2(31p+37)\bigr)_s, \\
+  \tau_4(5p + s) &= \bigl(R_1(31p+16),\ R_2(31p+15),\ R_1(31p+25),\ S_6(31p+28),\
+    R_2(31p+41)\bigr)_s, \\
+  \tau_5(5p + s) &= \bigl(R_1(31p+12),\ R_1(31p+15),\ R_2(31p+26),\ Q(31p+34),\
+    R_1(31p+45)\bigr)_s.
+\end{aligned}
+$$
 -/
 
 @[expose] public section
@@ -1064,10 +1089,15 @@ private theorem in_S6 (n : Nat) : IsInPatternSet ps (S6_cfg n) := by
   simp only [cond_Master, evalVarCond, vars]
   (try omega)
 inductive State where
+  /-- $R_1(n) := 0^\infty\,(1100)^n\,100\,\mathrm{A}{>}\,0^\infty$. -/
   | R1 (n : ℕ)
+  /-- $R_2(n) := 0^\infty\,(1100)^n\,100100\,\mathrm{A}{>}\,0^\infty$. -/
   | R2 (n : ℕ)
+  /-- $Q(n) := 0^\infty\,(1100)^n\,111100\,\mathrm{A}{>}\,0^\infty$. -/
   | Q (n : ℕ)
+  /-- $S_4(n) := 0^\infty\,(1100)^n\,111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S4 (n : ℕ)
+  /-- $S_6(n) := 0^\infty\,(1100)^n\,11111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S6 (n : ℕ)
 
 def start : State := .S6 1

@@ -16,7 +16,8 @@ $$
 C(a, b) := 0^\infty \ 110 \ \mathrm{A}{>} \ (11)^a \ 0 \ 1^b \ 0^\infty.
 $$
 
-Starting from $C(0, 9)$, the machine follows the map $T$:
+Starting from $C(0, 9)$ (reached after 74 steps from the blank tape), the machine follows the map
+$T$:
 
 $$
 T(C(a, b)) = \begin{cases}
@@ -1239,7 +1240,7 @@ inductive HighLevelState where
   /-- $C(a, b + 6) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^{b+6}\,0^\infty$. -/
   | C (a b : ℕ)
 
-/-- Initial high-level symbolic state $C(0, 9)$. -/
+/-- Initial high-level symbolic state `.C 0 3`, encoding $C(0, 9)$. -/
 def highLevelStart : HighLevelState := .C 0 3
 
 /-- Embed a `HighLevelState` into `State`. -/

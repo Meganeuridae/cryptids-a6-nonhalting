@@ -16,7 +16,8 @@ $$
 A(b, k, c) := 0^\infty \ 1^c \ 0 \ \mathrm{A}{>} \ 0 \ (10)^k \ 1^b \ 0^\infty.
 $$
 
-Starting from $A(4, 0, 3)$, the machine follows the map $T$:
+Starting from $A(4, 0, 3)$ (reached after 27 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(A(b, k, c)) = \begin{cases}
@@ -1294,7 +1295,8 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 /-- Single-family state space
 $A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty$
 for the high-level Collatz-like acceleration. -/
-inductive HighLevelState
+inductive HighLevelState where
+  /-- $A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty$. -/
   | A (b k c : ℕ)
 
 /-- Initial state $A(4, 0, 3)$ for the high-level Collatz-like acceleration. -/

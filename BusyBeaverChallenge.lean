@@ -1472,7 +1472,9 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
   | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
   | D1 (a b d : ℕ)
 
 def highLevelStart : HighLevelState := .D0 0 0 4
@@ -1650,7 +1652,9 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
   | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
   | D1 (a b d : ℕ)
 
 def highLevelStart : HighLevelState := .D0 0 0 4
@@ -1866,6 +1870,7 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
 
 def highLevelStart : HighLevelState := .A 5 0 2
@@ -1972,9 +1977,10 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState where
-  /-- $C(a, b + 1) := 0^\infty\,\mathrm{E}{>}\,(10)^a\,1^{b+1}\,0^\infty$. -/
+  /-- `.C a b` encodes $C(a, b + 1) := 0^\infty\,\mathrm{E}{>}\,(10)^a\,1^{b+1}\,0^\infty$. -/
   | C (a b : ℕ)
 
+/-- Initial state `.C 0 2`, encoding $C(0, 3) = 0^\infty\,\mathrm{E}{>}\,1^3\,0^\infty$. -/
 def highLevelStart : HighLevelState := .C 0 2
 
 def toState : HighLevelState → State
@@ -1983,18 +1989,15 @@ def toState : HighLevelState → State
 def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
   encode (toState s)
 
-def evalP : ℕ → ℕ → ℕ → HighLevelState
-  | 0, n, 0 => .C (n + 1) 2
-  | 0, n, 1 => .C (n + 1) 0
-  | 0, n, p + 2 => .C (n + 2) p
-  | k + 1, n, 0 => evalP k (n + 1) 2
-  | k + 1, n, 1 => evalP k (n + 1) 0
-  | k + 1, n, p + 2 => evalP k (n + 2) p
-
 def highLevelNext : HighLevelState → Option HighLevelState
   | .C a 0 => some (.C 2 (2 * a + 1))
   | .C _ 1 => none
-  | .C a (d + 2) => some (evalP a 0 (d + 2))
+  | .C a (d + 2) =>
+    if d ≥ 2 * a then some (.C (2 * a + 2) (d - 2 * a))
+    else if d % 2 = 1 then
+      some (.C ((6 * a + d + 5) / 4) ((6 * a + d + 5) % 4))
+    else
+      some (.C ((6 * a + d + 8) / 4) ((6 * a + d + 8) % 4))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
@@ -2565,6 +2568,7 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $A'(b, k, c) := 0^\infty\,1^c\,00\,{<}\mathrm{A}\,(01)^k\,1^b\,0^\infty$. -/
   | A (b k c : ℕ)
 
 def highLevelStart : HighLevelState := .A 4 0 3
@@ -3184,10 +3188,15 @@ def S6_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) :=
   Cfg.headRight A (ListBlank.append [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1] (LA n)) default
 
 inductive State where
+  /-- $R_1(n) := 0^\infty\,(1100)^n\,100\,\mathrm{A}{>}\,0^\infty$. -/
   | R1 (n : ℕ)
+  /-- $R_2(n) := 0^\infty\,(1100)^n\,100100\,\mathrm{A}{>}\,0^\infty$. -/
   | R2 (n : ℕ)
+  /-- $Q(n) := 0^\infty\,(1100)^n\,111100\,\mathrm{A}{>}\,0^\infty$. -/
   | Q (n : ℕ)
+  /-- $S_4(n) := 0^\infty\,(1100)^n\,111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S4 (n : ℕ)
+  /-- $S_6(n) := 0^\infty\,(1100)^n\,11111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S6 (n : ℕ)
 
 def start : State := .S6 1
@@ -3871,9 +3880,11 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState where
-  /-- $C(a, b + 6) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^{b+6}\,0^\infty$. -/
+  /-- `.C a b` encodes
+    $C(a, b + 6) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^{b+6}\,0^\infty$. -/
   | C (a b : ℕ)
 
+/-- Initial state `.C 0 3`, encoding $C(0, 9) = 0^\infty\,110\,\mathrm{A}{>}\,0\,1^9\,0^\infty$. -/
 def highLevelStart : HighLevelState := .C 0 3
 
 def toState : HighLevelState → State
@@ -4063,6 +4074,8 @@ theorem is_closed_pattern_set : IsClosedPatternSet target ps := by sorry
 theorem has_collatz_reduction : HasCollatzReduction target := by sorry
 
 inductive State
+  /-- $C(a, k, d, c) :=
+  0^\infty\,(10)^a\,(11)^k\,\mathrm{C}{>}\,(11)^d\,(10)^c\,1111\,0^\infty$. -/
   | mk (a k d c : ℕ)
 
 def start : State := .mk 0 0 0 1
@@ -4402,6 +4415,8 @@ theorem is_closed_pattern_set : IsClosedPatternSet target ps := by sorry
 theorem has_collatz_reduction : HasCollatzReduction target := by sorry
 
 inductive State where
+  /-- $C(k, m, f) :=
+  0^\infty\,(11)^{k+1}\,0\,(11)^{m+1}\,0\,\mathrm{D}{>}\,1^{f+2}\,0^\infty$. -/
   | C (k m f : ℕ)
 
 def start : State := .C 2 0 1
@@ -4761,6 +4776,7 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $P_1(a, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,1^c\,0^\infty$. -/
   | P_1 (a c : ℕ)
 
 def highLevelStart : HighLevelState := .P_1 2 1
@@ -5461,6 +5477,8 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
+  /-- $P_1(a, b, c, d) :=
+  0^\infty\,1^b\,(01)^a\,1\,\mathrm{C}{>}\,(01)^c\,1\,(01)^d\,1\,0^\infty$. -/
   | P_1 (a b c d : ℕ)
   deriving DecidableEq, Repr
 

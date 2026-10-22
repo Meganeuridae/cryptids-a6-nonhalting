@@ -16,7 +16,8 @@ $$
 D_1(a, z, w) := 0^\infty \ (10)^a \ 1^z \ \mathrm{D}{>} \ 1 \ 1^w \ 0^\infty.
 $$
 
-Starting from $D_1(0, 2, 2)$, the machine follows the map $T$:
+Starting from $D_1(0, 2, 2)$ (reached after 16 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(D_1(a, z, w)) = \begin{cases}

@@ -1,6 +1,6 @@
 # Busy Beaver 6 Holdouts (`BusyBeaver/BB6/`)
 
-This directory contains formal Lean 4 specifications and kernel-verified Collatz-like reductions for 53 Busy Beaver 6 (`BB(6)`, 6-state 2-symbol) holdout Turing machines. Each machine module exposes both **Level A** (`ps`, `is_closed_pattern_set`, `has_collatz_reduction`) and **Level B** (`State`, `start`, `encode`, `next`, `is_valid_acceleration`, `isHalt_iff_acceleration`), and each novel discovery module additionally exposes the higher-level single-family acceleration (`HighLevelState`, `highLevelStart`, `highLevelEncode`, `highLevelNext`, `is_valid_highLevel_acceleration`, `isHalt_iff_highLevel_acceleration`, `acceleration_iff_highLevel_acceleration`); see [`BusyBeaver/README.md`](../README.md) for definitions of the behavioral predicates.
+This directory contains formal Lean 4 specifications and kernel-verified Collatz-like reductions for 53 Busy Beaver 6 (`BB(6)`, 6-state 2-symbol) holdout Turing machines. Each machine module exposes both **Level A** (`ps`, `is_closed_pattern_set`, `has_collatz_reduction`) and **Level B** (`State`, `start`, `encode`, `next`, `is_valid_acceleration`, `isHalt_iff_acceleration`), and each novel discovery module additionally exposes the higher-level Collatz-like acceleration (`HighLevelState`, `highLevelStart`, `highLevelEncode`, `highLevelNext`, `is_valid_highLevel_acceleration`, `isHalt_iff_highLevel_acceleration`, `acceleration_iff_highLevel_acceleration`); see [`BusyBeaver/README.md`](../README.md) for definitions of the behavioral predicates.
 
 ## Formalized `BB(6)` Machines
 
@@ -70,7 +70,7 @@ $$
 E(a, k, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 0 \ (11)^k \ 0 \ 1^c \ 0^\infty.
 $$
 
-Starting from $E(3, 0, 2)$, the machine follows the map $T$:
+Starting from $E(3, 0, 2)$ (reached after 23 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(E(a, k, c)) = \begin{cases}
@@ -104,7 +104,7 @@ $$
 D(a, b, c, d) := 0^\infty \ \mathrm{D}{>} \ (10)^a \ (110)^b \ 0^c \ 1^d \ 0^\infty.
 $$
 
-Starting from $D(0, 0, 0, 4)$, the machine follows the map $T$:
+Starting from $D(0, 0, 0, 4)$ (reached after 6 steps from the blank tape), the machine follows the map $T$:
 
 $$
 \begin{aligned}
@@ -127,21 +127,37 @@ $$
 \end{aligned}
 $$
 
-where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, b, d)$ are defined recursively by:
+where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, q, m)$ are defined recursively by:
 
 $$
 \begin{aligned}
-  B(a, k, 0, d) &= H(a, k, d+2), \\
-  B(a, k, b+1, d) &= B(a, k+1, b, d+1), \\
-  H(a, b, 0) &= D(a, b, 0, 3), \\
-  H(a, b, m+1) &= A(a, 0, b, m+3), \\
-  A(a, k, b, d) &= \begin{cases}
-    D(a, k, 1, b+1) & \text{if } d = 0, \\
-    B(a, 0, k, b) & \text{if } d = 1, \\
-    D(a+1, k, 1, b+2) & \text{if } d = 2, \\
-    \text{Halt} & \text{if } k = 0 \text{ and } d = 3, \\
-    H(a+1, b+1, 2k-1) & \text{if } k \ge 1 \text{ and } d = 3, \\
-    A(a, k+1, b, d-2) & \text{if } d \ge 4.
+  B(a, k, b+1, d) &= B(a, k+1, b, d+2), \\
+  B(a, 0, 0, d) &= \begin{cases}
+    D(0, 0, 0, d+4) & \text{if } a = 0, \\
+    \text{Halt} & \text{if } a = 1, \\
+    D(1, 2, 1, 2) & \text{if } a = 2 \text{ and } d = 0, \\
+    D(2, 2, 0, d) & \text{if } a = 2 \text{ and } d \ge 1, \\
+    H(a-3, 1, d+1) & \text{if } a \ge 3,
+  \end{cases} \\
+  B(a, k+1, 0, d) &= A(a, k, 0, d+3), \\
+  H(a, b, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } m \ne 1, \\
+    D(1, b+1, 1, 5) & \text{if } a = 1 \text{ and } m = 0, \\
+    D(a, b+1, 1, 5) & \text{if } a \ge 2 \text{ and } m = 0, \\
+    D(a+2, b+1, 1, 2) & \text{if } m = 1, \\
+    D(2, b+2, 1, 3) & \text{if } a = 1 \text{ and } m = 2, \\
+    D(1, b+3, 1, 2) & \text{if } a = 1 \text{ and } m = 3, \\
+    D(2, b+3, 0, m-3) & \text{if } a = 1 \text{ and } m \ge 4, \\
+    H(a-2, b+2, m-2) & \text{if } a \ge 2 \text{ and } m \ge 2,
+  \end{cases} \\
+  A(a, k, q, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } k = 0, \\
+    D(1, q, 1, m+2) & \text{if } a = 1 \text{ and } k = 0, \\
+    D(a, q, 1, m+2) & \text{if } a \ge 2 \text{ and } k = 0, \\
+    D(1, q, 1, m) & \text{if } a = 0 \text{ and } k = 1, \\
+    A(a-1, q, 0, m+2q+3) & \text{if } a \ge 1 \text{ and } k = 1, \\
+    D(a+2, q, 1, m) & \text{if } k = 2, \\
+    A(a, k-3, q+1, m) & \text{if } k \ge 3.
   \end{cases}
 \end{aligned}
 $$
@@ -154,7 +170,7 @@ $$
 D(a, b, c, d) := 0^\infty \ \mathrm{D}{>} \ (10)^a \ (110)^b \ 0^c \ 1^d \ 0^\infty.
 $$
 
-Starting from $D(0, 0, 0, 4)$, the machine follows the map $T$:
+Starting from $D(0, 0, 0, 4)$ (reached after 6 steps from the blank tape), the machine follows the map $T$:
 
 $$
 \begin{aligned}
@@ -181,17 +197,31 @@ where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, b, d)$ are defined recursively
 
 $$
 \begin{aligned}
-  B(a, k, 0, d) &= H(a, k, d+2), \\
-  B(a, k, b+1, d) &= B(a, k+1, b, d+1), \\
-  H(a, b, 0) &= D(a, b, 0, 3), \\
-  H(a, b, m+1) &= A(a, 0, b, m+3), \\
+  B(a, k, b+1, d) &= B(a, k+1, b, d+2), \\
+  B(a, 0, 0, d) &= \begin{cases}
+    D(0, 0, 0, d+4) & \text{if } a = 0, \\
+    \text{Halt} & \text{if } a = 1, \\
+    D(0, 2, 0, d+2) & \text{if } a = 2, \\
+    H(a-3, 1, d+1) & \text{if } a \ge 3,
+  \end{cases} \\
+  B(a, k+1, 0, d) &= A(a, k, 0, d+3), \\
+  H(a, b, m) &= \begin{cases}
+    A(a, 0, b+1, 3) & \text{if } m = 0, \\
+    D(a+2, b+1, 1, 2) & \text{if } m = 1, \\
+    \text{Halt} & \text{if } a = 0 \text{ and } m \ge 2, \\
+    D(2, b+2, 1, 3) & \text{if } a = 1 \text{ and } m = 2, \\
+    D(1, b+3, 1, 2) & \text{if } a = 1 \text{ and } m = 3, \\
+    D(2, b+3, 0, m-3) & \text{if } a = 1 \text{ and } m \ge 4, \\
+    H(a-2, b+2, m-2) & \text{if } a \ge 2 \text{ and } m \ge 2,
+  \end{cases} \\
   A(a, k, b, d) &= \begin{cases}
-    D(a, k, 1, b+1) & \text{if } d = 0, \\
-    B(a, 0, k, b) & \text{if } d = 1, \\
-    D(a+1, k, 1, b+2) & \text{if } d = 2, \\
-    \text{Halt} & \text{if } k = 0 \text{ and } d = 3, \\
-    H(a+1, b+1, 2k-1) & \text{if } k \ge 1 \text{ and } d = 3, \\
-    A(a, k+1, b, d-2) & \text{if } d \ge 4.
+    \text{Halt} & \text{if } a = 0 \text{ and } k = 0, \\
+    D(0, b+1, 1, d) & \text{if } a = 1 \text{ and } k = 0, \\
+    A(a-2, 2, b, d+2) & \text{if } a \ge 2 \text{ and } k = 0, \\
+    D(1, b, 1, d) & \text{if } a = 0 \text{ and } k = 1, \\
+    A(a-1, b, 0, d+2b+3) & \text{if } a \ge 1 \text{ and } k = 1, \\
+    D(a+2, b, 1, d) & \text{if } k = 2, \\
+    A(a, k-3, b+1, d) & \text{if } k \ge 3.
   \end{cases}
 \end{aligned}
 $$
@@ -204,7 +234,7 @@ $$
 A(b, k, c) := 0^\infty \ 1^b \ (10)^k \ \mathrm{F}{>} \ 00 \ 1^c \ 0^\infty.
 $$
 
-Starting from $A(5, 0, 2)$, the machine follows the map $T$:
+Starting from $A(5, 0, 2)$ (reached after 33 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(A(b, k, c)) = \begin{cases}
@@ -247,7 +277,7 @@ $$
 C(a, b) := 0^\infty \ \mathrm{E}{>} \ (10)^a \ 1^b \ 0^\infty.
 $$
 
-Starting from $C(0, 3)$, the machine follows the map $T$:
+Starting from $C(0, 3)$ (encoded as `.C 0 2`, reached after 7 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(C(a, b)) = \begin{cases}
@@ -269,7 +299,7 @@ $$
 J(u, v, w) := 0^\infty \ 1^5 \ (10)^u \ 1 \ \mathrm{A}{>} \ 11 \ (01)^v \ 1^w \ 01 \ 0^\infty.
 $$
 
-Starting from $J(0, 0, 0)$, the machine follows the map $T$:
+Starting from $J(0, 0, 0)$ (reached after 35 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(J(u, v, w)) = \begin{cases}
@@ -299,7 +329,7 @@ $$
 S(p, k, j, c) := 0^\infty \ (1110)^p \ 1^k \ \mathrm{D}{>} \ 11 \ (01)^j \ 1^c \ 0^\infty.
 $$
 
-Starting from $S(0, 2, 0, 0)$, the machine follows the map $T$:
+Starting from $S(0, 2, 0, 0)$ (reached after 10 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(S(p, k, j, c)) = \begin{cases}
@@ -338,28 +368,28 @@ $$
 We define the configuration for $b, k, c \ge 0$:
 
 $$
-A(b, k, c) := 0^\infty \ 1^c \ 0 \ \mathrm{A}{>} \ 0 \ (10)^k \ 1^b \ 0^\infty.
+A'(b, k, c) := 0^\infty \ 1^c \ 00 \ {<}\mathrm{A} \ (01)^k \ 1^b \ 0^\infty.
 $$
 
-Starting from $A(4, 0, 3)$, the machine follows the map $T$:
+Starting from $A'(4, 0, 3)$ (reached after 27 steps from the blank tape), the machine follows the map $T$:
 
 $$
-T(A(b, k, c)) = \begin{cases}
-  A(4, 0, 3) & \text{if } b = 0,\ k = 0,\text{ and } c = 0, \\
-  A(6, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace,\ k = 0,\text{ and } c = 0, \\
-  A(3, 0, 3) & \text{if } b = 2,\ k = 0,\text{ and } c = 0, \\
+T(A'(b, k, c)) = \begin{cases}
+  A'(4, 0, 3) & \text{if } b = 0,\ k = 0,\text{ and } c = 0, \\
+  A'(6, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace,\ k = 0,\text{ and } c = 0, \\
+  A'(3, 0, 3) & \text{if } b = 2,\ k = 0,\text{ and } c = 0, \\
   \text{Halt} & \text{if } b = 4,\ k = 0,\text{ and } c = 0, \\
-  A(b-4, 0, 5) & \text{if } b \ge 5,\ k = 0,\text{ and } c = 0, \\
-  A(b, k-1, 1) & \text{if } k \ge 1 \text{ and } c = 0, \\
-  A(2k+6, 0, 3) & \text{if } b = 0 \text{ and } c = 1, \\
-  A(2k+8, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace \text{ and } c = 1, \\
+  A'(b-4, 0, 5) & \text{if } b \ge 5,\ k = 0,\text{ and } c = 0, \\
+  A'(b, k-1, 1) & \text{if } k \ge 1 \text{ and } c = 0, \\
+  A'(2k+6, 0, 3) & \text{if } b = 0 \text{ and } c = 1, \\
+  A'(2k+8, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 4 \text{ and } c = 1, \\
-  A(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
-  A(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
+  A'(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
+  A'(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
   F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\ k \ge 1,\text{ and } c \ge 1, \\
-  A(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
-  A(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
-  A(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
+  A'(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
+  A'(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
+  A'(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
 \end{cases}
 $$
 
@@ -367,9 +397,9 @@ where $F(m, p, k, n, c)$ is defined recursively on $m$ (with $k' = k + 2n$):
 
 $$
 F(m, p, k, n, c) = \begin{cases}
-  A(2k'+c+7, 0, 3) & \text{if } m = 0 \text{ and } p \le n+1, \\
-  A(2(p-n-2)+1, 0, 2(k'+3)+c) & \text{if } m = 0 \text{ and } p \ge n+2, \\
-  A(2(k'+4)+1, 0, c) & \text{if } m = 1 \text{ and } p \le n+1, \\
+  A'(2k'+c+7, 0, 3) & \text{if } m = 0 \text{ and } p \le n+1, \\
+  A'(2(p-n-2)+1, 0, 2(k'+3)+c) & \text{if } m = 0 \text{ and } p \ge n+2, \\
+  A'(2(k'+4)+1, 0, c) & \text{if } m = 1 \text{ and } p \le n+1, \\
   F(0, p-n-2, 0, k'+3, c) & \text{if } m = 1 \text{ and } p \ge n+2, \\
   F(m-2, k'+4, 0, 0, c) & \text{if } m \ge 2 \text{ and } p \le n+1, \\
   F(m-1, p-n-2, 0, k'+3, c) & \text{if } m \ge 2 \text{ and } p \ge n+2.
@@ -384,9 +414,9 @@ $$
 C(a, b, c, d) := 0^\infty \ 1^{a+1} \ \mathrm{C}{>} \ 00 \ 1^{b+4} \ (01)^c \ 1^d \ 011 \ 0^\infty,
 $$
 
-where $C(a, b, 0, 6) = C(a, b+3, 0, 3)$.
+noting that at $c = 0$ the two families satisfy $C(a, b, 0, 6) = C(a, b+3, 0, 3)$.
 
-Starting from $C(4, 0, 0, 3)$, the machine follows the map $T$:
+Starting from $C(4, 0, 0, 3)$ (reached after 162 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(C(a, b, c, d)) = \begin{cases}
@@ -396,6 +426,9 @@ T(C(a, b, c, d)) = \begin{cases}
   C(a, 0, k+3, 3) & \text{if } a \le 1,\ b = 2k,\ c = 0,\ d = 3, \\
   \text{Halt} & \text{if } a = 0,\ b = 2k+1,\ c = 0,\ d = 3, \\
   C(6, 3, k, 3) & \text{if } a = 1,\ b = 2k+1,\ c = 0,\ d = 3, \\
+  \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 0,\ d = 6, \\
+  C(6, 3, k+1, 3) & \text{if } a = 1,\ b = 2k,\ c = 0,\ d = 6, \\
+  C(a, 0, k+5, 3) & \text{if } a \le 1,\ b = 2k+1,\ c = 0,\ d = 6, \\
   C(a, 0, k+3, 6) & \text{if } a \le 1,\ b = 2k+1,\ c = 1,\ d = 3, \\
   \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 1,\ d = 3, \\
   C(6, 0, 3, 3) & \text{if } a = 1,\ b = 0,\ c = 1,\ d = 3, \\
@@ -417,7 +450,7 @@ $$
 \end{aligned}
 $$
 
-Starting from $S_6(1)$, the machine follows the map $T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$
+Starting from $S_6(1)$ (reached after 169 steps from the blank tape), the machine follows the map $T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$
 for $n \ge 1$ and $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
 
 $$
@@ -435,27 +468,49 @@ $$
     R_2(31q + 26) & \text{if } n \ge 1 \text{ and } r = 3, \\
     R_1(31q + 44) & \text{if } n \ge 1 \text{ and } r = 4,
   \end{cases} \\
-  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad T(S_6(1)) = R_2(23),
+  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad T(S_6(1)) = R_2(23), \\
+  T(Q(b+1)) &= \Phi_Q(2, b, 3), \quad T(S_4(b+1)) = \Phi_{S_4}(2, b, 3), \quad T(S_6(b+2)) = \Phi_{S_6}(2, b, 3),
 \end{aligned}
 $$
 
-and for $H(n) \in \lbrace Q(n), S_4(n), S_6(n) \rbrace$ with $b_0 = n - \delta_H \ge 0$
-($\delta_Q = \delta_{S_4} = 1$, $\delta_{S_6} = 2$), the transition initializes
-$(k, b) = (26, b_0 - 3)$ and iterates the base $31/10$ step while $b \ge 8$ (writing
-$\lfloor (k - 1)/2 \rfloor = 5q + r$ with $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+where for each $H \in \lbrace Q, S_4, S_6 \rbrace$, the scan transducer $\Phi_H(a, b, i)$ with prefix index
+$i \in \lbrace 0, 1, 2, 3, 4, 5, 6 \rbrace$ (corresponding to `[0]`, `[0,0,1,0,1,0]`, `[0,0,1,0]`,
+`[0,0,1,0,1,1,0]`, `[0,0]`, `[0,1,0]`, `[]`) is defined recursively on $b \ge 0$ (writing
+$\lfloor (a + 3)/2 \rfloor = 5q + r$ with $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$) by:
 
 $$
-(k, b) \mapsto (31q + c_r,\ b - \Delta b_r), \quad (c_r, \Delta b_r) = \begin{cases}
-  (8, 2) & \text{if } r = 0, \\
-  (18, 4) & \text{if } r = 1, \\
-  (30, 5) & \text{if } r = 2, \\
-  (48, 8) & \text{if } r = 3, \\
-  (38, 3) & \text{if } r = 4,
-\end{cases}
+\begin{aligned}
+  \Phi_H(a, 0, i) &= \bigl(E_H^{(0)}(a)\bigr)_i, \\
+  \Phi_H(a, 1, 0) &= E_H^{(1)}(a), \quad \Phi_H(a, 1, 2) = E_H^{(2)}(a), \\
+  \Phi_H(a, b+2, 0) &= \Phi_H(31q + c_r, b, j_r), \quad
+    (c_r, j_r) = \bigl((4, 0), (7, 5), (16, 4), (22, 2), (28, 1)\bigr)_r, \\
+  \Phi_H(a, b+2, 2) &= \Phi_H(a + 5, b, 3), \\
+  \Phi_H(a, b+1, i) &= \begin{cases}
+    \Phi_H(a + 6, b, 0) & \text{if } i = 1, \\
+    \Phi_H(a + 9, b, 4) & \text{if } i = 3, \\
+    \Phi_H(a + 3, b, 5) & \text{if } i = 4, \\
+    \Phi_H(a + 4, b, 6) & \text{if } i = 5, \\
+    \Phi_H(a + 3, b, 0) & \text{if } i = 6,
+  \end{cases}
+\end{aligned}
 $$
 
-until $b < 8$, where the terminal remainder $(r, b)$ selects $\text{Halt}$ (for $S_6$ at $r = 3$,
-$b \in \lbrace 1, 2 \rbrace$) or the next configuration in $\lbrace R_1, R_2, Q, S_4, S_6 \rbrace$.
+with base-case tables $E_H^{(0)}(a)$ (for $i = 0, \dots, 6$), $E_H^{(1)}(a)$, $E_H^{(2)}(a)$ and
+tail maps $\tau_3(w), \tau_4(w), \tau_5(w)$ (writing $w = 5q + r$ with $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
+  E_Q^{(0)}(a) &= \bigl(R_1(a+4),\ S_6(a+6),\ R_2(a+4),\ S_6(a+8),\ R_1(a+4),\ S_6(a+5),\ S_6(a+3)\bigr), \\
+  E_{S_4}^{(0)}(a) &= \bigl(R_2(a+7),\ R_1(a+9),\ R_1(a+9),\ S_4(a+9),\ R_1(a+11),\ Q(a+9),\ R_1(a+6)\bigr), \\
+  E_{S_6}^{(0)}(a) &= \bigl(S_4(a+9),\ R_1(a+18),\ R_1(a+10),\ \text{Halt},\ R_2(a+11),\ R_1(a+14),\ R_1(a+15)\bigr), \\
+  E_Q^{(1)}(a) &= S_6(a+2), \quad E_Q^{(2)}(a) = R_1(a+9), \\
+  E_{S_4}^{(1)}(a) &= \tau_5(\lfloor (a+1)/2 \rfloor + 1), \quad E_{S_4}^{(2)}(a) = R_1(a+13), \\
+  E_{S_6}^{(1)}(a) &= \tau_4(\lfloor (a+1)/2 \rfloor + 1), \quad E_{S_6}^{(2)}(a) = \tau_3(\lfloor (a+8)/2 \rfloor), \\
+  \tau_3(5q + r) &= \bigl(R_1(31q+10),\ Q(31q+16),\ R_2(31q+23),\ \text{Halt},\ R_2(31q+37)\bigr)_r, \\
+  \tau_4(5q + r) &= \bigl(R_1(31q+16),\ R_2(31q+15),\ R_1(31q+25),\ S_6(31q+28),\ R_2(31q+41)\bigr)_r, \\
+  \tau_5(5q + r) &= \bigl(R_1(31q+12),\ R_1(31q+15),\ R_2(31q+26),\ Q(31q+34),\ R_1(31q+45)\bigr)_r.
+\end{aligned}
+$$
 
 ### [`1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_---1RD`](./M_1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_HHH1RD.lean)
 
@@ -465,7 +520,7 @@ $$
 C(a, b, d) := 0^\infty \ 1^a \ (10)^b \ \mathrm{A}{>} \ 1^d \ 0^\infty.
 $$
 
-Starting from $C(0, 0, 0)$, the machine follows the map $T$:
+Starting from $C(0, 0, 0)$ (the blank tape, 0 steps), the machine follows the map $T$:
 
 $$
 T(C(a, b, d)) = \begin{cases}
@@ -492,7 +547,7 @@ $$
 E(a, b, c) := 0^\infty \ (10)^b \ (11)^{a+1} \ \mathrm{E}{>} \ 1^{c+1} \ 0^\infty.
 $$
 
-Starting from $E(1, 0, 2)$, the machine follows the map $T$:
+Starting from $E(1, 0, 2)$ (reached after 28 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(E(a, b, c)) = \begin{cases}
@@ -520,7 +575,7 @@ $$
 C(a, b) := 0^\infty \ 110 \ \mathrm{A}{>} \ (11)^a \ 0 \ 1^b \ 0^\infty.
 $$
 
-Starting from $C(0, 9)$, the machine follows the map $T$:
+Starting from $C(0, 9)$ (encoded as `.C 0 3`, reached after 74 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(C(a, b)) = \begin{cases}
@@ -539,19 +594,19 @@ $$
 We define the configuration for $a, k, d, c \ge 0$:
 
 $$
-A(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
+C(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
 $$
 
-Starting from $A(0, 0, 0, 1)$, the machine follows the map $T$:
+Starting from $C(0, 0, 0, 1)$ (reached after 27 steps from the blank tape), the machine follows the map $T$:
 
 $$
-T(A(a, k, d, c)) = \begin{cases}
-  A(a, k - c, 0, d + 2c + 1) & \text{if } k \ge 1,\ k > c, \\
-  A(a, 0, d + 2k, c - k) & \text{if } k \ge 1,\ k \le c, \\
-  A(a', d + 1, 2, c') & \text{if } a = a' + 1,\ k = 0,\ c = c' + 2, \\
-  A(a', d + 2, 0, 1) & \text{if } a = a' + 1,\ k = 0,\ c = 1, \\
-  A(a', d + 2, 0, 0) & \text{if } a = a' + 1,\ k = 0,\ c = 0, \\
-  A(d + 1, 0, 0, c' + 1) & \text{if } a = 0,\ k = 0,\ c = c' + 1, \\
+T(C(a, k, d, c)) = \begin{cases}
+  C(a, k - c, 0, d + 2c + 1) & \text{if } k \ge 1,\ k > c, \\
+  C(a, 0, d + 2k, c - k) & \text{if } k \ge 1,\ k \le c, \\
+  C(a', d + 1, 2, c') & \text{if } a = a' + 1,\ k = 0,\ c = c' + 2, \\
+  C(a', d + 2, 0, 1) & \text{if } a = a' + 1,\ k = 0,\ c = 1, \\
+  C(a', d + 2, 0, 0) & \text{if } a = a' + 1,\ k = 0,\ c = 0, \\
+  C(d + 1, 0, 0, c' + 1) & \text{if } a = 0,\ k = 0,\ c = c' + 1, \\
   \text{Halt} & \text{if } a = 0,\ k = 0,\ c = 0.
 \end{cases}
 $$
@@ -564,7 +619,7 @@ $$
 C(2k, 2m, f) := 0^\infty \ (11)^k \ 0 \ (11)^m \ 0 \ \mathrm{D}{>} \ 1 \ 1^f \ 0^\infty.
 $$
 
-Starting from $C(6, 2, 2)$, the machine follows the map $T$:
+Starting from $C(6, 2, 2)$ (encoded as `.C 2 0 1`, reached after 76 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(C(2k, 2m, f)) = \begin{cases}
@@ -591,7 +646,7 @@ $$
 C(a, b, c) := 0^\infty \ 1^{a+2} \ \mathrm{E}{>} \ 1^{2b+2} \ 0 \ 1^{2c+2} \ 0^\infty.
 $$
 
-Starting from $C(5, 2, 0)$, the machine follows the map $T$:
+Starting from $C(5, 2, 0)$ (reached after 100 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(C(a, b, c)) = \begin{cases}
@@ -613,7 +668,7 @@ $$
 D(a, b, w) := 0^\infty \ (10)^a \ 1^b \ \mathrm{D}{>} \ 1^{w+1} \ 0^\infty.
 $$
 
-Starting from $D(0, 1, 1)$, the machine follows the map $T$:
+Starting from $D(0, 1, 1)$ (reached after 13 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(D(a, b, w)) = \begin{cases}
@@ -635,7 +690,7 @@ $$
 P_1(a, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 1^c \ 0^\infty.
 $$
 
-Starting from $P_1(2, 1)$, the machine follows the map $T$:
+Starting from $P_1(2, 1)$ (reached after 6 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(P_1(a, c)) = \begin{cases}
@@ -668,7 +723,7 @@ $$
 D_1(a, z, w) := 0^\infty \ (10)^a \ 1^z \ \mathrm{D}{>} \ 1 \ 1^w \ 0^\infty.
 $$
 
-Starting from $D_1(0, 2, 2)$, the machine follows the map $T$:
+Starting from $D_1(0, 2, 2)$ (reached after 16 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(D_1(a, z, w)) = \begin{cases}
@@ -691,7 +746,7 @@ $$
 P_2(a, b, c) := 0^\infty \ 11 \ (01)^b \ (10)^a \ 1 \ \mathrm{D}{>} \ (10)^c \ 1111 \ 0^\infty.
 $$
 
-Starting from $P_2(2, 1, 0)$, the machine follows the map $T$:
+Starting from $P_2(2, 1, 0)$ (reached after 73 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(P_2(a, b, c)) = \begin{cases}
@@ -713,7 +768,7 @@ $$
 P_1(a, b, c, d) := 0^\infty \ 1^b \ (01)^a \ 1 \ \mathrm{C}{>} \ (01)^c \ 1 \ (01)^d \ 1 \ 0^\infty.
 $$
 
-Starting from $P_1(1, 4, 1, 1)$, the machine follows the map $T$:
+Starting from $P_1(1, 4, 1, 1)$ (reached after 70 steps from the blank tape), the machine follows the map $T$:
 
 $$
 T(P_1(a, b, c, d)) = \begin{cases}

@@ -16,7 +16,8 @@ $$
 D(a, b, c, d) := 0^\infty \ \mathrm{D}{>} \ (10)^a \ (110)^b \ 0^c \ 1^d \ 0^\infty.
 $$
 
-Starting from $D(0, 0, 0, 4)$, the machine follows the map $T$:
+Starting from $D(0, 0, 0, 4)$ (reached after 6 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 \begin{aligned}
@@ -39,21 +40,35 @@ $$
 \end{aligned}
 $$
 
-where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, b, d)$ are defined recursively by:
+where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, q, m)$ are defined recursively by:
 
 $$
 \begin{aligned}
-  B(a, k, 0, d) &= H(a, k, d+2), \\
-  B(a, k, b+1, d) &= B(a, k+1, b, d+1), \\
-  H(a, b, 0) &= D(a, b, 0, 3), \\
-  H(a, b, m+1) &= A(a, 0, b, m+3), \\
-  A(a, k, b, d) &= \begin{cases}
-    D(a, k, 1, b+1) & \text{if } d = 0, \\
-    B(a, 0, k, b) & \text{if } d = 1, \\
-    D(a+1, k, 1, b+2) & \text{if } d = 2, \\
-    \text{Halt} & \text{if } k = 0 \text{ and } d = 3, \\
-    H(a+1, b+1, 2k-1) & \text{if } k \ge 1 \text{ and } d = 3, \\
-    A(a, k+1, b, d-2) & \text{if } d \ge 4.
+  B(a, k, b+1, d) &= B(a, k+1, b, d+2), \\
+  B(a, k, 0, d) &= \begin{cases}
+    D(0, 0, 0, d+4) & \text{if } a = 0 \text{ and } k = 0, \\
+    \text{Halt} & \text{if } a = 1 \text{ and } k = 0, \\
+    D(1, 2, 1, 2) & \text{if } a = 2,\ k = 0,\text{ and } d = 0, \\
+    D(2, 2, 0, d) & \text{if } a = 2,\ k = 0,\text{ and } d \ge 1, \\
+    H(a-3, 1, d+1) & \text{if } a \ge 3 \text{ and } k = 0, \\
+    A(a, k-1, 0, d+3) & \text{if } k \ge 1,
+  \end{cases} \\
+  H(a, b, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } m \neq 1, \\
+    D(a, b+1, 1, 5) & \text{if } a \ge 1 \text{ and } m = 0, \\
+    D(a+2, b+1, 1, 2) & \text{if } m = 1, \\
+    D(2, b+2, 1, 3) & \text{if } a = 1 \text{ and } m = 2, \\
+    D(1, b+3, 1, 2) & \text{if } a = 1 \text{ and } m = 3, \\
+    D(2, b+3, 0, m-3) & \text{if } a = 1 \text{ and } m \ge 4, \\
+    H(a-2, b+2, m-2) & \text{if } a \ge 2 \text{ and } m \ge 2,
+  \end{cases} \\
+  A(a, k, q, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } k = 0, \\
+    D(a, q, 1, m+2) & \text{if } a \ge 1 \text{ and } k = 0, \\
+    D(1, q, 1, m) & \text{if } a = 0 \text{ and } k = 1, \\
+    A(a-1, q, 0, m+2q+3) & \text{if } a \ge 1 \text{ and } k = 1, \\
+    D(a+2, q, 1, m) & \text{if } k = 2, \\
+    A(a, k-3, q+1, m) & \text{if } k \ge 3.
   \end{cases}
 \end{aligned}
 $$
@@ -1277,8 +1292,10 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 
 /-- State space $D(a, b, c, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0^c\,1^d\,0^\infty$
 ($c \in \{0, 1\}$) for the high-level Collatz-like acceleration. -/
-inductive HighLevelState
+inductive HighLevelState where
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
   | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
   | D1 (a b d : ℕ)
 
 /-- Initial state $D(0, 0, 0, 4)$ for the high-level Collatz-like acceleration. -/

@@ -16,7 +16,8 @@ $$
 C(a, b, c) := 0^\infty \ 1^{a+2} \ \mathrm{E}{>} \ 1^{2b+2} \ 0 \ 1^{2c+2} \ 0^\infty.
 $$
 
-Starting from $C(5, 2, 0)$, the machine follows the map $T$:
+Starting from $C(5, 2, 0)$ (reached after 100 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(C(a, b, c)) = \begin{cases}

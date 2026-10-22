@@ -17,7 +17,8 @@ $$
 P_1(a, b, c, d) := 0^\infty \ 1^b \ (01)^a \ 1 \ \mathrm{C}{>} \ (01)^c \ 1 \ (01)^d \ 1 \ 0^\infty.
 $$
 
-Starting from $P_1(1, 4, 1, 1)$, the machine follows the map $T$:
+Starting from $P_1(1, 4, 1, 1)$ (reached after 70 steps from the blank tape), the machine follows
+the map $T$:
 
 $$
 T(P_1(a, b, c, d)) = \begin{cases}
@@ -1869,7 +1870,9 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 /-- Single-family state space
 $P_1(a, b, c, d) := 0^\infty\,1^b\,(01)^a\,1\,\mathrm{C}{>}\,(01)^c\,1\,(01)^d\,1\,0^\infty$
 for the high-level Collatz-like acceleration. -/
-inductive HighLevelState
+inductive HighLevelState where
+  /-- $P_1(a, b, c, d) :=
+    0^\infty\,1^b\,(01)^a\,1\,\mathrm{C}{>}\,(01)^c\,1\,(01)^d\,1\,0^\infty$. -/
   | P_1 (a b c d : ℕ)
   deriving DecidableEq, Repr
 

@@ -16,7 +16,8 @@ $$
 J(u, v, w) := 0^\infty \ 1^5 \ (10)^u \ 1 \ \mathrm{A}{>} \ 11 \ (01)^v \ 1^w \ 01 \ 0^\infty.
 $$
 
-Starting from $J(0, 0, 0)$, the machine follows the map $T$:
+Starting from $J(0, 0, 0)$ (reached after 35 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(J(u, v, w)) = \begin{cases}

@@ -16,7 +16,8 @@ $$
 S(p, k, j, c) := 0^\infty \ (1110)^p \ 1^k \ \mathrm{D}{>} \ 11 \ (01)^j \ 1^c \ 0^\infty.
 $$
 
-Starting from $S(0, 2, 0, 0)$, the machine follows the map $T$:
+Starting from $S(0, 2, 0, 0)$ (reached after 10 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(S(p, k, j, c)) = \begin{cases}

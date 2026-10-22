@@ -16,7 +16,8 @@ $$
 E(a, b, c) := 0^\infty \ (10)^b \ (11)^{a+1} \ \mathrm{E}{>} \ 1^{c+1} \ 0^\infty.
 $$
 
-Starting from $E(1, 0, 2)$, the machine follows the map $T$:
+Starting from $E(1, 0, 2)$ (reached after 28 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(E(a, b, c)) = \begin{cases}

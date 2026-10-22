@@ -17,7 +17,8 @@ $$
 P_2(a, b, c) := 0^\infty \ 11 \ (01)^b \ (10)^a \ 1 \ \mathrm{D}{>} \ (10)^c \ 1111 \ 0^\infty.
 $$
 
-Starting from $P_2(2, 1, 0)$, the machine follows the map $T$:
+Starting from $P_2(2, 1, 0)$ (reached after 73 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(P_2(a, b, c)) = \begin{cases}

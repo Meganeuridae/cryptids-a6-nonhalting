@@ -16,7 +16,8 @@ $$
 E(a, k, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 0 \ (11)^k \ 0 \ 1^c \ 0^\infty.
 $$
 
-Starting from $E(3, 0, 2)$, the machine follows the map $T$:
+Starting from $E(3, 0, 2)$ (reached after 23 steps from the blank tape), the machine follows the
+map $T$:
 
 $$
 T(E(a, k, c)) = \begin{cases}

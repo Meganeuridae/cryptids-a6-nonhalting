@@ -18,7 +18,8 @@ $$
 
 where $C(a, b, 0, 6) = C(a, b+3, 0, 3)$.
 
-Starting from $C(4, 0, 0, 3)$, the machine follows the map $T$:
+Starting from $C(4, 0, 0, 3)$ (reached after 162 steps from the blank tape), the machine follows
+the map $T$:
 
 $$
 T(C(a, b, c, d)) = \begin{cases}
@@ -28,6 +29,9 @@ T(C(a, b, c, d)) = \begin{cases}
   C(a, 0, k+3, 3) & \text{if } a \le 1,\ b = 2k,\ c = 0,\ d = 3, \\
   \text{Halt} & \text{if } a = 0,\ b = 2k+1,\ c = 0,\ d = 3, \\
   C(6, 3, k, 3) & \text{if } a = 1,\ b = 2k+1,\ c = 0,\ d = 3, \\
+  C(a, 0, k+5, 3) & \text{if } a \le 1,\ b = 2k+1,\ c = 0,\ d = 6, \\
+  \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 0,\ d = 6, \\
+  C(6, 3, k+1, 3) & \text{if } a = 1,\ b = 2k,\ c = 0,\ d = 6, \\
   C(a, 0, k+3, 6) & \text{if } a \le 1,\ b = 2k+1,\ c = 1,\ d = 3, \\
   \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 1,\ d = 3, \\
   C(6, 0, 3, 3) & \text{if } a = 1,\ b = 0,\ c = 1,\ d = 3, \\
