@@ -693,6 +693,56 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $E(a, k, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,0\,(11)^k\,0\,1^c\,0^\infty$. -/
+  | E (a k c : ℕ)
+
+def highLevelStart : HighLevelState := .E 3 0 2
+
+def toState : HighLevelState → State
+  | .E a k c => .E a k c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .E a 0 0 => some (.E 3 0 (a + 2))
+  | .E a 0 (d + 1) =>
+    if d % 2 = 0 then
+      if a % 2 = 0 then some (.E 3 (a / 2) (d + 1))
+      else some (.E 4 (a / 2 + 1) (d + 1))
+    else if d = 1 then
+      if a % 2 = 0 then some (.E 0 1 (a + 2))
+      else some (.E 1 1 (a + 3))
+    else
+      if a % 2 = 0 then some (.E 3 (a / 2 + 1) (d - 1))
+      else some (.E 4 (a / 2 + 2) (d - 1))
+  | .E a 1 c =>
+    if c % 2 = 0 then some (.E (a + 3) (c / 2) 0)
+    else if c = 1 then none
+    else if c = 3 then some (.E 3 0 (a + 7))
+    else if c = 5 then
+      if (a + 5) % 2 = 0 then some (.E 0 1 (a + 7))
+      else some (.E 1 1 (a + 8))
+    else
+      if (a + 5) % 2 = 0 then some (.E 3 ((a + 5) / 2 + 1) (c - 5))
+      else some (.E 4 ((a + 5) / 2 + 2) (c - 5))
+  | .E a (k + 2) 0 =>
+    if (a + 2) % 2 = 0 then some (.E 3 ((a + 2) / 2) (2 * k + 1))
+    else some (.E 4 ((a + 2) / 2 + 1) (2 * k + 1))
+  | .E a (k + 2) (d + 1) =>
+    if d % 2 = 0 then some (.E (a + 6) k (d + 1))
+    else if d = 1 then some (.E (a + 3) 1 (2 * k + 2))
+    else some (.E (a + 6) (k + 1) (d - 1))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LC_0LC1RF_1LE1RD_0RC1RC_0LA1LA_HHH1RA
 
 namespace M_1RB0LC_1LC0RD_1LF1LA_1LB1RE_1RB1LE_HHH0LE
@@ -1421,6 +1471,73 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
+  | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
+  | D1 (a b d : ℕ)
+
+def highLevelStart : HighLevelState := .D0 0 0 4
+
+def toState : HighLevelState → State
+  | .D0 a b d => .D0 a b d
+  | .D1 a b d => .D1 a b d
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalH : ℕ → ℕ → ℕ → Option HighLevelState
+  | 0, _, 0 => none
+  | a + 1, b, 0 => some (.D1 (if a = 0 then 1 else a + 1) (b + 1) 5)
+  | a, b, 1 => some (.D1 (a + 2) (b + 1) 2)
+  | 0, _, _ + 2 => none
+  | 1, b, 2 => some (.D1 2 (b + 2) 3)
+  | 1, b, 3 => some (.D1 1 (b + 3) 2)
+  | 1, b, m + 4 => some (.D0 2 (b + 3) (m + 1))
+  | a + 2, b, m + 2 => evalH a (b + 2) m
+
+def evalA_pos : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | 0, 0, _, _ => none
+  | a + 1, 0, 0, m => some (.D1 (if a = 0 then 1 else a + 1) 0 (m + 2))
+  | a + 1, 0, q + 1, m => some (.D1 (if a = 0 then 1 else a + 1) (q + 1) (m + 2))
+  | 0, 1, q, m => some (.D1 1 q m)
+  | a + 1, 1, q, m => evalA_pos a q 0 (m + 2 * q + 3)
+  | a, 2, q, m => some (.D1 (a + 2) q m)
+  | a, k + 3, q, m => evalA_pos a k (q + 1) m
+
+def evalB : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | a, k, b + 1, d => evalB a (k + 1) b (d + 2)
+  | 0, 0, 0, d => some (.D0 0 0 (d + 4))
+  | 1, 0, 0, _ => none
+  | 2, 0, 0, 0 => some (.D1 1 2 2)
+  | 2, 0, 0, d + 1 => some (.D0 2 2 (d + 1))
+  | a + 3, 0, 0, d => evalH a 1 (d + 1)
+  | a, k + 1, 0, d => evalA_pos a k 0 (d + 3)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .D1 0 0 d => some (.D1 0 0 (d + 1))
+  | .D1 0 (b + 1) d => some (.D1 1 b (d + 2))
+  | .D1 (a + 1) b d => evalB a 0 b d
+  | .D0 a b 0 =>
+    Nat.casesOn a
+      (Nat.casesOn b (some (.D1 0 0 1)) fun b => some (.D1 1 b 2))
+      fun a => evalB a 0 b 0
+  | .D0 a b 1 =>
+    Nat.casesOn b
+      (Nat.casesOn a (some (.D0 0 0 4)) fun a => evalB (a + 1) 0 0 0)
+      fun b => some (.D1 (a + 2) b 3)
+  | .D0 a b 2 =>
+    Nat.casesOn a (some (.D1 1 b 2)) fun a => evalB a 0 (b + 1) 0
+  | .D0 a b (d + 3) => some (.D0 (a + 2) b (d + 1))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_HHH0LA
 
 namespace M_1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_HHH1LC
@@ -1534,6 +1651,71 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
+  | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
+  | D1 (a b d : ℕ)
+
+def highLevelStart : HighLevelState := .D0 0 0 4
+
+def toState : HighLevelState → State
+  | .D0 a b d => .D0 a b d
+  | .D1 a b d => .D1 a b d
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalA : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | 0, 0, _, _ => none
+  | 1, 0, b, d => some (.D1 0 (b + 1) d)
+  | a + 2, 0, b, d => evalA a 2 b (d + 2)
+  | 0, 1, b, d => some (.D1 1 b d)
+  | a + 1, 1, b, d => evalA a b 0 (d + 2 * b + 3)
+  | a, 2, b, d => some (.D1 (a + 2) b d)
+  | a, k + 3, b, d => evalA a k (b + 1) d
+
+def evalH : ℕ → ℕ → ℕ → Option HighLevelState
+  | a, b, 0 => evalA a 0 (b + 1) 3
+  | a, b, 1 => some (.D1 (a + 2) (b + 1) 2)
+  | 0, _, _ + 2 => none
+  | 1, b, 2 => some (.D1 2 (b + 2) 3)
+  | 1, b, 3 => some (.D1 1 (b + 3) 2)
+  | 1, b, m + 4 => some (.D0 2 (b + 3) (m + 1))
+  | a + 2, b, m + 2 => evalH a (b + 2) m
+
+def evalB : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | a, k, b + 1, d => evalB a (k + 1) b (d + 2)
+  | 0, 0, 0, d => some (.D0 0 0 (d + 4))
+  | 1, 0, 0, _ => none
+  | 2, 0, 0, d => some (.D0 0 2 (d + 2))
+  | a + 3, 0, 0, d => evalH a 1 (d + 1)
+  | a, k + 1, 0, d => evalA a k 0 (d + 3)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .D1 0 0 d => some (.D1 0 0 (d + 1))
+  | .D1 0 (b + 1) d => some (.D1 1 b (d + 2))
+  | .D1 (a + 1) b d => evalB a 0 b d
+  | .D0 a b 0 =>
+    Nat.casesOn a
+      (Nat.casesOn b (some (.D1 0 0 1)) fun b => some (.D1 1 b 2))
+      fun a => evalB a 0 b 0
+  | .D0 a b 1 =>
+    Nat.casesOn b
+      (Nat.casesOn a (some (.D0 0 0 4)) fun a => evalB (a + 1) 0 0 0)
+      fun b => some (.D1 (a + 2) b 3)
+  | .D0 a b 2 =>
+    Nat.casesOn a (some (.D1 1 b 2)) fun a => evalB a 0 (b + 1) 0
+  | .D0 a b (d + 3) => some (.D0 (a + 2) b (d + 1))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_HHH1LC
 
 namespace M_1RB0LE_1LC1RA_1RA1LD_0LC0LA_0RE1RF_0RCHHH
@@ -1630,10 +1812,10 @@ def ETail_cfg (k m c : Nat) : Cfg (Fin 2) (Fin 6) :=
 
 /-- Symbolic configuration state space for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. -/
 inductive State
-  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
   /-- $Odd(p, k, n, m, c) :=
-  0^\infty\,1^{2p+1}\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
+  0^\infty\,1^{2p+1}\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
   | Odd (p k n m c : ℕ)
   /-- $ETail(k, m, c) := 0^\infty\,1^{2k+9}\,\mathrm{E}{>}\,(01)^m\,1^c\,0^\infty$. -/
   | ETail (k m c : ℕ)
@@ -1687,6 +1869,65 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
+  | A (b k c : ℕ)
+
+def highLevelStart : HighLevelState := .A 5 0 2
+
+def toState : HighLevelState → State
+  | .A b k c => .A b k c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalOdd : ℕ → ℕ → ℕ → ℕ → ℕ → HighLevelState
+  | 0, p, k, n, c =>
+    Nat.casesOn (p - n) (.A (2 * (k + 2 * n) + c + 7) 0 3) fun d =>
+    Nat.casesOn d (.A (2 * (k + 2 * n) + c + 7) 0 3) fun p' =>
+    .A (2 * p' + 1) 0 (2 * (k + 2 * n + 3) + c)
+  | 1, p, k, n, c =>
+    Nat.casesOn (p - n) (.A (2 * (k + 2 * n + 4) + 1) 0 c) fun d =>
+    Nat.casesOn d (.A (2 * (k + 2 * n + 4) + 1) 0 c) fun p' =>
+    evalOdd 0 p' 0 (k + 2 * n + 3) c
+  | m + 2, p, k, n, c =>
+    Nat.casesOn (p - n) (evalOdd m (k + 2 * n + 4) 0 0 c) fun d =>
+    Nat.casesOn d (evalOdd m (k + 2 * n + 4) 0 0 c) fun p' =>
+    evalOdd (m + 1) p' 0 (k + 2 * n + 3) c
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .A b k 0 =>
+    Nat.casesOn k
+      (Nat.casesOn b (some (.A 4 0 3)) fun b =>
+       Nat.casesOn b (some (.A 6 0 3)) fun b =>
+       Nat.casesOn b (some (.A 3 0 3)) fun b =>
+       Nat.casesOn b (some (.A 6 0 3)) fun b =>
+       Nat.casesOn b none fun b =>
+       some (.A (b + 1) 0 5))
+      fun k => some (.A b k 1)
+  | .A b k 1 =>
+    Nat.casesOn b (some (.A (2 * k + 6) 0 3)) fun b =>
+    Nat.casesOn b (some (.A (2 * k + 8) 0 3)) fun b =>
+    Nat.casesOn b
+      (Nat.casesOn k (some (.A 5 0 0)) fun k => some (evalOdd k 2 0 0 0)) fun b =>
+    Nat.casesOn b (some (.A (2 * k + 8) 0 3)) fun b =>
+    Nat.casesOn b none fun b =>
+    some (.A (b + 1) 0 (2 * k + 7))
+  | .A b k (c + 2) =>
+    Nat.casesOn b (some (.A 1 (k + 1) c)) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2) c)) fun b =>
+    Nat.casesOn b
+      (Nat.casesOn k (some (.A 5 0 (c + 1))) fun k => some (evalOdd k 2 0 0 (c + 1))) fun b =>
+    some (.A (b + 1) (k + 2) c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LF_1LC0LD_1RD1LB_HHH1RE_0RA1RE_1LA0LE
 
 namespace M_1RB0LF_1LC1RA_0RE0RD_HHH1LE_1LF1RC_1LC1LA
@@ -1735,6 +1976,37 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- `.C a b` encodes $C(a, b + 1) := 0^\infty\,\mathrm{E}{>}\,(10)^a\,1^{b+1}\,0^\infty$. -/
+  | C (a b : ℕ)
+
+/-- Initial state `.C 0 2`, encoding $C(0, 3) = 0^\infty\,\mathrm{E}{>}\,1^3\,0^\infty$. -/
+def highLevelStart : HighLevelState := .C 0 2
+
+def toState : HighLevelState → State
+  | .C a b => .C a b
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C a 0 => some (.C 2 (2 * a + 1))
+  | .C _ 1 => none
+  | .C a (d + 2) =>
+    if d ≥ 2 * a then some (.C (2 * a + 2) (d - 2 * a))
+    else if d % 2 = 1 then
+      some (.C ((6 * a + d + 5) / 4) ((6 * a + d + 5) % 4))
+    else
+      some (.C ((6 * a + d + 8) / 4) ((6 * a + d + 8) % 4))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LF_1LC1RA_0RE0RD_HHH1LE_1LF1RC_1LC1LA
 
 namespace M_1RB0LF_1RC1RA_0RD0RB_1LEHHH_0LA1LE_1RD1LA
@@ -1830,6 +2102,48 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $J(u, v, w) := 0^\infty\,1^5\,(10)^u\,1\,\mathrm{A}{>}\,11\,(01)^v\,1^w\,01\,0^\infty$. -/
+  | J (u v w : ℕ)
+
+def highLevelStart : HighLevelState := .J 0 0 0
+
+def toState : HighLevelState → State
+  | .J u v w => .J u v w
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .J 0 v 0 =>
+    if v % 2 = 0 then some (.J 0 0 (2 * v + 12))
+    else some (.J 2 4 (2 * v + 7))
+  | .J 0 v 1 =>
+    if v % 2 = 0 then some (.J 2 4 (2 * v + 9))
+    else some (.J 0 0 (2 * v + 14))
+  | .J 0 v 2 =>
+    if v % 2 = 0 then some (.J 2 (v + 4) 1)
+    else some (.J 0 (v + 4) 1)
+  | .J 0 v (w + 3) => some (.J (v + 3) 0 w)
+  | .J 1 v 0 => some (.J 0 0 (2 * v + 12))
+  | .J (u + 2) v 0 =>
+    if u % 2 = 0 then some (.J 2 4 (2 * (u + 2) + 2 * v + 5))
+    else some (.J 0 0 (2 * (u + 2) + 2 * v + 10))
+  | .J 1 _ 1 => none
+  | .J 2 v 1 => some (.J 0 0 (2 * v + 10))
+  | .J (u + 3) v 1 =>
+    if (u + 1) % 2 = 0 then some (.J 2 (u + 3) (2 * v + 5))
+    else some (.J 0 (u + 3) (2 * v + 5))
+  | .J (u + 1) v (w + 2) => some (.J u (v + 2) w)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0LF_1RC1RA_0RD0RB_1LEHHH_0LA1LE_1RD1LA
 
 namespace M_1RB0RB_1LB0LC_1RD1LC_1RE0RA_0RF1RA_HHH1LB
@@ -2032,6 +2346,57 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $S(0, k, j, c) := 0^\infty\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty$. -/
+  | S_def (k j c : ℕ)
+  /-- $S(1, k, j, c) := 0^\infty\,1110\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty$. -/
+  | S_hat (k j c : ℕ)
+
+def highLevelStart : HighLevelState := .S_def 2 0 0
+
+def toState : HighLevelState → State
+  | .S_def k j c => .S_def k j c
+  | .S_hat k j c => .S_hat k j c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalC (mk : ℕ → ℕ → ℕ → HighLevelState) (a b : ℕ) : Option HighLevelState :=
+  if a % 2 = 0 then
+    Nat.casesOn b none fun b =>
+    Nat.casesOn b (some (mk (4 * (a / 2) + 2) 0 0)) fun b =>
+    Nat.casesOn b (some (mk (4 * (a / 2) + 2) 0 3)) fun c =>
+    some (mk (4 * (a / 2) + 4) 0 c)
+  else
+    Nat.casesOn b (some (mk (4 * (a / 2) + 4) 0 1)) fun c =>
+    some (mk (4 * (a / 2) + 3) 0 (c + 1))
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .S_def 0 0 c => evalC .S_def 0 (c + 2)
+  | .S_def 0 (j + 1) c => evalC .S_hat j c
+  | .S_def 1 j 0 => some (.S_def 0 0 (2 * j + 3))
+  | .S_def 1 j (c + 1) => evalC .S_def (j + 1) c
+  | .S_def 2 j 0 => some (.S_def 0 0 (2 * j + 5))
+  | .S_def 2 j (c + 1) => evalC .S_def (j + 2) c
+  | .S_def (k + 3) j 0 => some (.S_def (k + 1) 0 (2 * j + 5))
+  | .S_def (k + 3) j (c + 1) => some (.S_def k (j + 2) c)
+  | .S_hat 0 0 c => some (.S_def 2 0 (c + 2))
+  | .S_hat 0 (j + 1) c => some (.S_def 6 (j + 1) c)
+  | .S_hat 1 j 0 => some (.S_def 1 1 (2 * j + 5))
+  | .S_hat 1 j (c + 1) => evalC (fun k j' c' => .S_def (3 + k) j' c') (j + 1) c
+  | .S_hat 2 j 0 => some (.S_hat 0 0 (2 * j + 5))
+  | .S_hat 2 j (c + 1) => some (.S_def 1 (j + 3) c)
+  | .S_hat (k + 3) j 0 => some (.S_hat (k + 1) 0 (2 * j + 5))
+  | .S_hat (k + 3) j (c + 1) => some (.S_hat k (j + 2) c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_HHH0RD
 
 namespace M_1RB0RD_0RC1RE_1RD0LA_1LE1LC_1RF0LD_HHH0RA
@@ -2202,6 +2567,65 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty$. -/
+  | A (b k c : ℕ)
+
+def highLevelStart : HighLevelState := .A 4 0 3
+
+def toState : HighLevelState → State
+  | .A b k c => .A b k c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalOdd : ℕ → ℕ → ℕ → ℕ → ℕ → HighLevelState
+  | 0, p, k, n => fun c =>
+    Nat.casesOn (p - n) (.A (2 * (k + 2 * n) + c + 7) 0 3) fun d =>
+    Nat.casesOn d (.A (2 * (k + 2 * n) + c + 7) 0 3) fun p' =>
+    .A (2 * p' + 1) 0 (2 * (k + 2 * n + 3) + c)
+  | 1, p, k, n => fun c =>
+    Nat.casesOn (p - n) (.A (2 * (k + 2 * n + 4) + 1) 0 c) fun d =>
+    Nat.casesOn d (.A (2 * (k + 2 * n + 4) + 1) 0 c) fun p' =>
+    evalOdd 0 p' 0 (k + 2 * n + 3) c
+  | m + 2, p, k, n => fun c =>
+    Nat.casesOn (p - n) (evalOdd m (k + 2 * n + 4) 0 0 c) fun d =>
+    Nat.casesOn d (evalOdd m (k + 2 * n + 4) 0 0 c) fun p' =>
+    evalOdd (m + 1) p' 0 (k + 2 * n + 3) c
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .A b k 0 =>
+    Nat.casesOn k
+      (Nat.casesOn b (some (.A 4 0 3)) fun b =>
+       Nat.casesOn b (some (.A 6 0 3)) fun b =>
+       Nat.casesOn b (some (.A 3 0 3)) fun b =>
+       Nat.casesOn b (some (.A 6 0 3)) fun b =>
+       Nat.casesOn b none fun b =>
+       some (.A (b + 1) 0 5))
+      fun k => some (.A b k 1)
+  | .A b k 1 =>
+    Nat.casesOn b (some (.A (2 * k + 6) 0 3)) fun b =>
+    Nat.casesOn b (some (.A (2 * k + 8) 0 3)) fun b =>
+    Nat.casesOn b
+      (Nat.casesOn k (some (.A 5 0 0)) fun k => some (evalOdd k 2 0 0 0)) fun b =>
+    Nat.casesOn b (some (.A (2 * k + 8) 0 3)) fun b =>
+    Nat.casesOn b none fun b =>
+    some (.A (b + 1) 0 (2 * k + 7))
+  | .A b k (c + 2) =>
+    Nat.casesOn b (some (.A 1 (k + 1) c)) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2) c)) fun b =>
+    Nat.casesOn b
+      (Nat.casesOn k (some (.A 5 0 (c + 1))) fun k => some (evalOdd k 2 0 0 (c + 1))) fun b =>
+    some (.A (b + 1) (k + 2) c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB0RE_1LC0RA_1RF0RD_HHH1LE_0LB1LE_1LE1RC
 
 namespace M_1RB0RE_1LC1LD_0RA0LD_1LB0LA_1RF1RA_HHH1LB
@@ -2492,6 +2916,61 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $C(a, b, c, 3) :=
+  0^\infty\,1^{a+1}\,\mathrm{C}{>}\,00\,1^{b+4}\,(01)^c\,111\,011\,0^\infty$. -/
+  | C_3 (a b c : ℕ)
+  /-- $C(a, b, c, 6) :=
+  0^\infty\,1^{a+1}\,\mathrm{C}{>}\,00\,1^{b+4}\,(01)^c\,111111\,011\,0^\infty$. -/
+  | C_6 (a b c : ℕ)
+
+def highLevelStart : HighLevelState := .C_3 4 0 0
+
+def toState : HighLevelState → State
+  | .C_3 a b c => .C_3 a b c
+  | .C_6 a b c => .C_6 a b c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def stepL3 (a : Bool) (b : ℕ) : Option HighLevelState :=
+  if b % 2 = 0 then some (.C_3 (if a then 1 else 0) 0 (b / 2 + 3))
+  else if a then some (.C_3 6 3 (b / 2))
+  else none
+
+def stepL6 (a : Bool) (b : ℕ) : Option HighLevelState :=
+  if b % 2 = 1 then some (.C_6 (if a then 1 else 0) 0 (b / 2 + 3))
+  else if !a then none
+  else if b = 0 then some (.C_3 6 0 3)
+  else some (.C_6 6 3 (b / 2 - 1))
+
+def stepM3 (a : Bool) (b c : ℕ) : Option HighLevelState :=
+  Nat.casesOn c (stepL3 a b) fun c =>
+  Nat.casesOn c (stepL6 a b) fun c =>
+  some (.C_3 (b + 4 + if a then 1 else 0) 3 c)
+
+def stepM6Pos (a : Bool) (b c : ℕ) : Option HighLevelState :=
+  Nat.casesOn c (some (.C_3 (b + 4 + if a then 1 else 0) 0 3)) fun c =>
+  some (.C_6 (b + 4 + if a then 1 else 0) 3 c)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C_3 0 b c => stepM3 false b c
+  | .C_3 1 b c => stepM3 true b c
+  | .C_3 (a + 2) b c => some (.C_3 a (b + 3) c)
+  | .C_6 0 b 0 => stepM3 false (b + 3) 0
+  | .C_6 1 b 0 => stepM3 true (b + 3) 0
+  | .C_6 0 b (c + 1) => stepM6Pos false b c
+  | .C_6 1 b (c + 1) => stepM6Pos true b c
+  | .C_6 (a + 2) b c => some (.C_6 a (b + 3) c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1LA_1LC0RE_1LF1LD_1RE0LC_1LB1RA_HHH0LA
 
 namespace M_1RB1LA_1RC1RE_1LD0RB_1LA0LC_0RF0RD_0RBHHH
@@ -2709,10 +3188,15 @@ def S6_cfg (n : Nat) : Cfg (Fin 2) (Fin 6) :=
   Cfg.headRight A (ListBlank.append [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1] (LA n)) default
 
 inductive State where
+  /-- $R_1(n) := 0^\infty\,(1100)^n\,100\,\mathrm{A}{>}\,0^\infty$. -/
   | R1 (n : ℕ)
+  /-- $R_2(n) := 0^\infty\,(1100)^n\,100100\,\mathrm{A}{>}\,0^\infty$. -/
   | R2 (n : ℕ)
+  /-- $Q(n) := 0^\infty\,(1100)^n\,111100\,\mathrm{A}{>}\,0^\infty$. -/
   | Q (n : ℕ)
+  /-- $S_4(n) := 0^\infty\,(1100)^n\,111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S4 (n : ℕ)
+  /-- $S_6(n) := 0^\infty\,(1100)^n\,11111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S6 (n : ℕ)
 
 def start : State := .S6 1
@@ -2914,6 +3398,22 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+abbrev HighLevelState := State
+
+def highLevelStart : HighLevelState := start
+
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+def highLevelNext : HighLevelState → Option HighLevelState := next
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA
 
 namespace M_1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_HHH1RD
@@ -2960,6 +3460,41 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $C(a, b, d) := 0^\infty\,1^a\,(10)^b\,\mathrm{A}{>}\,1^d\,0^\infty$. -/
+  | C (a b d : ℕ)
+
+def highLevelStart : HighLevelState := .C 0 0 0
+
+def toState : HighLevelState → State
+  | .C a b d => .A a b 0 d
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C a b 0 => some (.C (a + 1) 0 (2 * b + 2))
+  | .C (a + 3) b (d + 1) => some (.C a (b + 2) d)
+  | .C 2 b (d + 1) => some (.C 0 (b + 1) d)
+  | .C 1 (b + 1) (d + 1) => some (.C 1 (b + 3) d)
+  | .C 1 0 (d + 1) => some (.C 0 0 (d + 3))
+  | .C 0 0 1 => some (.C 0 2 5)
+  | .C 0 (b + 1) 1 => some (.C 0 2 (2 * b + 3))
+  | .C 0 b (d + 2) =>
+    if b ≥ d + 1 then some (.C (3 * d + 2) 3 (2 * b - 2 * d - 1))
+    else if d = b then none
+    else if d = b + 1 then some (.C (3 * b + 2) 0 6)
+    else if d = b + 2 then some (.C (3 * b + 4) 0 4)
+    else some (.C (3 * b + 3) 2 (d - b - 3))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_HHH1RD
 
 namespace M_1RB1LD_1RC1RE_0LA1LB_0LD1LC_1RF0RA_HHH0RC
@@ -3239,6 +3774,47 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $E(a, b, c) := 0^\infty\,(10)^b\,(11)^{a+1}\,\mathrm{E}{>}\,1^{c+1}\,0^\infty$. -/
+  | E (a b c : ℕ)
+
+def highLevelStart : HighLevelState := .E 1 0 2
+
+def toState : HighLevelState → State
+  | .E a b c => .E a b c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .E (a + 1) b 0 => some (.E a b 1)
+  | .E 0 0 0 => some (.E 1 0 1)
+  | .E 0 1 0 => some (.E 1 0 2)
+  | .E 0 2 0 => some (.E 1 0 6)
+  | .E 0 (b + 3) 0 => some (.E 1 b 4)
+  | .E a 0 1 => some (.E 1 0 (2 * a + 3))
+  | .E a 0 2 => some (.E 1 0 (2 * a + 5))
+  | .E _ 0 3 => none
+  | .E a 0 4 => some (.E 1 (a + 1) 2)
+  | .E a 0 5 => some (.E 1 (a + 1) 4)
+  | .E a 0 6 => some (.E 1 (a + 1) 6)
+  | .E a 0 (c + 7) => some (.E 1 (a + 3) (c + 1))
+  | .E a 1 1 => some (.E 1 0 (2 * a + 4))
+  | .E a 1 2 => some (.E 1 0 (2 * a + 6))
+  | .E a 2 1 => some (.E 1 2 (2 * a + 2))
+  | .E a 2 2 => some (.E 1 2 (2 * a + 4))
+  | .E a (b + 3) 1 => some (.E 1 b (2 * a + 6))
+  | .E a (b + 3) 2 => some (.E 1 b (2 * a + 8))
+  | .E a (b + 1) (c + 3) => some (.E (a + 2) b (c + 1))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1LE_1RC1RA_0LD1RB_1LE1LD_1RF0LA_HHH0RE
 
 namespace M_1RB1LF_0RC1RD_1LA1LD_1LE0RA_HHH1LC_0LA1LA
@@ -3303,6 +3879,44 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- `.C a b` encodes
+    $C(a, b + 6) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^{b+6}\,0^\infty$. -/
+  | C (a b : ℕ)
+
+/-- Initial state `.C 0 3`, encoding $C(0, 9) = 0^\infty\,110\,\mathrm{A}{>}\,0\,1^9\,0^\infty$. -/
+def highLevelStart : HighLevelState := .C 0 3
+
+def toState : HighLevelState → State
+  | .C a b => .C a b
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C 0 b =>
+    if b % 2 = 0 then some (.C (b / 2 + 1) 3)
+    else some (.C (b / 2 + 3) 0)
+  | .C (a + 1) b =>
+    if b % 2 = 0 then
+      let k := b / 2
+      if k ≤ a + 3 then some (.C (a + 4 - k) (6 * k + 6))
+      else if k ≤ a + 5 then none
+      else some (.C (k - a - 5) (6 * a + 33))
+    else
+      let k := b / 2 + 2
+      if k > a then some (.C (k - a) (6 * a + 6))
+      else if a ≤ k + 1 then none
+      else some (.C (a - k - 1) (6 * k + 9))
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1LF_0RC1RD_1LA1LD_1LE0RA_HHH1LC_0LA1LA
 
 namespace M_1RB1LF_1RC1RF_0LD1RE_HHH1LC_0RB1RE_1LA0LE
@@ -3460,6 +4074,8 @@ theorem is_closed_pattern_set : IsClosedPatternSet target ps := by sorry
 theorem has_collatz_reduction : HasCollatzReduction target := by sorry
 
 inductive State
+  /-- $C(a, k, d, c) :=
+  0^\infty\,(10)^a\,(11)^k\,\mathrm{C}{>}\,(11)^d\,(10)^c\,1111\,0^\infty$. -/
   | mk (a k d c : ℕ)
 
 def start : State := .mk 0 0 0 1
@@ -3480,6 +4096,30 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+abbrev HighLevelState := State
+
+def highLevelStart : HighLevelState := start
+
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .mk a (k + 1) d c =>
+    if k + 1 > c then some (.mk a (k + 1 - c) 0 (d + 2 * c + 1))
+    else some (.mk a 0 (d + 2 * (k + 1)) (c - (k + 1)))
+  | .mk (a + 1) 0 d (c + 2) => some (.mk a (d + 1) 2 c)
+  | .mk (a + 1) 0 d 1       => some (.mk a (d + 2) 0 1)
+  | .mk (a + 1) 0 d 0       => some (.mk a (d + 2) 0 0)
+  | .mk 0 0 d (c + 1)       => some (.mk (d + 1) 0 0 (c + 1))
+  | .mk 0 0 _ 0             => none
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_HHH1LC
 
 namespace M_1RB1RA_0LC1LE_1LD1LC_1LA0LB_1LF1RE_HHH0RA
@@ -3775,6 +4415,8 @@ theorem is_closed_pattern_set : IsClosedPatternSet target ps := by sorry
 theorem has_collatz_reduction : HasCollatzReduction target := by sorry
 
 inductive State where
+  /-- $C(k, m, f) :=
+  0^\infty\,(11)^{k+1}\,0\,(11)^{m+1}\,0\,\mathrm{D}{>}\,1^{f+2}\,0^\infty$. -/
   | C (k m f : ℕ)
 
 def start : State := .C 2 0 1
@@ -3811,6 +4453,22 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+abbrev HighLevelState := State
+
+def highLevelStart : HighLevelState := start
+
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+def highLevelNext : HighLevelState → Option HighLevelState := next
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RB_1LC0RE_HHH1LD_0RA1LB_1RA1LF_0LE1LE
 
 namespace M_1RB1RC_1LC1LC_1RE0LD_1LB1RF_HHH1RA_0RD1RD
@@ -3869,6 +4527,37 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $C(a, b, c) := 0^\infty\,1^{a+2}\,\mathrm{E}{>}\,1^{2b+2}\,0\,1^{2c+2}\,0^\infty$. -/
+  | C (a b c : ℕ)
+
+def highLevelStart : HighLevelState := .C 5 2 0
+
+def toState : HighLevelState → State
+  | .C a b c => if a % 2 = 0 then .C_0 (a / 2) b c else .C_1 (a / 2) b c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .C _ 0 0 => none
+  | .C a 0 1 =>
+    if a % 2 = 0 then some (.C 5 2 (a / 2 + 1))
+    else some (.C 2 0 (a / 2 + 3))
+  | .C a 0 (d + 2) =>
+    if a % 2 = 0 then some (.C 2 (a / 2 + 3) d)
+    else some (.C 5 (a / 2 + 3) d)
+  | .C a (b + 1) 0 => some (.C (a + 3) 0 b)
+  | .C a (b + 1) (c + 1) => some (.C (a + 6) b c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RC_1LC1LC_1RE0LD_1LB1RF_HHH1RA_0RD1RD
 
 namespace M_1RB1RC_1LC1LE_1RA1RD_0RF0RE_1LA0LB_HHH1RA
@@ -3986,6 +4675,49 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $D(0, 2k + 1, w) := 0^\infty\,1^{2k+1}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_0_odd (k w : ℕ)
+  /-- $D(0, 2k + 2, w) := 0^\infty\,1^{2k+2}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_0_even (k w : ℕ)
+  /-- $D(a + 1, 2k + 1, w) :=
+    0^\infty\,(10)^{a+1}\,1^{2k+1}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_succ_odd (a k w : ℕ)
+
+def highLevelStart : HighLevelState := .D_0_odd 0 1
+
+def toState : HighLevelState → State
+  | .D_0_odd k w => .D_0_odd k w
+  | .D_0_even k w => .D_0_even k w
+  | .D_succ_odd a k w => .D_succ_odd a k w
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .D_0_odd k 0 => some (.D_0_odd 0 (2 * k + 2))
+  | .D_0_odd k 1 => some (.D_0_odd 0 (2 * k + 4))
+  | .D_0_odd k (w + 2) => some (.D_0_even (k + 1) w)
+  | .D_0_even _ 0 => none
+  | .D_0_even k 1 => some (.D_succ_odd k 0 1)
+  | .D_0_even k 2 => some (.D_succ_odd k 0 3)
+  | .D_0_even k 3 => some (.D_succ_odd k 0 5)
+  | .D_0_even k (w + 4) => some (.D_succ_odd k 2 w)
+  | .D_succ_odd 0 k 0 => some (.D_0_odd 0 (2 * k + 3))
+  | .D_succ_odd 0 k 1 => some (.D_0_odd 0 (2 * k + 5))
+  | .D_succ_odd (a + 1) k 0 => some (.D_succ_odd a 0 (2 * k + 3))
+  | .D_succ_odd (a + 1) k 1 => some (.D_succ_odd a 0 (2 * k + 5))
+  | .D_succ_odd 0 k (w + 2) => some (.D_0_odd (k + 2) w)
+  | .D_succ_odd (a + 1) k (w + 2) => some (.D_succ_odd a (k + 2) w)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RD_0LC1RA_0RA1LC_1RA1LE_1RF0LD_HHH0RE
 
 namespace M_1RB1RD_0LC1RA_1LA1LC_1RA1LE_1RF0LD_HHH0RE
@@ -4043,6 +4775,44 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $P_1(a, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,1^c\,0^\infty$. -/
+  | P_1 (a c : ℕ)
+
+def highLevelStart : HighLevelState := .P_1 2 1
+
+def toState : HighLevelState → State
+  | .P_1 a c => .P_1 a c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalP2 : ℕ → ℕ → ℕ → HighLevelState
+  | 0, m, 0 => .P_1 0 (2 * m + 3)
+  | k + 1, m, 0 => evalP2 k 0 (2 * m + 3)
+  | 0, m, 1 => .P_1 0 (2 * (m + 1) + 3)
+  | k + 1, m, 1 => evalP2 k 0 (2 * (m + 1) + 3)
+  | 0, m, d + 2 => .P_1 (2 * m + 4) d
+  | k + 1, m, d + 2 => evalP2 k (m + 2) d
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .P_1 a 0 => some (.P_1 2 (a + 1))
+  | .P_1 a 1 => some (.P_1 (a + 2) 0)
+  | .P_1 a (c + 2) =>
+    if a % 2 = 0 then some (.P_1 (a + 3) c)
+    else
+      Nat.casesOn c none fun c =>
+      Nat.casesOn c (some (evalP2 (a / 2) 1 0)) fun d =>
+      some (evalP2 (a / 2) 2 d)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RD_0LC1RA_1LA1LC_1RA1LE_1RF0LD_HHH0RE
 
 namespace M_1RB1RD_0LC1RA_1RA1LC_0RB1LE_1RF0LD_HHH0RE
@@ -4118,6 +4888,54 @@ def next : State → Option State
 
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $D_1(0, 2k + 1, w) := 0^\infty\,1^{2k+1}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_1_0_odd (k w : ℕ)
+  /-- $D_1(0, 2k + 2, w) := 0^\infty\,1^{2k+2}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_1_0_even (k w : ℕ)
+  /-- $D_1(a + 1, 2k + 1, w) :=
+    0^\infty\,(10)^{a+1}\,1^{2k+1}\,\mathrm{D}{>}\,1\,1^w\,0^\infty$. -/
+  | D_1_succ_odd (a k w : ℕ)
+
+def highLevelStart : HighLevelState := .D_1_0_even 0 2
+
+def toState : HighLevelState → State
+  | .D_1_0_odd k w => .D_1_0_odd k w
+  | .D_1_0_even k w => .D_1_0_even k w
+  | .D_1_succ_odd a k w => .D_1_succ_odd a k w
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .D_1_0_odd k 0 => some (.D_1_0_even 0 (2 * k + 2))
+  | .D_1_0_odd k 1 => some (.D_1_0_even 0 (2 * k + 4))
+  | .D_1_0_odd k (w + 2) => some (.D_1_0_even (k + 1) w)
+  | .D_1_0_even _ 0 => none
+  | .D_1_0_even 0 1 => some (.D_1_0_odd 1 1)
+  | .D_1_0_even (k + 1) 1 => some (.D_1_succ_odd k 1 1)
+  | .D_1_0_even 0 2 => some (.D_1_0_odd 1 3)
+  | .D_1_0_even (k + 1) 2 => some (.D_1_succ_odd k 1 3)
+  | .D_1_0_even 0 3 => some (.D_1_0_odd 1 5)
+  | .D_1_0_even (k + 1) 3 => some (.D_1_succ_odd k 1 5)
+  | .D_1_0_even k (w + 4) => some (.D_1_succ_odd k 2 w)
+  | .D_1_succ_odd 0 k 0 => some (.D_1_0_even 0 (2 * k + 3))
+  | .D_1_succ_odd 0 k 1 => some (.D_1_0_even 0 (2 * k + 5))
+  | .D_1_succ_odd 1 k 0 => some (.D_1_0_odd 1 (2 * k + 3))
+  | .D_1_succ_odd 1 k 1 => some (.D_1_0_odd 1 (2 * k + 5))
+  | .D_1_succ_odd (a + 2) k 0 => some (.D_1_succ_odd a 1 (2 * k + 3))
+  | .D_1_succ_odd (a + 2) k 1 => some (.D_1_succ_odd a 1 (2 * k + 5))
+  | .D_1_succ_odd 0 k (w + 2) => some (.D_1_0_odd (k + 2) w)
+  | .D_1_succ_odd (a + 1) k (w + 2) => some (.D_1_succ_odd a (k + 2) w)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RD_0LC1RA_1RA1LC_0RB1LE_1RF0LD_HHH0RE
 
 namespace M_1RB1RD_1LC0RD_1RF1RB_1LE0RA_0LB0LE_HHH0RC
@@ -4530,6 +5348,36 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState where
+  /-- $P_2(a, b, c) := 0^\infty\,11\,(01)^b\,(10)^a\,1\,\mathrm{D}{>}\,(10)^c\,1111\,0^\infty$. -/
+  | P_2 (a b c : ℕ)
+
+def highLevelStart : HighLevelState := .P_2 2 1 0
+
+def toState : HighLevelState → State
+  | .P_2 a b c => .P_2 a b c
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .P_2 a b 0 =>
+    if a ≤ b + 1 then some (.P_2 2 (b + 2 - a) (2 * a + 2))
+    else if (a - (b + 2)) % 2 = 0 then some (.P_2 2 0 (2 * a + 2))
+    else some (.P_2 2 1 (2 * a + 2))
+  | .P_2 a 0 1 => some (.P_2 2 0 (a + 4))
+  | .P_2 _ 0 2 => none
+  | .P_2 a 0 (c + 3) => some (.P_2 2 (a + 2) c)
+  | .P_2 a (b + 1) (c + 1) => some (.P_2 (a + 2) b c)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RB1RF_1LCHHH_1LE1RD_1RA0RC_0LF0LA_0LD0RB
 
 namespace M_1RBHHH_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD
@@ -4628,6 +5476,56 @@ def next : State → Option State
 theorem is_valid_acceleration : IsValidAcceleration target start encode next := by sorry
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
+inductive HighLevelState
+  /-- $P_1(a, b, c, d) :=
+  0^\infty\,1^b\,(01)^a\,1\,\mathrm{C}{>}\,(01)^c\,1\,(01)^d\,1\,0^\infty$. -/
+  | P_1 (a b c d : ℕ)
+  deriving DecidableEq, Repr
+
+def highLevelStart : HighLevelState := .P_1 1 4 1 1
+
+def toState : HighLevelState → State
+  | .P_1 a b c d => .P_1 a b c d
+
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+def evalP23_4 : Bool → ℕ → ℕ → HighLevelState
+  | false, 0, c => .P_1 (1 + c) 4 1 1
+  | true, 0, c => .P_1 (1 + c) 4 1 2
+  | false, a + 1, c => evalP23_4 true a (c + 2)
+  | true, a + 1, c => evalP23_4 false a (c + 2)
+
+def evalP4_4 : ℕ → ℕ → ℕ → HighLevelState
+  | 0, c, 0 => .P_1 (1 + c) 4 1 1
+  | a + 1, c, 0 => evalP23_4 true a (c + 2)
+  | 0, c, d + 1 => .P_1 (1 + c) 4 1 (d + 2)
+  | a + 1, c, d + 1 => evalP4_4 a (c + 2) d
+
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .P_1 0 b c 0 =>
+    if b % 2 = 0 then some (.P_1 (b / 2 + c + 1) 4 1 1)
+    else some (.P_1 (b / 2 + c) 4 1 2)
+  | .P_1 1 0 c 0 => some (.P_1 c 4 1 2)
+  | .P_1 1 1 c 0 => some (.P_1 0 0 1 (c + 2))
+  | .P_1 1 2 c 0 => some (.P_1 (c + 3) 4 1 1)
+  | .P_1 1 (_ + 3) _ 0 => none
+  | .P_1 (a + 2) b c 0 => some (.P_1 a b 1 (c + 2))
+  | .P_1 0 0 0 (_ + 1) => none
+  | .P_1 0 0 (c + 1) (d + 1) => some (evalP4_4 c 1 (d + 2))
+  | .P_1 0 (b' + 1) c (d + 1) =>
+    if (b' + 1) % 2 = 0 then some (evalP4_4 (b' / 2 + c) 1 (d + 2))
+    else some (.P_1 0 0 (b' / 2 + c + 2) d)
+  | .P_1 (a + 1) b c (d + 1) => some (.P_1 a b (c + 2) d)
+
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
+
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart := by sorry
+
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart := by sorry
 end M_1RBHHH_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD
 
 namespace M_1RB0LB0RC_2LC2LA1RA_1RA1LCHHH

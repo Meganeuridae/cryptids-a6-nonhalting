@@ -921,4 +921,187 @@ theorem exists_evalStackExpr_single_word_iff (a₀ a₁ : Γ) (s : ListBlank Γ)
     dsimp only [evalStackExpr, evalStackSeg]
     rw [hw]
 
+/-! ## Higher-Level Acceleration Reduction (`CollatzReachesStar`, `CollatzStepsTo`) -/
+
+/-- Any two valid Collatz-like accelerations of the same machine `M` have equivalent halting
+problems. -/
+theorem IsValidAcceleration.collatzHalts_iff {M : Machine Γ Λ} {S₁ S₂ : Type*}
+    {start₁ : S₁} {encode₁ : S₁ → Cfg Γ Λ} {next₁ : S₁ → Option S₁}
+    {start₂ : S₂} {encode₂ : S₂ → Cfg Γ Λ} {next₂ : S₂ → Option S₂}
+    (h₁ : IsValidAcceleration M start₁ encode₁ next₁)
+    (h₂ : IsValidAcceleration M start₂ encode₂ next₂) :
+    CollatzHalts next₁ start₁ ↔ CollatzHalts next₂ start₂ :=
+  h₁.isHalt_iff.symm.trans h₂.isHalt_iff
+
+/-- `next` reaches `s₂` from `s₁` in `n` steps. -/
+def CollatzReachesIn {S : Type*} (next : S → Option S) (n : ℕ) (s₁ s₂ : S) : Prop :=
+  (Option.bind · next)^[n] (some s₁) = some s₂
+
+/-- `next` reaches `s₂` from `s₁` in zero or more steps. -/
+def CollatzReachesStar {S : Type*} (next : S → Option S) (s₁ s₂ : S) : Prop :=
+  ∃ n : ℕ, CollatzReachesIn next n s₁ s₂
+
+/-- `next` reaches `s₂` from `s₁` in one or more steps. -/
+def CollatzReachesPlus {S : Type*} (next : S → Option S) (s₁ s₂ : S) : Prop :=
+  ∃ n : ℕ, n > 0 ∧ CollatzReachesIn next n s₁ s₂
+
+/-- `next` from `s` either reaches `s'` in one or more steps (`some s'`) or halts (`none`). -/
+def CollatzStepsTo {S : Type*} (next : S → Option S) (s : S) : Option S → Prop
+  | some s' => CollatzReachesPlus next s s'
+  | none => CollatzHalts next s
+
+@[simp]
+private theorem iterate_bind_none {S : Type*} (next : S → Option S) (n : ℕ) :
+    (Option.bind · next)^[n] none = none := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [Function.iterate_succ_apply, Option.bind_none, ih]
+
+private theorem CollatzReachesIn.head {next : S → Option S} {n : ℕ} {s₁ s₂ s₃ : S}
+    (h₁ : next s₁ = some s₂) (h₂ : CollatzReachesIn next n s₂ s₃) :
+    CollatzReachesIn next (n + 1) s₁ s₃ := by
+  unfold CollatzReachesIn at *
+  rw [Function.iterate_succ_apply]
+  simpa [h₁] using h₂
+
+private theorem CollatzReachesIn.trans {next : S → Option S} {m n : ℕ} {s₁ s₂ s₃ : S}
+    (h₁ : CollatzReachesIn next m s₁ s₂) (h₂ : CollatzReachesIn next n s₂ s₃) :
+    CollatzReachesIn next (m + n) s₁ s₃ := by
+  unfold CollatzReachesIn at *
+  rw [Nat.add_comm, Function.iterate_add_apply, h₁, h₂]
+
+theorem CollatzReachesStar.refl (next : S → Option S) (s : S) :
+    CollatzReachesStar next s s :=
+  ⟨0, rfl⟩
+
+theorem CollatzReachesStar.head {next : S → Option S} {s₁ s₂ s₃ : S}
+    (h₁ : next s₁ = some s₂) (h₂ : CollatzReachesStar next s₂ s₃) :
+    CollatzReachesStar next s₁ s₃ :=
+  let ⟨n, hn⟩ := h₂
+  ⟨n + 1, CollatzReachesIn.head h₁ hn⟩
+
+theorem CollatzReachesStar.single {next : S → Option S} {s₁ s₂ : S}
+    (h : next s₁ = some s₂) :
+    CollatzReachesStar next s₁ s₂ :=
+  CollatzReachesStar.head h (CollatzReachesStar.refl next s₂)
+
+theorem CollatzReachesPlus.single {next : S → Option S} {s₁ s₂ : S}
+    (h : next s₁ = some s₂) :
+    CollatzReachesPlus next s₁ s₂ :=
+  ⟨1, Nat.succ_pos 0, CollatzReachesIn.head h rfl⟩
+
+theorem CollatzReachesPlus.to_star {next : S → Option S} {s₁ s₂ : S}
+    (h : CollatzReachesPlus next s₁ s₂) :
+    CollatzReachesStar next s₁ s₂ :=
+  let ⟨n, _, hn⟩ := h
+  ⟨n, hn⟩
+
+theorem CollatzReachesPlus.head {next : S → Option S} {s₁ s₂ s₃ : S}
+    (h₁ : next s₁ = some s₂) (h₂ : CollatzReachesStar next s₂ s₃) :
+    CollatzReachesPlus next s₁ s₃ :=
+  let ⟨n, hn⟩ := h₂
+  ⟨n + 1, Nat.succ_pos n, CollatzReachesIn.head h₁ hn⟩
+
+private theorem CollatzReachesStar.trans_plus {next : S → Option S} {s₁ s₂ s₃ : S}
+    (h₁ : CollatzReachesStar next s₁ s₂) (h₂ : CollatzReachesPlus next s₂ s₃) :
+    CollatzReachesPlus next s₁ s₃ :=
+  let ⟨m, hm⟩ := h₁
+  let ⟨n, hn_pos, hn⟩ := h₂
+  ⟨m + n, Nat.add_pos_right m hn_pos, hm.trans hn⟩
+
+private theorem CollatzHalts.of_reachesStar {next : S → Option S} {s₁ s₂ : S}
+    (h₁ : CollatzReachesStar next s₁ s₂) (h₂ : CollatzHalts next s₂) :
+    CollatzHalts next s₁ := by
+  obtain ⟨m, hm⟩ := h₁
+  obtain ⟨n, hn⟩ := h₂
+  refine ⟨m + n, ?_⟩
+  unfold CollatzReachesIn at hm
+  rw [Nat.add_comm, Function.iterate_add_apply, hm, hn]
+
+theorem CollatzStepsTo.of_eq {next : S → Option S} {s : S} {res : Option S}
+    (h : next s = res) :
+    CollatzStepsTo next s res := by
+  rcases res with _ | s'
+  · exact CollatzHalts.of_next_eq_none h
+  · exact CollatzReachesPlus.single h
+
+theorem CollatzStepsTo.head {next : S → Option S} {s₁ s₂ : S} {res : Option S}
+    (h₁ : next s₁ = some s₂) (h₂ : CollatzStepsTo next s₂ res) :
+    CollatzStepsTo next s₁ res := by
+  rcases res with _ | s'
+  · exact CollatzHalts.of_next_eq_some h₁ h₂
+  · exact CollatzReachesPlus.head h₁ h₂.to_star
+
+theorem CollatzStepsTo.of_reachesStar {next : S → Option S} {s₁ s₂ : S} {res : Option S}
+    (h₁ : CollatzReachesStar next s₁ s₂) (h₂ : CollatzStepsTo next s₂ res) :
+    CollatzStepsTo next s₁ res := by
+  rcases res with _ | s'
+  · exact CollatzHalts.of_reachesStar h₁ h₂
+  · exact h₁.trans_plus h₂
+
+private theorem IsValidAcceleration.reachesStar_of_collatzReachesIn {M : Machine Γ Λ} {S : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    (h : IsValidAcceleration M start encode next) {n : ℕ} {s₁ s₂ : S}
+    (hs : CollatzReachesIn next n s₁ s₂) :
+    ReachesStar M (encode s₁) (encode s₂) := by
+  induction n generalizing s₁ with
+  | zero =>
+    unfold CollatzReachesIn at hs
+    simp only [Function.iterate_zero_apply, Option.some.injEq] at hs
+    subst hs
+    exact ReachesStar.refl M (encode s₁)
+  | succ n ih =>
+    unfold CollatzReachesIn at hs
+    rw [Function.iterate_succ_apply] at hs
+    rcases hnext : next s₁ with _ | s'
+    · simp [hnext] at hs
+    · refine (h.step_some s₁ s' hnext).to_star.trans (ih ?_)
+      change (Option.bind · next)^[n] (some s') = some s₂
+      simpa [hnext] using hs
+
+private theorem IsValidAcceleration.reachesStar_of_collatzReachesStar {M : Machine Γ Λ} {S : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    (h : IsValidAcceleration M start encode next) {s₁ s₂ : S}
+    (hs : CollatzReachesStar next s₁ s₂) :
+    ReachesStar M (encode s₁) (encode s₂) := by
+  obtain ⟨n, hn⟩ := hs
+  exact h.reachesStar_of_collatzReachesIn hn
+
+private theorem IsValidAcceleration.reachesPlus_of_collatzReachesPlus {M : Machine Γ Λ} {S : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    (h : IsValidAcceleration M start encode next) {s₁ s₂ : S}
+    (hs : CollatzReachesPlus next s₁ s₂) :
+    ReachesPlus M (encode s₁) (encode s₂) := by
+  obtain ⟨n, hn_pos, hn⟩ := hs
+  rcases n with _ | n
+  · omega
+  · unfold CollatzReachesIn at hn
+    rw [Function.iterate_succ_apply] at hn
+    rcases hnext : next s₁ with _ | s'
+    · simp [hnext] at hn
+    · refine (h.step_some s₁ s' hnext).trans_star (h.reachesStar_of_collatzReachesIn (n := n) ?_)
+      unfold CollatzReachesIn
+      simpa [hnext] using hn
+
+/-- Construct a higher-level `IsValidAcceleration` from a base `IsValidAcceleration` by showing
+that `start` reaches `embed highLevelStart` under `next` and each step of `highLevelNext` is
+simulated by one or more steps of `next`. -/
+theorem IsValidAcceleration.of_collatz {M : Machine Γ Λ} {S H : Type*}
+    {start : S} {encode : S → Cfg Γ Λ} {next : S → Option S}
+    {highLevelStart : H} {embed : H → S} {highLevelNext : H → Option H}
+    (h : IsValidAcceleration M start encode next)
+    (h_init : CollatzReachesStar next start (embed highLevelStart))
+    (h_step : ∀ u, CollatzStepsTo next (embed u) ((highLevelNext u).map embed)) :
+    IsValidAcceleration M highLevelStart (fun u => encode (embed u)) highLevelNext where
+  init_reaches := h.init_reaches.trans (h.reachesStar_of_collatzReachesStar h_init)
+  step_some u u' hu := by
+    have hs := h_step u
+    rw [hu, Option.map_some] at hs
+    exact h.reachesPlus_of_collatzReachesPlus hs
+  step_none u hu := by
+    have hs := h_step u
+    rw [hu, Option.map_none] at hs
+    exact h.haltsFrom_of_collatzHalts hs
+
 end BusyBeaver

@@ -8,37 +8,93 @@ public import BusyBeaver.Basic
 public import BusyBeaver.Bridge
 
 /-!
-# Collatz Reduction for `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
+# Busy Beaver Holdout `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
 
-We analyze canonical configurations in state `A` facing the blank right half-tape `default`, with
-left half-tape consisting of `n` blocks of `U4 = [0, 0, 1, 1]` (`LA n := default <+ U4^n`) followed
-by one of five canonical suffixes:
-- `R1 (n)`: `(LA n <+ [0, 0, 1]) {{A}}> default`
-- `R2 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1]) {{A}}> default`
-- `Q (n)`:  `(LA n <+ [0, 0, 1, 1, 1, 1]) {{A}}> default`
-- `S4 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]) {{A}}> default`
-- `S6 (n)`: `(LA n <+ [0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]) {{A}}> default`
+We define the configurations for $n \ge 0$ (where $L(n) := 0^\infty \ (1100)^n$):
 
-Starting from the blank tape `init []`, the machine reaches `S6 1` in 66 steps.
-The accelerated Collatz-like map `next : State → Option State` evolves the five canonical families
-as follows:
-- **`R1 (n)`**:
-  - `R1 0 ↦ R1 4`
-  - `R1 1 ↦ R1 6`
-  - `R1 (n' + 2) ↦ R1 (n' + 7)`
-- **`R2 (n)`**:
-  - `R2 0 ↦ R1 4`
-  - `R2 (n' + 1)` drains `n'` blocks of `U4` in pairs (`w = ⌊n'/2⌋`) into
-    `W8 = [1, 0, 1, 1, 0, 1, 1, 0]` blocks (`HubTail 7 w r_R2`), which consumes `W8` blocks in
-    groups of 5 (`w ↦ w - 5`, `k ↦ k + 31`)
-    and branches on `w mod 5` into `R1`, `R2`, `Q`, or `R3 ↦ T1 ↦ R1`.
-- **`Q (n)`, `S4 (n)`, `S6 (n)`**:
-  - Small values of `n` (`n = 0, 1`) transition directly to `R1`, `R2`, or `HubTail`.
-  - General values `n ≥ 1` (`Q`, `S4`) or `n ≥ 2` (`S6`) sweep left in state `D`, converting each
-    `U4` block into `B4 = [1, 1, 1, 0]` on the right tape (`Scan 6 b p0010110 rend`), then scan
-    across `B4^b` via the 7-prefix finite transducer (`ScanBundle`) interleaved with `D`-drains
-    (`HubW8` and `HubTail`), halting on two specific remainder prefixes (`rem_halt_1`, `rem_halt_2`)
-    or returning to `{R1, R2, Q, S4, S6}`.
+$$
+\begin{aligned}
+  R_1(n) &:= L(n) \ 100 \ \mathrm{A}{>} \ 0^\infty, \\
+  R_2(n) &:= L(n) \ 100100 \ \mathrm{A}{>} \ 0^\infty, \\
+  Q(n)   &:= L(n) \ 111100 \ \mathrm{A}{>} \ 0^\infty, \\
+  S_4(n) &:= L(n) \ 111100100100 \ \mathrm{A}{>} \ 0^\infty, \\
+  S_6(n) &:= L(n) \ 11111100100100 \ \mathrm{A}{>} \ 0^\infty.
+\end{aligned}
+$$
+
+Starting from $S_6(1)$ (reached after 169 steps from the blank tape), the machine follows the map
+$T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$ for $n \ge 1$ and
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
+  T(R_1(n)) &= \begin{cases}
+    R_1(4) & \text{if } n = 0, \\
+    R_1(6) & \text{if } n = 1, \\
+    R_1(n+5) & \text{if } n \ge 2,
+  \end{cases} \\
+  T(R_2(n)) &= \begin{cases}
+    R_1(4) & \text{if } n = 0, \\
+    R_1(31q + 8) & \text{if } n \ge 1 \text{ and } r = 0, \\
+    R_2(31q + 11) & \text{if } n \ge 1 \text{ and } r = 1, \\
+    Q(31q + 19) & \text{if } n \ge 1 \text{ and } r = 2, \\
+    R_2(31q + 26) & \text{if } n \ge 1 \text{ and } r = 3, \\
+    R_1(31q + 44) & \text{if } n \ge 1 \text{ and } r = 4,
+  \end{cases} \\
+  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad
+    T(S_6(1)) = R_2(23), \\
+  T(Q(b+1)) &= \Phi_Q(2, b, 3), \quad T(S_4(b+1)) = \Phi_{S_4}(2, b, 3), \quad
+    T(S_6(b+2)) = \Phi_{S_6}(2, b, 3),
+\end{aligned}
+$$
+
+where for each $H \in \lbrace Q, S_4, S_6 \rbrace$, the scan transducer $\Phi_H(a, b, i)$ with
+prefix index $i \in \lbrace 0, 1, 2, 3, 4, 5, 6 \rbrace$ (corresponding to `[0]`,
+`[0,0,1,0,1,0]`, `[0,0,1,0]`, `[0,0,1,0,1,1,0]`, `[0,0]`, `[0,1,0]`, `[]`) is defined recursively
+on $b \ge 0$ (writing $\lfloor (a + 3)/2 \rfloor = 5q + r$ with
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$) by:
+
+$$
+\begin{aligned}
+  \Phi_H(a, 0, i) &= \bigl(E_H^{(0)}(a)\bigr)_i, \\
+  \Phi_H(a, 1, 0) &= E_H^{(1)}(a), \quad \Phi_H(a, 1, 2) = E_H^{(2)}(a), \\
+  \Phi_H(a, b+2, 0) &= \Phi_H(31q + c_r, b, j_r), \quad
+    (c_r, j_r) = \bigl((4, 0), (7, 5), (16, 4), (22, 2), (28, 1)\bigr)_r, \\
+  \Phi_H(a, b+2, 2) &= \Phi_H(a + 5, b, 3), \\
+  \Phi_H(a, b+1, i) &= \begin{cases}
+    \Phi_H(a + 6, b, 0) & \text{if } i = 1, \\
+    \Phi_H(a + 9, b, 4) & \text{if } i = 3, \\
+    \Phi_H(a + 3, b, 5) & \text{if } i = 4, \\
+    \Phi_H(a + 4, b, 6) & \text{if } i = 5, \\
+    \Phi_H(a + 3, b, 0) & \text{if } i = 6,
+  \end{cases}
+\end{aligned}
+$$
+
+with base-case tables $E_H^{(0)}(a)$ (for $i = 0, \dots, 6$), $E_H^{(1)}(a)$, $E_H^{(2)}(a)$ and
+tail maps $\tau_3(w), \tau_4(w), \tau_5(w)$ (writing $w = 5q + r$ with
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
+  E_Q^{(0)}(a) &= \bigl(R_1(a+4),\ S_6(a+6),\ R_2(a+4),\ S_6(a+8),\ R_1(a+4),\ S_6(a+5),\
+    S_6(a+3)\bigr), \\
+  E_{S_4}^{(0)}(a) &= \bigl(R_2(a+7),\ R_1(a+9),\ R_1(a+9),\ S_4(a+9),\ R_1(a+11),\ Q(a+9),\
+    R_1(a+6)\bigr), \\
+  E_{S_6}^{(0)}(a) &= \bigl(S_4(a+9),\ R_1(a+18),\ R_1(a+10),\ \text{Halt},\ R_2(a+11),\ R_1(a+14),\
+    R_1(a+15)\bigr), \\
+  E_Q^{(1)}(a) &= S_6(a+2), \quad E_Q^{(2)}(a) = R_1(a+9), \\
+  E_{S_4}^{(1)}(a) &= \tau_5(\lfloor (a+1)/2 \rfloor + 1), \quad E_{S_4}^{(2)}(a) = R_1(a+13), \\
+  E_{S_6}^{(1)}(a) &= \tau_4(\lfloor (a+1)/2 \rfloor + 1), \quad
+    E_{S_6}^{(2)}(a) = \tau_3(\lfloor (a+8)/2 \rfloor), \\
+  \tau_3(5q + r) &= \bigl(R_1(31q+10),\ Q(31q+16),\ R_2(31q+23),\ \text{Halt},\
+    R_2(31q+37)\bigr)_r, \\
+  \tau_4(5q + r) &= \bigl(R_1(31q+16),\ R_2(31q+15),\ R_1(31q+25),\ S_6(31q+28),\
+    R_2(31q+41)\bigr)_r, \\
+  \tau_5(5q + r) &= \bigl(R_1(31q+12),\ R_1(31q+15),\ R_2(31q+26),\ Q(31q+34),\
+    R_1(31q+45)\bigr)_r.
+\end{aligned}
+$$
 -/
 
 @[expose] public section
@@ -1042,10 +1098,15 @@ private theorem in_S6 (n : Nat) : IsInPatternSet ps (S6_cfg n) := by
   simp only [cond_Master, evalVarCond, vars]
   (try omega)
 inductive State where
+  /-- $R_1(n) := 0^\infty\,(1100)^n\,100\,\mathrm{A}{>}\,0^\infty$. -/
   | R1 (n : ℕ)
+  /-- $R_2(n) := 0^\infty\,(1100)^n\,100100\,\mathrm{A}{>}\,0^\infty$. -/
   | R2 (n : ℕ)
+  /-- $Q(n) := 0^\infty\,(1100)^n\,111100\,\mathrm{A}{>}\,0^\infty$. -/
   | Q (n : ℕ)
+  /-- $S_4(n) := 0^\infty\,(1100)^n\,111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S4 (n : ℕ)
+  /-- $S_6(n) := 0^\infty\,(1100)^n\,11111100100100\,\mathrm{A}{>}\,0^\infty$. -/
   | S6 (n : ℕ)
 
 def start : State := .S6 1
@@ -2962,5 +3023,37 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- Symbolic state space for the high-level Collatz-like acceleration. -/
+abbrev HighLevelState := State
+
+/-- Initial state $S_6(1)$ for the high-level Collatz-like acceleration. -/
+def highLevelStart : HighLevelState := start
+
+/-- Decode a high-level symbolic state into a concrete Turing machine configuration. -/
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+/-- High-level accelerated Collatz-like transition function. -/
+def highLevelNext : HighLevelState → Option HighLevelState := next
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext :=
+  is_valid_acceleration
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LFHHH_0RA1LA

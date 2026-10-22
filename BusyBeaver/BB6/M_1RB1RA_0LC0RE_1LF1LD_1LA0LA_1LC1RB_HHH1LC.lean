@@ -10,29 +10,26 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`
 
-Formal `IsClosedPatternSet`, `HasCollatzReduction`, and `IsValidAcceleration` proofs for the
-6-state, 2-symbol Busy Beaver holdout `1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`.
+We define the configuration for $a, k, d, c \ge 0$:
 
-Starting from the blank tape (`init []`), the trajectory enters the canonical configuration family
-$$A(a, k, d, c) := 0^\infty\,(10)^a\,(11)^k\,\mathrm{C}{>}\,(11)^d\,(10)^c\,1111\,0^\infty$$
-at $A(0, 0, 0, 1)$ in 27 steps.
+$$
+C(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
+$$
 
-## Collatz-like Acceleration Rules
+Starting from $C(0, 0, 0, 1)$ (reached after 27 steps from the blank tape), the machine follows the
+map $T$:
 
-```text
-Consider:
-A(a, k, d, c) = 0^inf (10)^a (11)^k C> (11)^d (10)^c 1111 0^inf
-
-A(a, k + 1, d, c + 1) -> A(a, k, d + 2, c)
-A(a, k + 1, d, 0)     -> A(a, k + 1, 0, d + 1)
-A(a + 1, 0, d, c + 2) -> A(a, d + 1, 2, c)
-A(a + 1, 0, d, 1)     -> A(a, d + 2, 0, 1)
-A(a + 1, 0, d, 0)     -> A(a, d + 2, 0, 0)
-A(0, 0, d, c + 1)     -> A(d + 1, 0, 0, c + 1)
-A(0, 0, d, 0)         -> Halt
-
-Start: A(0, 0, 0, 1), reached after 27 raw TM steps
-```
+$$
+T(C(a, k, d, c)) = \begin{cases}
+  C(a, k - c, 0, d + 2c + 1) & \text{if } k \ge 1,\ k > c, \\
+  C(a, 0, d + 2k, c - k) & \text{if } k \ge 1,\ k \le c, \\
+  C(a', d + 1, 2, c') & \text{if } a = a' + 1,\ k = 0,\ c = c' + 2, \\
+  C(a', d + 2, 0, 1) & \text{if } a = a' + 1,\ k = 0,\ c = 1, \\
+  C(a', d + 2, 0, 0) & \text{if } a = a' + 1,\ k = 0,\ c = 0, \\
+  C(d + 1, 0, 0, c' + 1) & \text{if } a = 0,\ k = 0,\ c = c' + 1, \\
+  \text{Halt} & \text{if } a = 0,\ k = 0,\ c = 0.
+\end{cases}
+$$
 -/
 
 @[expose] public section
@@ -504,7 +501,8 @@ theorem has_collatz_reduction : HasCollatzReduction target :=
 
 /-! ## Collatz-Like Acceleration (Level B) -/
 
-inductive State
+inductive State where
+  /-- $A(a, k, d, c) := 0^\infty\,(10)^a\,(11)^k\,\mathrm{C}{>}\,(11)^d\,(10)^c\,1111\,0^\infty$. -/
   | mk (a k d c : ℕ)
 
 def start : State := .mk 0 0 0 1
@@ -546,5 +544,89 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- High-level symbolic configuration state space for
+`1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_---1LC`. -/
+abbrev HighLevelState := State
+
+/-- Initial high-level symbolic state $A(0, 0, 0, 1)$. -/
+def highLevelStart : HighLevelState := start
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode : HighLevelState → Cfg (Fin 2) (Fin 6) := encode
+
+/-- High-level accelerated transition function on $A(a, k, d, c)$, contracting the inner
+$(k, c)$ drain loop into a single step. -/
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .mk a (k + 1) d c =>
+    if k + 1 > c then some (.mk a (k + 1 - c) 0 (d + 2 * c + 1))
+    else some (.mk a 0 (d + 2 * (k + 1)) (c - (k + 1)))
+  | .mk (a + 1) 0 d (c + 2) => some (.mk a (d + 1) 2 c)
+  | .mk (a + 1) 0 d 1       => some (.mk a (d + 2) 0 1)
+  | .mk (a + 1) 0 d 0       => some (.mk a (d + 2) 0 0)
+  | .mk 0 0 d (c + 1)       => some (.mk (d + 1) 0 0 (c + 1))
+  | .mk 0 0 _ 0             => none
+
+private theorem reaches_drain (a : ℕ) : ∀ (k c d : ℕ),
+    CollatzReachesPlus next (.mk a (k + 1) d c)
+      (if k + 1 > c then .mk a (k + 1 - c) 0 (d + 2 * c + 1)
+       else .mk a 0 (d + 2 * (k + 1)) (c - (k + 1)))
+  | k, 0, d => by
+    simp only [Nat.succ_pos', ↓reduceIte, Nat.sub_zero, Nat.mul_zero, Nat.add_zero]
+    exact .single rfl
+  | 0, c + 1, d => by
+    have h : ¬ (1 > c + 1) := by omega
+    have hsub : c + 1 - 1 = c := by omega
+    simp only [h, ↓reduceIte, hsub]
+    exact .single rfl
+  | k + 1, c + 1, d => by
+    have ih := reaches_drain a k c (d + 2)
+    refine CollatzReachesPlus.head (s₂ := .mk a (k + 1) (d + 2) c) rfl ?_
+    by_cases h : k + 1 > c
+    · have h' : k + 2 > c + 1 := by omega
+      have h1 : k + 2 - (c + 1) = k + 1 - c := by omega
+      have h2 : d + 2 * (c + 1) + 1 = d + 2 + 2 * c + 1 := by omega
+      simp only [h, ↓reduceIte] at ih
+      simp only [h', ↓reduceIte, h1, h2]
+      exact ih.to_star
+    · have h' : ¬ (k + 2 > c + 1) := by omega
+      have h1 : d + 2 * (k + 2) = d + 2 + 2 * (k + 1) := by omega
+      have h2 : c + 1 - (k + 2) = c - (k + 1) := by omega
+      simp only [h, ↓reduceIte] at ih
+      simp only [h', ↓reduceIte, h1, h2]
+      exact ih.to_star
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by
+  refine is_valid_acceleration.of_collatz (embed := id)
+    (CollatzReachesStar.refl next start) ?_
+  rintro ⟨a, k, d, c⟩
+  rcases k with _ | k
+  · rcases a with _ | a <;> rcases c with _ | _ | c
+    · exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.of_eq rfl
+  · dsimp [highLevelNext]
+    have h := reaches_drain a k c d
+    split_ifs with hgt <;> simp only [hgt, ↓reduceIte] at h <;> exact h
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB1RA_0LC0RE_1LF1LD_1LA0LA_1LC1RB_HHH1LC

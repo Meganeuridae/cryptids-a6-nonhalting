@@ -10,40 +10,68 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---0LA`
 
-Formal `IsClosedPatternSet`, `HasCollatzReduction`, and `IsValidAcceleration` proofs for the
-6-state, 2-symbol Busy Beaver holdout `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---0LA`.
+We define the configuration for $a, b, d \ge 0$ and $c \in \lbrace 0, 1 \rbrace$:
 
-## Collatz-like Acceleration Rules
+$$
+D(a, b, c, d) := 0^\infty \ \mathrm{D}{>} \ (10)^a \ (110)^b \ 0^c \ 1^d \ 0^\infty.
+$$
 
-The primary canonical configuration family is:
-`D(a, b, c, d) = 0^∞ {{D}}> (10)^a (110)^b 0^c 1^d 0^∞` (`c ∈ {0, 1}`),
-together with the intermediate families:
-- `B_mid(a, k, b, d) = 0^∞ (01)^a 1^k {{B}}> 00 (110)^b 0 1^d 0^∞`
-- `H_mid(a, b, m) = 0^∞ (01)^a 1 (111)^b 0 {{D}}> 1^m 0^∞`
-- `A_rem(a, k, q, m) = 0^∞ (01)^a 1^k <{{A}} (110)^q 0 1^m 0^∞`
+Starting from $D(0, 0, 0, 4)$ (reached after 6 steps from the blank tape), the machine follows the
+map $T$:
 
-Starting from the blank tape, the machine reaches $D(0, 0, 0, 4)$. The accelerated rules are:
+$$
+\begin{aligned}
+  T(D(a, b, 0, d)) &= \begin{cases}
+    D(0, 0, 1, 1) & \text{if } a = 0,\ b = 0,\text{ and } d = 0, \\
+    D(1, b-1, 1, 2) & \text{if } a = 0,\ b \ge 1,\text{ and } d = 0, \\
+    B(a-1, 0, b, 0) & \text{if } a \ge 1 \text{ and } d = 0, \\
+    D(0, 0, 0, 4) & \text{if } a = 0,\ b = 0,\text{ and } d = 1, \\
+    B(a, 0, 0, 0) & \text{if } a \ge 1,\ b = 0,\text{ and } d = 1, \\
+    D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
+    D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
+    B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
+    D(a+2, b, 0, d-2) & \text{if } d \ge 3,
+  \end{cases} \\
+  T(D(a, b, 1, d)) &= \begin{cases}
+    D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\
+    D(1, b-1, 1, d+2) & \text{if } a = 0 \text{ and } b \ge 1, \\
+    B(a-1, 0, b, d) & \text{if } a \ge 1,
+  \end{cases}
+\end{aligned}
+$$
 
-```text
-D(a, b, 0, 0)         =  D(a, b, 1, 0)
-D(0, 0, 0, 1)         -> D(0, 0, 0, 4)
-D(a + 1, 0, 0, 1)     -> B_mid(a + 1, 1, 0, 0)
-D(a, b + 1, 0, 1)     -> D(a + 2, b, 1, 3)
-D(a, b, 0, 2)         =  D(a, b + 1, 1, 0)
-D(a, b, 0, d + 3)     -> D(a + 2, b, 0, d + 1)
+where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, q, m)$ are defined recursively by:
 
-D(0, 0, 1, d)         -> D(0, 0, 1, d + 1)
-D(0, b + 1, 1, d)     -> D(1, b, 1, d + 2)
-D(a + 1, b, 1, d)     -> B_mid(a, 1, b, d)
-
-B_mid(a, k+1, b+1, d) -> B_mid(a, k + 2, b, d + 2)
-B_mid(0, 1, 0, d)     -> D(0, 0, 0, d + 4)
-B_mid(1, 1, 0, d)     -> Halt
-B_mid(2, 1, 0, 0)     -> D(1, 2, 1, 2)
-B_mid(2, 1, 0, d + 1) -> D(2, 2, 0, d + 1)
-B_mid(a + 3, 1, 0, d) -> H_mid(a, 2, d + 2)
-B_mid(a, k + 2, 0, d) -> A_rem(a, k + 1, 0, d + 3)
-```
+$$
+\begin{aligned}
+  B(a, k, b+1, d) &= B(a, k+1, b, d+2), \\
+  B(a, k, 0, d) &= \begin{cases}
+    D(0, 0, 0, d+4) & \text{if } a = 0 \text{ and } k = 0, \\
+    \text{Halt} & \text{if } a = 1 \text{ and } k = 0, \\
+    D(1, 2, 1, 2) & \text{if } a = 2,\ k = 0,\text{ and } d = 0, \\
+    D(2, 2, 0, d) & \text{if } a = 2,\ k = 0,\text{ and } d \ge 1, \\
+    H(a-3, 1, d+1) & \text{if } a \ge 3 \text{ and } k = 0, \\
+    A(a, k-1, 0, d+3) & \text{if } k \ge 1,
+  \end{cases} \\
+  H(a, b, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } m \neq 1, \\
+    D(a, b+1, 1, 5) & \text{if } a \ge 1 \text{ and } m = 0, \\
+    D(a+2, b+1, 1, 2) & \text{if } m = 1, \\
+    D(2, b+2, 1, 3) & \text{if } a = 1 \text{ and } m = 2, \\
+    D(1, b+3, 1, 2) & \text{if } a = 1 \text{ and } m = 3, \\
+    D(2, b+3, 0, m-3) & \text{if } a = 1 \text{ and } m \ge 4, \\
+    H(a-2, b+2, m-2) & \text{if } a \ge 2 \text{ and } m \ge 2,
+  \end{cases} \\
+  A(a, k, q, m) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0 \text{ and } k = 0, \\
+    D(a, q, 1, m+2) & \text{if } a \ge 1 \text{ and } k = 0, \\
+    D(1, q, 1, m) & \text{if } a = 0 \text{ and } k = 1, \\
+    A(a-1, q, 0, m+2q+3) & \text{if } a \ge 1 \text{ and } k = 1, \\
+    D(a+2, q, 1, m) & \text{if } k = 2, \\
+    A(a, k-3, q+1, m) & \text{if } k \ge 3.
+  \end{cases}
+\end{aligned}
+$$
 -/
 
 @[expose] public section
@@ -1259,6 +1287,157 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
   is_valid_acceleration.isHalt_iff
+
+/-! ## High-Level Collatz-Like Acceleration -/
+
+/-- State space $D(a, b, c, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0^c\,1^d\,0^\infty$
+($c \in \{0, 1\}$) for the high-level Collatz-like acceleration. -/
+inductive HighLevelState where
+  /-- $D(a, b, 0, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,1^d\,0^\infty$. -/
+  | D0 (a b d : ℕ)
+  /-- $D(a, b, 1, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0\,1^d\,0^\infty$. -/
+  | D1 (a b d : ℕ)
+
+/-- Initial state $D(0, 0, 0, 4)$ for the high-level Collatz-like acceleration. -/
+def highLevelStart : HighLevelState := .D0 0 0 4
+
+/-- Embed a `HighLevelState` into `State`. -/
+def toState : HighLevelState → State
+  | .D0 a b d => .D0 a b d
+  | .D1 a b d => .D1 a b d
+
+/-- Decode a `HighLevelState` into a concrete Turing machine configuration. -/
+def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
+  encode (toState s)
+
+/-- Outcome of the intermediate family `H a b m` when run until returning to `D` or halting. -/
+def evalH : ℕ → ℕ → ℕ → Option HighLevelState
+  | 0, _, 0 => none
+  | a + 1, b, 0 => some (.D1 (if a = 0 then 1 else a + 1) (b + 1) 5)
+  | a, b, 1 => some (.D1 (a + 2) (b + 1) 2)
+  | 0, _, _ + 2 => none
+  | 1, b, 2 => some (.D1 2 (b + 2) 3)
+  | 1, b, 3 => some (.D1 1 (b + 3) 2)
+  | 1, b, m + 4 => some (.D0 2 (b + 3) (m + 1))
+  | a + 2, b, m + 2 => evalH a (b + 2) m
+
+/-- Outcome of the intermediate family `A_pos a k q m` when run until returning to `D` or
+halting. -/
+def evalA_pos : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | 0, 0, _, _ => none
+  | a + 1, 0, 0, m => some (.D1 (if a = 0 then 1 else a + 1) 0 (m + 2))
+  | a + 1, 0, q + 1, m => some (.D1 (if a = 0 then 1 else a + 1) (q + 1) (m + 2))
+  | 0, 1, q, m => some (.D1 1 q m)
+  | a + 1, 1, q, m => evalA_pos a q 0 (m + 2 * q + 3)
+  | a, 2, q, m => some (.D1 (a + 2) q m)
+  | a, k + 3, q, m => evalA_pos a k (q + 1) m
+
+/-- Outcome of the intermediate family `B a k b d` when run until returning to `D` or halting. -/
+def evalB : ℕ → ℕ → ℕ → ℕ → Option HighLevelState
+  | a, k, b + 1, d => evalB a (k + 1) b (d + 2)
+  | 0, 0, 0, d => some (.D0 0 0 (d + 4))
+  | 1, 0, 0, _ => none
+  | 2, 0, 0, 0 => some (.D1 1 2 2)
+  | 2, 0, 0, d + 1 => some (.D0 2 2 (d + 1))
+  | a + 3, 0, 0, d => evalH a 1 (d + 1)
+  | a, k + 1, 0, d => evalA_pos a k 0 (d + 3)
+
+/-- High-level accelerated Collatz-like transition function on $D(a, b, c, d)$. -/
+def highLevelNext : HighLevelState → Option HighLevelState
+  | .D1 0 0 d => some (.D1 0 0 (d + 1))
+  | .D1 0 (b + 1) d => some (.D1 1 b (d + 2))
+  | .D1 (a + 1) b d => evalB a 0 b d
+  | .D0 a b 0 =>
+    Nat.casesOn a
+      (Nat.casesOn b (some (.D1 0 0 1)) fun b => some (.D1 1 b 2))
+      fun a => evalB a 0 b 0
+  | .D0 a b 1 =>
+    Nat.casesOn b
+      (Nat.casesOn a (some (.D0 0 0 4)) fun a => evalB (a + 1) 0 0 0)
+      fun b => some (.D1 (a + 2) b 3)
+  | .D0 a b 2 =>
+    Nat.casesOn a (some (.D1 1 b 2)) fun a => evalB a 0 (b + 1) 0
+  | .D0 a b (d + 3) => some (.D0 (a + 2) b (d + 1))
+
+private theorem stepsTo_H : ∀ (a b m : ℕ),
+    CollatzStepsTo next (.H a b m) ((evalH a b m).map toState)
+  | 0, _, 0 => CollatzStepsTo.of_eq (by simp [next, evalH])
+  | a + 1, b, 0 => CollatzStepsTo.of_eq (by simp [next, toState, evalH])
+  | a, b, 1 => CollatzStepsTo.of_eq (by simp [next, toState, evalH])
+  | 0, _, _ + 2 => CollatzStepsTo.of_eq (by simp [next, evalH])
+  | 1, b, 2 => CollatzStepsTo.of_eq (by simp [next, toState, evalH])
+  | 1, b, 3 => CollatzStepsTo.of_eq (by simp [next, toState, evalH])
+  | 1, b, m + 4 => CollatzStepsTo.of_eq (by simp [next, toState, evalH])
+  | a + 2, b, m + 2 => by
+    rw [evalH]
+    exact CollatzStepsTo.head rfl (stepsTo_H a (b + 2) m)
+
+private theorem stepsTo_A_pos : ∀ (a k q m : ℕ),
+    CollatzStepsTo next (.A_pos a k q m) ((evalA_pos a k q m).map toState)
+  | 0, 0, _, _ => CollatzStepsTo.of_eq (by simp [next, evalA_pos])
+  | a + 1, 0, 0, m => CollatzStepsTo.of_eq (by simp [next, toState, evalA_pos])
+  | a + 1, 0, q + 1, m => CollatzStepsTo.of_eq (by simp [next, toState, evalA_pos])
+  | 0, 1, q, m => CollatzStepsTo.of_eq (by simp [next, toState, evalA_pos])
+  | a + 1, 1, q, m => by
+    rw [evalA_pos]
+    exact CollatzStepsTo.head rfl (stepsTo_A_pos a q 0 (m + 2 * q + 3))
+  | a, 2, q, m => by
+    rw [evalA_pos]
+    exact CollatzStepsTo.head rfl (CollatzStepsTo.of_eq rfl)
+  | a, k + 3, q, m => by
+    rw [evalA_pos]
+    exact CollatzStepsTo.head (by simp [next]) (stepsTo_A_pos a k (q + 1) m)
+
+private theorem stepsTo_B : ∀ (a k b d : ℕ),
+    CollatzStepsTo next (.B a k b d) ((evalB a k b d).map toState)
+  | a, k, b + 1, d => by
+    rw [evalB]
+    exact CollatzStepsTo.head rfl (stepsTo_B a (k + 1) b (d + 2))
+  | 0, 0, 0, d => CollatzStepsTo.of_eq rfl
+  | 1, 0, 0, _ => CollatzStepsTo.of_eq rfl
+  | 2, 0, 0, 0 => CollatzStepsTo.of_eq rfl
+  | 2, 0, 0, d + 1 => CollatzStepsTo.of_eq rfl
+  | a + 3, 0, 0, d => by
+    rw [evalB]
+    exact CollatzStepsTo.head rfl (stepsTo_H a 1 (d + 1))
+  | a, k + 1, 0, d => by
+    rw [evalB]
+    exact CollatzStepsTo.head (by simp [next]) (stepsTo_A_pos a k 0 (d + 3))
+
+/-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
+of `target`. -/
+theorem is_valid_highLevel_acceleration :
+    IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by
+  refine is_valid_acceleration.of_collatz (embed := toState) (CollatzReachesStar.refl next start) ?_
+  rintro (⟨a, b, d⟩ | ⟨a, b, d⟩)
+  · rcases d with _ | _ | _ | d
+    · rcases a with _ | a
+      · rcases b with _ | b <;> exact CollatzStepsTo.of_eq rfl
+      · exact CollatzStepsTo.head rfl (stepsTo_B a 0 b 0)
+    · rcases b with _ | b
+      · rcases a with _ | a
+        · exact CollatzStepsTo.of_eq rfl
+        · exact CollatzStepsTo.head rfl (stepsTo_B (a + 1) 0 0 0)
+      · exact CollatzStepsTo.of_eq (by simp [next, toState, highLevelNext])
+    · rcases a with _ | a
+      · exact CollatzStepsTo.of_eq rfl
+      · exact CollatzStepsTo.head rfl (stepsTo_B a 0 (b + 1) 0)
+    · exact CollatzStepsTo.of_eq rfl
+  · rcases a with _ | a
+    · rcases b with _ | b <;> exact CollatzStepsTo.of_eq rfl
+    · exact CollatzStepsTo.head rfl (stepsTo_B a 0 b d)
+
+/-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
+halts from `highLevelStart`. -/
+theorem isHalt_iff_highLevel_acceleration :
+    IsHalt target ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_highLevel_acceleration.isHalt_iff
+
+/-- The initial acceleration `next` halts from `start` if and only if the high-level acceleration
+`highLevelNext` halts from `highLevelStart`. -/
+theorem acceleration_iff_highLevel_acceleration :
+    CollatzHalts next start ↔ CollatzHalts highLevelNext highLevelStart :=
+  is_valid_acceleration.collatzHalts_iff is_valid_highLevel_acceleration
 
 end BusyBeaver.M_1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_HHH0LA
 
