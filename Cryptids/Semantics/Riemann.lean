@@ -54,7 +54,8 @@ The equivalence is factored through the elementary integer predicate
 
 namespace ConjectureMachines.Semantics.Riemann
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 
 /-- Unconditional halting equivalence between the 744-state Turing machine `Machines.riemann744`
 and the 16-register NQL counter machine `RegHalts`, combining Layer 1 and Layer 2. -/

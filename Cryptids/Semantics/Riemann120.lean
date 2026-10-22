@@ -23,7 +23,8 @@ reduction (`riemann104`) into the complete end-to-end equivalences:
 
 namespace ConjectureMachines.Riemann120
 
-open Turing ConjectureMachines
+open Turing (Dir)
+open ConjectureMachines
 theorem quarterClock_eq_quarterClockStep :
     ∀ z : ℕ, VonMangoldt.quarterClock z = Riemann120Analytic.quarterClockStep z
   | 0 => by rw [VonMangoldt.quarterClock, Riemann120Analytic.quarterClockStep]

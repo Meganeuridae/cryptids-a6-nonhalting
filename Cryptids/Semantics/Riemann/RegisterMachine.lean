@@ -22,7 +22,8 @@ that starting from `regInit = ⟨0, []⟩`, it halts if and only if there exists
 
 namespace ConjectureMachines.Semantics.Riemann
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 
 @[simp]
 theorem harmNum_zero : harmNum 0 = 0 := rfl

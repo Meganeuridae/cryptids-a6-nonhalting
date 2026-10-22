@@ -18,7 +18,8 @@ This file proves `boot_to_root`, showing that starting from the blank initial co
 
 namespace ConjectureMachines.Semantics.Zf.Boot
 
-open Turing StateTransition ConjectureMachines.Semantics.Zf
+open Turing (Dir)
+open StateTransition ConjectureMachines.Semantics.Zf
 
 open ConjectureMachines.Semantics.Zf.Layer1
   (refTrans refTrans_eq step_mkL_left step_mkL_right step_mk'_right step_mk'_left
@@ -1033,11 +1034,11 @@ theorem boot2_loop (m i : ℕ) (hm : 1 ≤ m) (hi : 1 ≤ i) :
     ∃ s, nSteps Machines.zf432 s (boot2CycleCfg m i) =
       some (zfRootCfg (2 * (i + m) + 3) [] (List.replicate (i + m) 0)) := by
   induction m generalizing i with
-  | zero => omega
+  | zero => exfalso; omega
   | succ m' ih =>
     obtain ⟨s₁, h92⟩ := boot2_cycle_to_92 m' i hi
-    by_cases hm' : m' = 0
-    · subst hm'
+    cases m' with
+    | zero =>
       rw [bootLeft_zero] at h92
       set R_end := ListBlank.append (List.replicate (2 * (i + 1) + 3) 0)
         (ListBlank.append [1, 0] (regsTape (List.replicate (i + 1) 0)))
@@ -1062,7 +1063,9 @@ theorem boot2_loop (m i : ℕ) (hm : 1 ≤ m) (hi : 1 ≤ i) :
       rw [hroot_eq] at hroot
       exact ⟨_, nSteps_bind_eq h92 (step_nSteps hs1 (step_nSteps hs2
         (step_nSteps hs3 (nSteps_bind_eq hbounce hroot))))⟩
-    · have hm'1 : 1 ≤ m' := by omega
+    | succ m'' =>
+      let m' := m'' + 1
+      have hm'1 : 1 ≤ m' := by omega
       obtain ⟨s₂, _, hcont⟩ := continue0_boot_pos m' hm'1 0
         (ListBlank.append (List.replicate (2 * (i + 1) + 3) 0)
           (ListBlank.append [1, 0] (regsTape (List.replicate (i + 1) 0))))

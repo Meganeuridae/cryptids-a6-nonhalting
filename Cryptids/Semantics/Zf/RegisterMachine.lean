@@ -40,7 +40,10 @@ enumerator as compiled by Andrew Wade's `zf2.py` (prior to commit `10fcf152b3`) 
 
 namespace ConjectureMachines.Semantics.Zf
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
+
+attribute [-simp] Nat.add_eq_right
 
 /-! ## Section 1: Cantor Pairing, Unpairing, and Register Loop Equivalence -/
 
@@ -618,10 +621,10 @@ theorem mem_eval_zfMainStep_iff_zfMainNSteps {c₀ ch : ZfMainCfg} :
     ch ∈ eval zfMainStep c₀ ↔ ∃ n, zfMainNSteps n c₀ = some ch ∧ zfMainStep ch = none := by
   constructor
   · intro h
-    refine StateTransition.evalInduction h fun a ha ih => ?_
+    refine evalInduction' h fun a ha ih => ?_
     rcases hs : zfMainStep a with _ | a'
     · have hmem : a ∈ eval zfMainStep a :=
-        StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩
+        mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩
       have heq : ch = a := Part.mem_unique ha hmem
       subst heq
       exact ⟨0, rfl, hs⟩
@@ -640,7 +643,7 @@ theorem mem_eval_zfMainStep_iff_zfMainNSteps {c₀ ch : ZfMainCfg} :
         · rw [hs] at hn; cases hn
         · rw [hs, Option.bind_some] at hn
           exact Relation.ReflTransGen.head hs (ih hn)
-    exact StateTransition.mem_eval.mpr ⟨hreach, hnone⟩
+    exact mem_eval'.mpr ⟨hreach, hnone⟩
 
 theorem mainLoopHalts_iff_exists_zfMainNSteps :
     MainLoopHalts ↔ ∃ n c, zfMainNSteps n zfMainInit = some c ∧ zfMainStep c = none := by
@@ -920,129 +923,137 @@ theorem zfMainNext_prooflist_lt {c : ZfMainCfg} (hpos : 0 < c.prooflist) :
     cantorUnpair_snd_le (cantorUnpair (cantorUnpair (cantorUnpair (c.prooflist - 1)).2).2).2
   exact ⟨by omega, trivial⟩
 
-/-- If `MainLoopHalts` is false, then `zfMainStep` never halts on any configuration reachable
-from `zfMainInit`. -/
-private theorem step_some_of_not_halts {n : ℕ} {c : ZfMainCfg}
-    (hNotHalts : ¬ MainLoopHalts) (hn : zfMainNSteps n zfMainInit = some c) :
-    zfMainStep c = some (zfMainNext c) := by
+/-- From any reachable configuration `c`, either `MainLoopHalts` already holds at `c` or
+`zfMainStep c = some (zfMainNext c)` constructively without classical contradiction. -/
+private theorem step_or_halts {n : ℕ} {c : ZfMainCfg}
+    (hn : zfMainNSteps n zfMainInit = some c) :
+    MainLoopHalts ∨ zfMainStep c = some (zfMainNext c) := by
   rcases hs : zfMainStep c with _ | c'
-  · exfalso
-    exact hNotHalts (mainLoopHalts_iff_exists_zfMainNSteps.mpr ⟨n, c, hn, hs⟩)
+  · exact Or.inl (mainLoopHalts_iff_exists_zfMainNSteps.mpr ⟨n, c, hn, hs⟩)
   · unfold zfMainStep at hs
-    split_ifs at hs with h1
-    exact hs.symm
+    split at hs
+    · cases hs
+    · exact Or.inr hs.symm
 
-/-- Under `¬ MainLoopHalts`, any reachable configuration `c` eventually drains `c.prooflist` to `0`
-without changing `c.nextproof`. -/
-private theorem drain_prooflist_of_not_halts (hNotHalts : ¬ MainLoopHalts) (pl : ℕ) :
+/-- Constructively either `MainLoopHalts` holds before draining `c.prooflist`, or `c` drains
+`c.prooflist` down to `0` without changing `c.nextproof`. -/
+private theorem drain_prooflist_or_halts (pl : ℕ) :
     ∀ {n : ℕ} {c : ZfMainCfg},
       zfMainNSteps n zfMainInit = some c →
       c.prooflist = pl →
-      ∃ m c',
-        zfMainNSteps m zfMainInit = some c' ∧ c'.prooflist = 0 ∧ c'.nextproof = c.nextproof := by
+      MainLoopHalts ∨
+        ∃ m c',
+          zfMainNSteps m zfMainInit = some c' ∧ c'.prooflist = 0 ∧ c'.nextproof = c.nextproof := by
   induction pl using Nat.strong_induction_on with
   | h pl ih =>
     intro n c hn hpl
-    by_cases hzero : pl = 0
-    · exact ⟨n, c, hn, hpl.trans hzero, rfl⟩
-    · have hpos : 0 < c.prooflist := by omega
-      have hstep : zfMainStep c = some (zfMainNext c) := step_some_of_not_halts hNotHalts hn
-      have hn1 : zfMainNSteps (n + 1) zfMainInit = some (zfMainNext c) :=
-        zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
-      obtain ⟨hlt, hnp⟩ := zfMainNext_prooflist_lt hpos
-      rw [hpl] at hlt
-      obtain ⟨m, c', hm, hpl', hnp'⟩ := ih (zfMainNext c).prooflist hlt hn1 rfl
-      exact ⟨m, c', hm, hpl', hnp'.trans hnp⟩
+    cases pl with
+    | zero => exact Or.inr ⟨n, c, hn, hpl, rfl⟩
+    | succ pl' =>
+      have hpos : 0 < c.prooflist := by omega
+      rcases step_or_halts hn with hH | hstep
+      · exact Or.inl hH
+      · have hn1 : zfMainNSteps (n + 1) zfMainInit = some (zfMainNext c) :=
+          zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
+        obtain ⟨hlt, hnp⟩ := zfMainNext_prooflist_lt hpos
+        rw [hpl] at hlt
+        rcases ih (zfMainNext c).prooflist hlt hn1 rfl with hH | ⟨m, c', hm, hpl', hnp'⟩
+        · exact Or.inl hH
+        · exact Or.inr ⟨m, c', hm, hpl', hnp'.trans hnp⟩
 
-/-- Under `¬ MainLoopHalts`, for every `N : ℕ`, the machine eventually reaches a configuration `c`
-with `c.prooflist = 0` and `c.nextproof = N`. -/
-private theorem reaches_nextproof_of_not_halts (hNotHalts : ¬ MainLoopHalts) (N : ℕ) :
-    ∃ n c, zfMainNSteps n zfMainInit = some c ∧ c.prooflist = 0 ∧ c.nextproof = N := by
+/-- Constructively, for every `N : ℕ`, either `MainLoopHalts` already holds at an earlier candidate
+or the machine reaches a configuration `c` with `c.prooflist = 0` and `c.nextproof = N`. -/
+private theorem reaches_nextproof_or_halts (N : ℕ) :
+    MainLoopHalts ∨
+      ∃ n c, zfMainNSteps n zfMainInit = some c ∧ c.prooflist = 0 ∧ c.nextproof = N := by
   induction N with
-  | zero => exact ⟨0, zfMainInit, rfl, rfl, rfl⟩
+  | zero => exact Or.inr ⟨0, zfMainInit, rfl, rfl, rfl⟩
   | succ N ih =>
-    obtain ⟨n, c, hn, hpl0, hnp⟩ := ih
-    have hstep : zfMainStep c = some (zfMainNext c) := step_some_of_not_halts hNotHalts hn
-    have hn1 : zfMainNSteps (n + 1) zfMainInit = some (zfMainNext c) :=
-      zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
-    have hnp_next : (zfMainNext c).nextproof = N + 1 := by
-      unfold zfMainNext
-      simp [hpl0, hnp]
-    obtain ⟨m, c', hm, hpl', hnp'⟩ :=
-      drain_prooflist_of_not_halts hNotHalts (zfMainNext c).prooflist hn1 rfl
-    exact ⟨m, c', hm, hpl', hnp'.trans hnp_next⟩
+    rcases ih with hH | ⟨n, c, hn, hpl0, hnp⟩
+    · exact Or.inl hH
+    · rcases step_or_halts hn with hH | hstep
+      · exact Or.inl hH
+      · have hn1 : zfMainNSteps (n + 1) zfMainInit = some (zfMainNext c) :=
+          zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
+        have hnp_next : (zfMainNext c).nextproof = N + 1 := by
+          unfold zfMainNext
+          simp [hpl0, hnp]
+        rcases drain_prooflist_or_halts (zfMainNext c).prooflist hn1 rfl with
+          hH | ⟨m, c', hm, hpl', hnp'⟩
+        · exact Or.inl hH
+        · exact Or.inr ⟨m, c', hm, hpl', hnp'.trans hnp_next⟩
 
-/-- Under `¬ MainLoopHalts`, executing `encodeProofList L` from a reachable configuration evaluates
-`execProofList L` on `(topwff, wffstack)`. -/
-private theorem exec_encodeProofList_of_not_halts (hNotHalts : ¬ MainLoopHalts)
-    (L : List ProofStep) :
+/-- Constructively, executing a prefix `LInit` of `sLast` either halts along `LInit` or reaches
+`⟨encodeProofList [sLast], np, (execProofList LInit (top, stk)).1, ...⟩`. -/
+private theorem exec_prefix_or_halts (LInit : List ProofStep) (sLast : ProofStep) :
     ∀ {n : ℕ} {np top stk : ℕ},
-      zfMainNSteps n zfMainInit = some ⟨encodeProofList L, np, top, stk⟩ →
-      zfMainNSteps (n + L.length) zfMainInit =
-        some ⟨0, np, (execProofList L (top, stk)).1, (execProofList L (top, stk)).2⟩ := by
-  induction L with
+      zfMainNSteps n zfMainInit = some ⟨encodeProofList (LInit ++ [sLast]), np, top, stk⟩ →
+      MainLoopHalts ∨
+        zfMainNSteps (n + LInit.length) zfMainInit =
+          some ⟨encodeProofList [sLast], np,
+            (execProofList LInit (top, stk)).1, (execProofList LInit (top, stk)).2⟩ := by
+  induction LInit with
   | nil =>
     intro n np top stk hn
-    simpa using hn
+    exact Or.inr (by simpa using hn)
   | cons s rest ih =>
     intro n np top stk hn
-    have hstep : zfMainStep ⟨encodeProofList (s :: rest), np, top, stk⟩ =
-        some (zfMainNext ⟨encodeProofList (s :: rest), np, top, stk⟩) :=
-      step_some_of_not_halts hNotHalts hn
-    rw [encodeProofList_cons, zfMainNext_packProofStep] at hstep
-    have hn1 : zfMainNSteps (n + 1) zfMainInit =
-        some ⟨encodeProofList rest, np,
-          (execProofStep s (top, stk)).1, (execProofStep s (top, stk)).2⟩ :=
-      zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
-    have hrest := ih hn1
-    have hlen : n + 1 + rest.length = n + (s :: rest).length := by simp; omega
-    rwa [hlen] at hrest
+    rcases step_or_halts hn with hH | hstep
+    · exact Or.inl hH
+    · rw [List.cons_append, encodeProofList_cons, zfMainNext_packProofStep] at hstep
+      have hn1 : zfMainNSteps (n + 1) zfMainInit =
+          some ⟨encodeProofList (rest ++ [sLast]), np,
+            (execProofStep s (top, stk)).1, (execProofStep s (top, stk)).2⟩ :=
+        zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep])
+      rcases ih hn1 with hH | hrest
+      · exact Or.inl hH
+      · have hlen : n + 1 + rest.length = n + (s :: rest).length := by simp; omega
+        rw [hlen] at hrest
+        exact Or.inr hrest
 
-/-- **Completeness of `zfMainStep`**: if `WadeZFInconsistent` holds, then `MainLoopHalts`. -/
+/-- **Completeness of `zfMainStep` (constructive, without `Classical.choice`)**:
+if `WadeZFInconsistent` holds, then `MainLoopHalts`. -/
 theorem mainLoopHalts_of_wadeZFInconsistent (hInc : WadeZFInconsistent) : MainLoopHalts := by
-  by_contra hNotHalts
   obtain ⟨L, hL_ne, hL_eval⟩ := exists_proofList_of_wadeZFProvable hInc
   let s₀ : ProofStep := (0, 0, 0, 0)
   let P : ℕ := encodeProofList (s₀ :: L) - 1
   have hP_succ : P + 1 = packProofStep s₀ (encodeProofList L) := by
     simp only [P, encodeProofList_cons, packProofStep]; omega
-  obtain ⟨n, c, hn, hpl0, hnp⟩ := reaches_nextproof_of_not_halts hNotHalts P
-  have hc_eq : c = ⟨0, P, c.topwff, c.wffstack⟩ := by
-    cases c
-    dsimp at hpl0 hnp
-    subst hpl0 hnp
-    rfl
-  rw [hc_eq] at hn
-  have hstep0 : zfMainStep ⟨0, P, c.topwff, c.wffstack⟩ =
-      some (zfMainNext ⟨0, P, c.topwff, c.wffstack⟩) :=
-    step_some_of_not_halts hNotHalts hn
-  have hnext0 : zfMainNext ⟨0, P, c.topwff, c.wffstack⟩ =
-      ⟨encodeProofList L, P + 1, (execProofStep s₀ (c.topwff, c.wffstack)).1,
-        (execProofStep s₀ (c.topwff, c.wffstack)).2⟩ := by
-    rw [zfMainNext_zero_prooflist, hP_succ]
-    exact zfMainNext_packProofStep s₀ (encodeProofList L) (P + 1) c.topwff c.wffstack
-  rw [hnext0] at hstep0
-  have hn1 : zfMainNSteps (n + 1) zfMainInit =
-      some ⟨encodeProofList L, P + 1, (execProofStep s₀ (c.topwff, c.wffstack)).1,
-            (execProofStep s₀ (c.topwff, c.wffstack)).2⟩ :=
-    zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep0])
-  have hL_ne_nil : ∃ LInit sLast, L = LInit ++ [sLast] := by
-    refine ⟨L.dropLast, L.getLast hL_ne, (List.dropLast_append_getLast hL_ne).symm⟩
-  obtain ⟨LInit, sLast, rfl⟩ := hL_ne_nil
-  have hn_all := exec_encodeProofList_of_not_halts hNotHalts (LInit ++ [sLast]) hn1
-  rw [hL_eval] at hn_all
-  have hlen_split : n + 1 + (LInit ++ [sLast]).length = (n + 1 + LInit.length) + 1 := by
-    simp; omega
-  rw [hlen_split, zfMainNSteps_add] at hn_all
-  rcases hmid : zfMainNSteps (n + 1 + LInit.length) zfMainInit with _ | cmid
-  · rw [hmid] at hn_all; cases hn_all
-  · rw [hmid, Option.bind_some, zfMainNSteps_succ] at hn_all
-    unfold zfMainStep at hn_all
-    split_ifs at hn_all with h1
-    · cases hn_all
-    · simp only [Option.bind_some, zfMainNSteps_zero, Option.some.injEq] at hn_all
-      have htop : (zfMainNext cmid).topwff = zfMem 0 0 := by rw [hn_all]
-      exact h1 htop
+  rcases reaches_nextproof_or_halts P with hH | ⟨n, c, hn, hpl0, hnp⟩
+  · exact hH
+  · have hc_eq : c = ⟨0, P, c.topwff, c.wffstack⟩ := by
+      cases c; dsimp at hpl0 hnp; subst hpl0 hnp; rfl
+    rw [hc_eq] at hn
+    rcases step_or_halts hn with hH | hstep0
+    · exact hH
+    · have hnext0 : zfMainNext ⟨0, P, c.topwff, c.wffstack⟩ =
+          ⟨encodeProofList L, P + 1, (execProofStep s₀ (c.topwff, c.wffstack)).1,
+            (execProofStep s₀ (c.topwff, c.wffstack)).2⟩ := by
+        rw [zfMainNext_zero_prooflist, hP_succ]
+        exact zfMainNext_packProofStep s₀ (encodeProofList L) (P + 1) c.topwff c.wffstack
+      rw [hnext0] at hstep0
+      have hn1 : zfMainNSteps (n + 1) zfMainInit =
+          some ⟨encodeProofList L, P + 1, (execProofStep s₀ (c.topwff, c.wffstack)).1,
+                (execProofStep s₀ (c.topwff, c.wffstack)).2⟩ :=
+        zfMainNSteps_bind_eq hn (by simp [zfMainNSteps, hstep0])
+      obtain ⟨LInit, sLast, rfl⟩ : ∃ LInit sLast, L = LInit ++ [sLast] :=
+        ⟨L.dropLast, L.getLast hL_ne, (List.dropLast_append_getLast hL_ne).symm⟩
+      rcases exec_prefix_or_halts LInit sLast hn1 with hH | hmid
+      · exact hH
+      · let cmid : ZfMainCfg :=
+          ⟨encodeProofList [sLast], P + 1,
+            (execProofList LInit (execProofStep s₀ (c.topwff, c.wffstack))).1,
+            (execProofList LInit (execProofStep s₀ (c.topwff, c.wffstack))).2⟩
+        have htop : (zfMainNext cmid).topwff = zfMem 0 0 := by
+          dsimp only [cmid]
+          rw [encodeProofList_cons, zfMainNext_packProofStep]
+          simpa [execProofList] using congrArg Prod.fst
+            (hL_eval (execProofStep s₀ (c.topwff, c.wffstack)).1
+              (execProofStep s₀ (c.topwff, c.wffstack)).2)
+        have hhalt : zfMainStep cmid = none := by
+          unfold zfMainStep
+          simp [htop]
+        exact mainLoopHalts_iff_exists_zfMainNSteps.mpr ⟨n + 1 + LInit.length, cmid, hmid, hhalt⟩
 
 /-- **Main Theorem of Layer 3**: the `zf_432_wade.tm` main loop halts if and only if the
 20-clause Hilbert system `WadeZFProvable` is inconsistent (`WadeZFInconsistent`). -/

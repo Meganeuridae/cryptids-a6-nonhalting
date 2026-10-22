@@ -22,7 +22,8 @@ set_option linter.flexible false
 
 namespace ConjectureMachines.Riemann120.Backend
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Riemann120
 open ConjectureMachines.Semantics.Riemann.Layer1
   (nSteps nSteps_zero nSteps_succ nSteps_add nSteps_bind_eq step_nSteps step_one
@@ -796,7 +797,10 @@ theorem regDecnzStage3_trans_one (k : ℕ) (hk : k < 5) :
 
 theorem rhRegDecrChain_trans_one (m : ℕ) (hm1 : 1 ≤ m) (hm6 : m ≤ 5) :
     commonTrans (rhRegDecrChain m) 1 = some (1, .right, rhRegDecrChain m) := by
-  revert m hm1 hm6; decide
+  match m with
+  | 0 => exfalso; omega
+  | 1 | 2 | 3 | 4 | 5 => rfl
+  | _ + 6 => exfalso; omega
 
 theorem rhRegDecrChain_trans_zero (m : ℕ) (hm : m < 6) :
     commonTrans (rhRegDecrChain (m + 1)) 0 = some (0, .right, rhRegDecrChain m) := by
@@ -1936,11 +1940,11 @@ theorem boot2_loop (m i : ℕ) (hm : 1 ≤ m) (hi : 1 ≤ i) :
     ∃ s, nSteps riemann121 s (rhBoot2CycleCfg m i) =
       some (rhRootCfg (2 * (i + m) + 3) [] (List.replicate (i + m) 0)) := by
   induction m generalizing i with
-  | zero => omega
+  | zero => exfalso; omega
   | succ m' ih =>
     obtain ⟨s₁, h10⟩ := boot2_cycle_to_10 m' i hi
-    by_cases hm' : m' = 0
-    · subst hm'
+    cases m' with
+    | zero =>
       rw [bootLeft_zero] at h10
       set R_end := ListBlank.append (List.replicate (2 * (i + 1) + 3) 0)
         (ListBlank.append [1, 0] (regsTape (List.replicate (i + 1) 0)))
@@ -1952,7 +1956,9 @@ theorem boot2_loop (m i : ℕ) (hm : 1 ≤ m) (hi : 1 ≤ i) :
         rfl
       rw [hroot_eq] at hret
       exact ⟨_, nSteps_bind_eq h10 hret⟩
-    · have hm'1 : 1 ≤ m' := by omega
+    | succ m'' =>
+      let m' := m'' + 1
+      have hm'1 : 1 ≤ m' := by omega
       obtain ⟨s₂, _, hcont⟩ := continue0_boot_pos m' hm'1 0
         (ListBlank.append (List.replicate (2 * (i + 1) + 3) 0)
           (ListBlank.append [1, 0] (regsTape (List.replicate (i + 1) 0))))
@@ -1993,7 +1999,8 @@ end ConjectureMachines.Riemann120.Backend
 
 namespace ConjectureMachines.Riemann120.Layer2
 
-open Turing StateTransition ConjectureMachines.Riemann120
+open Turing (Dir)
+open StateTransition ConjectureMachines.Riemann120
 
 set_option maxRecDepth 200000
 
@@ -2180,7 +2187,7 @@ def RhRegHalts : Prop :=
 theorem mem_eval_rhRegStep_iff_rhRegNSteps {c₀ ch : RhRegCfg} :
     ch ∈ StateTransition.eval rhRegStep c₀ ↔
       ∃ n, rhRegNSteps n c₀ = some ch ∧ rhRegStep ch = none := by
-  rw [StateTransition.mem_eval]
+  rw [mem_eval']
   constructor
   · rintro ⟨hreach, hnone⟩
     induction hreach using Relation.ReflTransGen.head_induction_on with
@@ -2279,7 +2286,8 @@ end ConjectureMachines.Riemann120.Layer2
 
 namespace ConjectureMachines.Riemann120
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Semantics.Riemann
 open Backend
 open Layer2
@@ -2844,7 +2852,7 @@ def RhRegHaltsOf (isEd : Bool) : Prop :=
 theorem mem_eval_rhRegStepOf_iff_rhRegNStepsOf (isEd : Bool) {c₀ ch : RhRegCfg} :
     ch ∈ StateTransition.eval (rhRegStepOf isEd) c₀ ↔
       ∃ n, rhRegNStepsOf isEd n c₀ = some ch ∧ rhRegStepOf isEd ch = none := by
-  rw [StateTransition.mem_eval]
+  rw [mem_eval']
   constructor
   · rintro ⟨hreach, hnone⟩
     induction hreach using Relation.ReflTransGen.head_induction_on with
@@ -3597,7 +3605,7 @@ theorem rhReg_eval_dom_of_tm_halt (isEd : Bool) :
     have hsim := rhRootCfgOf_step_sim isEd hpad hv hregs extra
     rcases hs : rhRegStepOf isEd c with _ | c'
     · rw [Part.dom_iff_mem]
-      exact ⟨c, StateTransition.mem_eval.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
+      exact ⟨c, mem_eval'.mpr ⟨Relation.ReflTransGen.refl, hs⟩⟩
     · obtain ⟨hv', hregs', padTotal', hpad', s, hs_pos, extra', hsteps⟩ :=
         hsim.2 c'.stack c'.regs hs
       have hle : s ≤ N := by
@@ -3611,7 +3619,7 @@ theorem rhReg_eval_dom_of_tm_halt (isEd : Bool) :
       have hDom' := ih (N - s) (by omega) hpad' hv' hregs' hN hnone
       have hreach : Reaches (rhRegStepOf isEd) c c' :=
         Relation.ReflTransGen.head hs Relation.ReflTransGen.refl
-      rwa [StateTransition.reaches_eval hreach]
+      rwa [reaches_eval' hreach]
 
 set_option maxHeartbeats 800000 in
 -- Finite state-table decision procedure.
@@ -3737,7 +3745,7 @@ theorem rhRegHaltsOf_false_iff_rhRegHalts : RhRegHaltsOf false ↔ Layer2.RhRegH
       have hs' : rhRegStepOf false c₁ = some c₁' := by rw [hstep_eq, hs]
       exact ⟨c₁', ⟨Layer2.rhRegStep_preserves_isValidStack hv hs, rfl⟩,
         Relation.TransGen.single hs'⟩
-  exact (StateTransition.tr_eval_dom hrel ⟨Layer2.isValidStack_nil, rfl⟩).symm
+  exact (tr_eval_dom' hrel ⟨Layer2.isValidStack_nil, rfl⟩).symm
 
 /-- **Lockstep Simulation Theorem**: `riemann121` halts on the blank tape if and only if
 the 5-register abstract machine `RhRegHalts` halts from `rhRegInit`. -/

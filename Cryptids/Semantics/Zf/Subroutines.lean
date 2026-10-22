@@ -19,7 +19,10 @@ This module bridges the abstract call-stack + register machine (`Layer2.ZfRegHal
 
 namespace ConjectureMachines.Semantics.Zf
 
-open Turing StateTransition ConjectureMachines.Semantics.Zf ConjectureMachines.Semantics.Zf.Layer2
+open Turing (Dir)
+open StateTransition ConjectureMachines.Semantics.Zf ConjectureMachines.Semantics.Zf.Layer2
+
+attribute [-simp] Nat.add_eq_right
 
 /-! ## Section 1: Fixed-Width 11-Register Machine (`zfReg11Step`) -/
 
@@ -2273,7 +2276,7 @@ theorem subEval_112 (Q : List (Fin 2)) (hQ : walkInternal 126 Q = some 112) :
         have hset_eq : (regs₁.set 9 0).set 10 0 = (regs.set 9 0).set 10 0 := by
           dsimp only [regs₁]
           rw [set_comm_of_ne (regs.set 9 v) w 0 (by decide), List.set_set, List.set_set]
-        have heq_iff : (v = w) ↔ (v + 1 = w + 1) := by omega
+        have heq_iff : (v = w) ↔ (v + 1 = w + 1) := ⟨congrArg (· + 1), Nat.succ.inj⟩
         rw [hw₁, hset_eq] at hsteps_ih
         have hcond_eq : (if v = w then retStack Q else (popBreakRev 1 Q.reverse).reverse) =
             (if v + 1 = w + 1 then retStack Q else (popBreakRev 1 Q.reverse).reverse) := by

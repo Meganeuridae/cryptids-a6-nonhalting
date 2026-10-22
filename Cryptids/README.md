@@ -19,15 +19,15 @@ See [`RELATED_WORK.md`](../RELATED_WORK.md) for the historical progression acros
 
 ## What Is Formally Proved
 
-All proofs in [`Cryptids/`](./) are checked by the Lean 4 kernel (`v4.35.0-rc4`) without `sorry` and use only the standard axioms (`propext`, `Classical.choice`, `Quot.sound`):
+All proofs in [`Cryptids/`](./) are checked by the Lean 4 kernel (`v4.35.0-rc4`) without `sorry`:
 
-1. **State reduction and halting equivalence (`candidate.states < reference.states` and `Halts candidate ↔ Halts reference`):** Each reduced record machine (`goldbach_21`, `zf_380`, `riemann_95`) has fewer states than its reference machine (`goldbach_25`, `zf_393`, `riemann_104`) and halts from the blank tape if and only if the reference machine halts ([`Goldbach21.lean`](./Goldbach21.lean), [`Zf380.lean`](./Zf380.lean), [`Riemann95.lean`](./Riemann95.lean)).
+1. **State reductions:** Each reduced machine (`goldbach_21`, `zf_380`, `riemann_104`, `riemann_95`) has fewer states than its reference machine (`goldbach_25`, `zf_393`, `riemann_120`, `riemann_104`) and halts from the blank tape if and only if the reference machine halts ([`Goldbach21.lean`](./Goldbach21.lean), [`Zf380.lean`](./Zf380.lean), [`Riemann104.lean`](./Riemann104.lean), [`Riemann95.lean`](./Riemann95.lean)). The direct simulation reductions (`goldbach_21`, `zf_380`, `riemann_104`) and all four `candidate_fewer_states` theorems are completely constructive (`["propext", "Quot.sound"]`, zero `Classical.choice`), audited via [`comparator/constructive.json`](../comparator/constructive.json), [`comparator/goldbach_21.json`](../comparator/goldbach_21.json), [`comparator/zf_380.json`](../comparator/zf_380.json), and [`comparator/riemann_104.json`](../comparator/riemann_104.json), while [`riemann_95`](./Riemann95.lean) routes through the arithmetic stage predicate `ShuniaCounterexample` (`Nat.Prime`, audited via [`comparator/riemann_95.json`](../comparator/riemann_95.json)).
 2. **End-to-end mathematical semantics ([`Cryptids/Semantics/`](./Semantics/README.md)):**
-   - **Goldbach (`goldbach_21` and `goldbach_25`):** Both `goldbach_21` and `goldbach_25` halt if and only if Goldbach's conjecture is false (`Halts candidate ↔ ¬ GoldbachConjecture`).
+   - **ZF Consistency (`zf_380`, `zf_393`, and `zf_432`):** Both `zf_380` and Wade's 393-state machine `zf_393` (incorporating upstream fix `10fcf152b3`) halt if and only if O'Rear's `zf2.nql` Hilbert system proves $v_0 \in v_0$ (`Halts candidate ↔ ZFInconsistent`, `Halts zf393 ↔ ZFInconsistent`), while `zf_432` halts if and only if the 20-clause deductive system enumerated by `zf_432_wade.tm` derives $v_0 \in v_0$ (`WadeZFInconsistent`). **All three proof-search equivalences are proved constructively in Lean using only `["propext", "Quot.sound"]` (no `Classical.choice`, no Excluded Middle, and no Markov's Principle)** and audited via [`comparator/constructive.json`](../comparator/constructive.json), blocking classical `Con(ZF)` shortcuts via [`Zf/Soundness.lean`](./Semantics/Zf/Soundness.lean) or `Classical.em` (while internalizing the reduction inside `PA`/`ZF` and establishing full `ZF`-independence remain separate from this Lean meta-level correspondence; see [`Semantics/README.md`](./Semantics/README.md#foundational-note-conzf-in-lean-and-constructive-equivalence)). Separately, [`Zf/Soundness.lean`](./Semantics/Zf/Soundness.lean) uses classical `ZFSet.{0}` (`Classical.choice`) to establish `not_zfInconsistent` and deduce unconditional non-halting (`not_halts_zf393`, `not_halts_candidate`) inside Lean's stronger meta-theory.
+   - **Goldbach (`goldbach_21` and `goldbach_25`):** Both `goldbach_21` and `goldbach_25` constructively satisfy `Halts M ↔ ∃ w, ¬ HasGoldbachPair (2 * w + 4)` without `Classical.choice` ([`Goldbach21.lean`](./Goldbach21.lean)), and with `Classical.choice` (for Markov's Principle on `¬ ∀ n, ...`) satisfy `Halts candidate ↔ ¬ GoldbachConjecture` ([`Semantics/Goldbach.lean`](./Semantics/Goldbach.lean)).
    - **Riemann Hypothesis (`riemann_95`, `riemann_104`, `riemann_120`, and `riemann_744`):** All four machines (`riemann_95`, `riemann_104`, Shunia's 120-state machine `riemann_120`, and the 744-state machine `riemann_744`) halt if and only if Mathlib's `RiemannHypothesis` is false (`Halts candidate ↔ ¬ RiemannHypothesis`, `Halts riemann120 ↔ ¬ RiemannHypothesis`, and `Halts riemann744 ↔ ¬ RiemannHypothesis`).
-   - **ZF Consistency (`zf_380`, `zf_393`, and `zf_432`):** Both `zf_380` and Wade's 393-state machine `zf_393` (incorporating upstream fix `10fcf152b3`) halt if and only if O'Rear's `zf2.nql` Hilbert system proves $v_0 \in v_0$ (`Halts candidate ↔ ZFInconsistent`, `Halts zf393 ↔ ZFInconsistent`), and hence never halt in `ZFSet.{0}` (`not_halts_candidate`, `not_halts_zf393`), while `zf_432` halts if and only if the 20-clause deductive system enumerated by `zf_432_wade.tm` derives $v_0 \in v_0$ (`WadeZFInconsistent`).
 
-Details on the proof architecture and mathematical background are in [`Cryptids/Semantics/README.md`](./Semantics/README.md).
+Details on the proof architecture and the foundational distinction between constructive proof-search equivalence and meta-theoretic non-halting are in [`Cryptids/Semantics/README.md`](./Semantics/README.md).
 
 The [95-state Riemann construction](../artifacts/riemann_95/README.md) retains the
 stage counter in `x` after `FOLD` and permutes physical operand banks. Its proof
@@ -57,6 +57,7 @@ Independently audit the proofs against [`Challenge.lean`](../Challenge.lean) wit
 [`leanprover/comparator`](../comparator/README.md):
 
 ```bash
+lake comparator --config comparator/constructive.json
 lake comparator --config comparator/all.json
 ```
 

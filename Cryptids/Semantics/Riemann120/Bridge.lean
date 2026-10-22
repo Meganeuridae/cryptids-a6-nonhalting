@@ -24,7 +24,8 @@ Combines:
 
 namespace ConjectureMachines.Riemann120
 
-open Turing StateTransition ConjectureMachines
+open Turing (Dir)
+open StateTransition ConjectureMachines
 open ConjectureMachines.Riemann120.Layer2 (rhRegHalts_iff_exists_shuniaCounterexample)
 open Riemann120Analytic
   (quarterClockStep ShuniaCounterexampleExact shuniaCounterexampleExact_iff

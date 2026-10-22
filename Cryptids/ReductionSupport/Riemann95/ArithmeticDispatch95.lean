@@ -41,21 +41,21 @@ theorem arithmetic_dispatch_exact (pad : Nat) (word walked : List (Fin 2)) (bank
   have hp := ConjectureMachines.Riemann95.Parser.walkInternal_nSteps walked 15
     (if inc then Physical.incLeaf r else Physical.decLeaf r)
     (Riemann120.rootLeftOf true)
-    (Turing.ListBlank.append (List.replicate (pad - walked.length) 0)
-      (Turing.ListBlank.append [1, 0] (Semantics.Riemann.Layer1.regsTape bank))) hparse
+    (ListBlank.append (List.replicate (pad - walked.length) 0)
+      (ListBlank.append [1, 0] (Semantics.Riemann.Layer1.regsTape bank))) hparse
   have hroot : Physical.rootCfg pad word bank =
-      ⟨15, Turing.Tape.mk' (Riemann120.rootLeftOf true)
-        (Turing.ListBlank.append walked
-          (Turing.ListBlank.append (List.replicate (pad - walked.length) 0)
-            (Turing.ListBlank.append [1, 0] (Semantics.Riemann.Layer1.regsTape bank))))⟩ := by
+      ⟨15, Tape.mk' (Riemann120.rootLeftOf true)
+        (ListBlank.append walked
+          (ListBlank.append (List.replicate (pad - walked.length) 0)
+            (ListBlank.append [1, 0] (Semantics.Riemann.Layer1.regsTape bank))))⟩ := by
     unfold Physical.rootCfg
     rw [htape]
     unfold Semantics.Riemann.Layer1.regsTape
-    rw [show (default : Turing.ListBlank (Fin 2)) = Turing.ListBlank.mk [] from rfl]
-    simp only [Turing.ListBlank.append_mk, List.append_nil, List.append_assoc]
+    rw [show (default : ListBlank (Fin 2)) = ListBlank.mk [] from rfl]
+    simp only [ListBlank.append_mk, List.append_nil, List.append_assoc]
     rfl
   rw [← hroot] at hp
-  have hstack : Turing.ListBlank.append walked.reverse (Riemann120.rootLeftOf true) =
+  have hstack : ListBlank.append walked.reverse (Riemann120.rootLeftOf true) =
       Riemann120.stackLeftOf true walked := by
     rfl
   rw [hstack] at hp

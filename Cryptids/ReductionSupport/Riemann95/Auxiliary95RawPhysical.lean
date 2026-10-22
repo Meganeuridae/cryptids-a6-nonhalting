@@ -418,7 +418,6 @@ theorem unary98_inc (r : Fin 5) (bank : List Nat) (hr : r.val < bank.length) (L 
   (ListBlank.append [0, 0] (ConjectureMachines.Semantics.Riemann.Layer1.regsTape (bank.set r.val
   (bank.getD r.val 0 + 1))))⟩ := by
   open Semantics.Riemann.Layer1 in
-    classical
     simp only [nSteps98_eq]
     let run := Semantics.Riemann.Layer1.nSteps Raw.machine
     have shift (suff : List Nat) (m : Nat) (LP : ListBlank (Fin 2)) :

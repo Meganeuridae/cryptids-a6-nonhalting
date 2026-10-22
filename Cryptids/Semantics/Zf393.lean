@@ -32,7 +32,8 @@ Together with `Cryptids.Semantics.Zf.not_zfInconsistent` (soundness of `ZFProvab
 
 namespace ConjectureMachines.Zf393
 
-open Turing ConjectureMachines ConjectureMachines.Semantics.Zf
+open Turing (Dir)
+open ConjectureMachines ConjectureMachines.Semantics.Zf
 
 /-- **Main Theorem for `zf_393`**: Andrew Wade's 393-state Turing machine `zf393` halts from the
 blank tape if and only if O'Rear's `zf2.nql` Hilbert system proves `v₀ ∈ v₀` (`ZFInconsistent`). -/

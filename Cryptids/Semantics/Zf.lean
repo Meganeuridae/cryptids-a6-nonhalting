@@ -89,7 +89,8 @@ Andrew Wade's `zf2.py` prior to his August 31, 2025 bugfix commit `10fcf152b3`
 
 namespace ConjectureMachines.Semantics.Zf
 
-open Turing StateTransition
+open Turing (Dir)
+open StateTransition
 
 /-! ## Section 1: Unconditional Layer 1 + Layer 2 Halting Equivalence -/
 

@@ -121,7 +121,7 @@ private theorem cantorUnpair_cantorPair_aux (s : ℕ) :
   induction s with
   | zero =>
     intro x y h
-    obtain ⟨rfl, rfl⟩ : x = 0 ∧ y = 0 := by omega
+    obtain ⟨rfl, rfl⟩ : x = 0 ∧ y = 0 := ⟨by omega, by omega⟩
     rfl
   | succ s ihs =>
     intro x

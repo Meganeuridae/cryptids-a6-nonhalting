@@ -16,7 +16,8 @@ public import Cryptids.Zf393
 
 namespace ConjectureMachines.Zf380
 
-open Turing StateTransition Machines
+open Turing (Dir)
+open StateTransition Machines
 open Zf393
   (zf393Trans_eq BootState stateOfBoot bitOfBool stepBootR stepBootL stepBoot runBoot
    bootChkL_7 bootChkR_7 boot_phase1_39734)
@@ -1290,9 +1291,10 @@ theorem of_fin_nat {n : Nat} {p : Nat → Bool} (h : allBelowNat n p = true) (q 
 def all2 (f : Fin 2 → Bool) : Bool := f 0 && f 1
 
 theorem of_all2 {f : Fin 2 → Bool} (h : all2 f = true) (a : Fin 2) : f a = true := by
-  fin_cases a
-  · exact (Bool.and_eq_true _ _).mp h |>.1
-  · exact (Bool.and_eq_true _ _).mp h |>.2
+  rcases a with ⟨_ | _ | _, ha⟩
+  · exact ((Bool.and_eq_true _ _).mp h).1
+  · exact ((Bool.and_eq_true _ _).mp h).2
+  · omega
 
 theorem candM_transition_eq_nat (q : Fin 380) (a : Fin 2) :
     candM.transition q a = zf380Trans q.val a := by
@@ -1335,7 +1337,7 @@ theorem nSteps_reaches {N : ℕ} [NeZero N] {M : Machine N 2} {n : ℕ} {c c' : 
 theorem nSteps_eval_dom {N : ℕ} [NeZero N] {M : Machine N 2} {n : ℕ} {c c' : Cfg N 2}
     (h : nSteps M n c = some c') :
     (eval (step M) c).Dom ↔ (eval (step M) c').Dom := by
-  rw [StateTransition.reaches_eval (nSteps_reaches h)]
+  rw [reaches_eval' (nSteps_reaches h)]
 
 def Tape.mkL (L R : ListBlank (Fin 2)) : Tape (Fin 2) :=
   ⟨L.head, L.tail, R⟩
@@ -1348,7 +1350,7 @@ theorem default_cons_zero :
     (default : ListBlank (Fin 2)).cons 0 = default := by
   change ListBlank.cons 0 (ListBlank.mk []) = ListBlank.mk []
   rw [ListBlank.cons_mk]
-  exact Quotient.sound' (Or.inr ⟨1, rfl⟩)
+  exact Quot.sound (Or.inr ⟨1, rfl⟩)
 
 theorem step_mk'_none {N : ℕ} [NeZero N] {M : Machine N 2} {q : Fin N} {a : Fin 2}
     (h : M.transition q a = none) (L R : ListBlank (Fin 2)) :
@@ -2859,5 +2861,5 @@ theorem rel_boot : Rel (cfgOfFast 64 [] 0 bootR_39753) (cfgOfFast 64 [] 0 bootR_
 theorem candidate_equivalent : Halts candidate ↔ Halts reference := by
   unfold BundledMachine.Halts ConjectureMachines.Halts
   rw [nSteps_eval_dom boot_cand, nSteps_eval_dom boot_ref]
-  exact StateTransition.tr_eval_dom respects rel_boot
+  exact tr_eval_dom' respects rel_boot
 end ConjectureMachines.Zf380
