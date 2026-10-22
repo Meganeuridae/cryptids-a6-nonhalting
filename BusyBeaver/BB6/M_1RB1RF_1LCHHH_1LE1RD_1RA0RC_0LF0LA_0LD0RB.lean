@@ -12,18 +12,24 @@ public import BusyBeaver.Cert
 # Busy Beaver Holdout `1RB1RF_1LC---_1LE1RD_1RA0RC_0LF0LA_0LD0RB`
 
 We define the configuration for $a, b, c \ge 0$:
-$$P_2(a, b, c) := 0^\infty\,11\,(01)^b\,(10)^a\,1\,\mathrm{D}{>}\,(10)^c\,1111\,0^\infty.$$
+
+$$
+P_2(a, b, c) := 0^\infty \ 11 \ (01)^b \ (10)^a \ 1 \ \mathrm{D}{>} \ (10)^c \ 1111 \ 0^\infty.
+$$
 
 Starting from $P_2(2, 1, 0)$, the machine follows the map $T$:
-$$T(P_2(a, b, c)) = \begin{cases}
+
+$$
+T(P_2(a, b, c)) = \begin{cases}
   P_2(2, b+2-a, 2a+2) & \text{if } c = 0 \text{ and } a \le b+1, \\
-  P_2(2, 1, 2a+2) & \text{if } c = 0,\; a \ge b+2,\text{ and } a - b \text{ is odd}, \\
-  P_2(2, 0, 2a+2) & \text{if } c = 0,\; a \ge b+2,\text{ and } a - b \text{ is even}, \\
+  P_2(2, 1, 2a+2) & \text{if } c = 0,\ a \ge b+2,\text{ and } a - b \text{ is odd}, \\
+  P_2(2, 0, 2a+2) & \text{if } c = 0,\ a \ge b+2,\text{ and } a - b \text{ is even}, \\
   P_2(2, 0, a+4) & \text{if } b = 0 \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 0 \text{ and } c = 2, \\
   P_2(2, a+2, c-3) & \text{if } b = 0 \text{ and } c \ge 3, \\
   P_2(a+2, b-1, c-1) & \text{if } b \ge 1 \text{ and } c \ge 1.
-\end{cases}$$
+\end{cases}
+$$
 -/
 
 @[expose] public section

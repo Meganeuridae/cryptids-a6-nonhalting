@@ -11,25 +11,35 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1RD_0LC1RA_1LA1LC_1RA1LE_1RF0LD_---0RE`
 
 We define the configuration for $a, c \ge 0$:
-$$P_1(a, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,1^c\,0^\infty.$$
+
+$$
+P_1(a, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 1^c \ 0^\infty.
+$$
 
 Starting from $P_1(2, 1)$, the machine follows the map $T$:
-$$T(P_1(a, c)) = \begin{cases}
+
+$$
+T(P_1(a, c)) = \begin{cases}
   P_1(2, a+1) & \text{if } c = 0, \\
   P_1(a+2, 0) & \text{if } c = 1, \\
   P_1(a+3, c-2) & \text{if } c \ge 2 \text{ and } a \text{ is even}, \\
   \text{Halt} & \text{if } c = 2 \text{ and } a \text{ is odd}, \\
   F(\lfloor a/2 \rfloor, 1, 0) & \text{if } c = 3 \text{ and } a \text{ is odd}, \\
   F(\lfloor a/2 \rfloor, 2, c-4) & \text{if } c \ge 4 \text{ and } a \text{ is odd},
-\end{cases}$$
+\end{cases}
+$$
+
 where $F(k, m, c)$ is defined recursively by:
-$$F(k, m, c) = \begin{cases}
+
+$$
+F(k, m, c) = \begin{cases}
   P_1(0, 2m+3) & \text{if } k = 0 \text{ and } c = 0, \\
   F(k-1, 0, 2m+3) & \text{if } k \ge 1 \text{ and } c = 0, \\
   F(k, m+1, 0) & \text{if } c = 1, \\
   P_1(2m+4, c-2) & \text{if } k = 0 \text{ and } c \ge 2, \\
   F(k-1, m+2, c-2) & \text{if } k \ge 1 \text{ and } c \ge 2.
-\end{cases}$$
+\end{cases}
+$$
 -/
 
 @[expose] public section

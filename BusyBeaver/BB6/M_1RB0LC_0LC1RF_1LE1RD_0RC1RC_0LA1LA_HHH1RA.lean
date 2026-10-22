@@ -11,30 +11,36 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB0LC_0LC1RF_1LE1RD_0RC1RC_0LA1LA_---1RA`
 
 We define the configuration for $a, k, c \ge 0$:
-$$E(a, k, c) := 0^\infty\,1^a\,\mathrm{A}{>}\,0\,(11)^k\,0\,1^c\,0^\infty.$$
+
+$$
+E(a, k, c) := 0^\infty \ 1^a \ \mathrm{A}{>} \ 0 \ (11)^k \ 0 \ 1^c \ 0^\infty.
+$$
 
 Starting from $E(3, 0, 2)$, the machine follows the map $T$:
-$$T(E(a, k, c)) = \begin{cases}
-  E(3, 0, a + 2) & \text{if } k = 0,\; c = 0, \\
-  E(3, m, 2j + 1) & \text{if } a = 2m,\; k = 0,\; c = 2j + 1, \\
-  E(4, m + 1, 2j + 1) & \text{if } a = 2m + 1,\; k = 0,\; c = 2j + 1, \\
-  E(0, 1, 2m + 2) & \text{if } a = 2m,\; k = 0,\; c = 2, \\
-  E(1, 1, 2m + 4) & \text{if } a = 2m + 1,\; k = 0,\; c = 2, \\
-  E(3, m + 1, 2j + 2) & \text{if } a = 2m,\; k = 0,\; c = 2j + 4, \\
-  E(4, m + 2, 2j + 2) & \text{if } a = 2m + 1,\; k = 0,\; c = 2j + 4, \\
-  E(a + 3, m, 0) & \text{if } k = 1,\; c = 2m, \\
-  \text{Halt} & \text{if } k = 1,\; c = 1, \\
-  E(3, 0, a + 7) & \text{if } k = 1,\; c = 3, \\
-  E(1, 1, 2m + 8) & \text{if } a = 2m,\; k = 1,\; c = 5, \\
-  E(0, 1, 2m + 8) & \text{if } a = 2m + 1,\; k = 1,\; c = 5, \\
-  E(4, m + 4, 2j + 2) & \text{if } a = 2m,\; k = 1,\; c = 2j + 7, \\
-  E(3, m + 4, 2j + 2) & \text{if } a = 2m + 1,\; k = 1,\; c = 2j + 7, \\
-  E(3, m + 1, 2k' + 1) & \text{if } a = 2m,\; k = k' + 2,\; c = 0, \\
-  E(4, m + 2, 2k' + 1) & \text{if } a = 2m + 1,\; k = k' + 2,\; c = 0, \\
-  E(a + 6, k', 2j + 1) & \text{if } k = k' + 2,\; c = 2j + 1, \\
-  E(a + 3, 1, 2k' + 2) & \text{if } k = k' + 2,\; c = 2, \\
-  E(a + 6, k' + 1, 2j + 2) & \text{if } k = k' + 2,\; c = 2j + 4.
-\end{cases}$$
+
+$$
+T(E(a, k, c)) = \begin{cases}
+  E(3, 0, a + 2) & \text{if } k = 0,\ c = 0, \\
+  E(3, m, 2j + 1) & \text{if } a = 2m,\ k = 0,\ c = 2j + 1, \\
+  E(4, m + 1, 2j + 1) & \text{if } a = 2m + 1,\ k = 0,\ c = 2j + 1, \\
+  E(0, 1, 2m + 2) & \text{if } a = 2m,\ k = 0,\ c = 2, \\
+  E(1, 1, 2m + 4) & \text{if } a = 2m + 1,\ k = 0,\ c = 2, \\
+  E(3, m + 1, 2j + 2) & \text{if } a = 2m,\ k = 0,\ c = 2j + 4, \\
+  E(4, m + 2, 2j + 2) & \text{if } a = 2m + 1,\ k = 0,\ c = 2j + 4, \\
+  E(a + 3, m, 0) & \text{if } k = 1,\ c = 2m, \\
+  \text{Halt} & \text{if } k = 1,\ c = 1, \\
+  E(3, 0, a + 7) & \text{if } k = 1,\ c = 3, \\
+  E(1, 1, 2m + 8) & \text{if } a = 2m,\ k = 1,\ c = 5, \\
+  E(0, 1, 2m + 8) & \text{if } a = 2m + 1,\ k = 1,\ c = 5, \\
+  E(4, m + 4, 2j + 2) & \text{if } a = 2m,\ k = 1,\ c = 2j + 7, \\
+  E(3, m + 4, 2j + 2) & \text{if } a = 2m + 1,\ k = 1,\ c = 2j + 7, \\
+  E(3, m + 1, 2k' + 1) & \text{if } a = 2m,\ k = k' + 2,\ c = 0, \\
+  E(4, m + 2, 2k' + 1) & \text{if } a = 2m + 1,\ k = k' + 2,\ c = 0, \\
+  E(a + 6, k', 2j + 1) & \text{if } k = k' + 2,\ c = 2j + 1, \\
+  E(a + 3, 1, 2k' + 2) & \text{if } k = k' + 2,\ c = 2, \\
+  E(a + 6, k' + 1, 2j + 2) & \text{if } k = k' + 2,\ c = 2j + 4.
+\end{cases}
+$$
 -/
 
 @[expose] public section

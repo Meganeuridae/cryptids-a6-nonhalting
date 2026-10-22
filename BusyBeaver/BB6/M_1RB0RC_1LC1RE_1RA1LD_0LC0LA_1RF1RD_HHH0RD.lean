@@ -10,29 +10,45 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB0RC_1LC1RE_1RA1LD_0LC0LA_1RF1RD_---0RD`
 
-We define the configuration for $p \in \{0, 1\}$ and $k, j, c \ge 0$:
-$$S(p, k, j, c) := 0^\infty\,(1110)^p\,1^k\,\mathrm{D}{>}\,11\,(01)^j\,1^c\,0^\infty.$$
+We define the configuration for $p \in \lbrace 0, 1 \rbrace$ and $k, j, c \ge 0$:
 
-Starting from $S(0, 2, 0, 0)$, the machine follows the map $T$ (where $\Phi(2m, 0) = \text{Halt}$,
-$\Phi(2m, 1) = (4m + 2, 0, 0)$, $\Phi(2m, 2) = (4m + 2, 0, 3)$,
-$\Phi(2m, c + 3) = (4m + 4, 0, c)$, $\Phi(2m + 1, 0) = (4m + 4, 0, 1)$, and
-$\Phi(2m + 1, c + 1) = (4m + 3, 0, c + 1)$):
-$$T(S(p, k, j, c)) = \begin{cases}
-  S(p, k', j + 2, c') & \text{if } k = k' + 3,\; c = c' + 1, \\
-  S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\; c = 0, \\
-  S(0, \Phi(j + 2, c')) & \text{if } p = 0,\; k = 2,\; c = c' + 1, \\
-  S(0, 0, 0, 2j + 5) & \text{if } p = 0,\; k = 2,\; c = 0, \\
-  S(0, \Phi(j + 1, c')) & \text{if } p = 0,\; k = 1,\; c = c' + 1, \\
-  S(0, 0, 0, 2j + 3) & \text{if } p = 0,\; k = 1,\; c = 0, \\
-  S(1, \Phi(j', c)) & \text{if } p = 0,\; k = 0,\; j = j' + 1, \\
-  S(0, \Phi(0, c + 2)) & \text{if } p = 0,\; k = 0,\; j = 0, \\
-  S(0, 1, j + 3, c') & \text{if } p = 1,\; k = 2,\; c = c' + 1, \\
-  S(1, 0, 0, 2j + 5) & \text{if } p = 1,\; k = 2,\; c = 0, \\
-  S(0, (3, 0, 0) + \Phi(j + 1, c')) & \text{if } p = 1,\; k = 1,\; c = c' + 1, \\
-  S(0, 1, 1, 2j + 5) & \text{if } p = 1,\; k = 1,\; c = 0, \\
-  S(0, 6, j' + 1, c) & \text{if } p = 1,\; k = 0,\; j = j' + 1, \\
-  S(0, 2, 0, c + 2) & \text{if } p = 1,\; k = 0,\; j = 0.
-\end{cases}$$
+$$
+S(p, k, j, c) := 0^\infty \ (1110)^p \ 1^k \ \mathrm{D}{>} \ 11 \ (01)^j \ 1^c \ 0^\infty.
+$$
+
+Starting from $S(0, 2, 0, 0)$, the machine follows the map $T$:
+
+$$
+T(S(p, k, j, c)) = \begin{cases}
+  S(p, k', j + 2, c') & \text{if } k = k' + 3,\ c = c' + 1, \\
+  S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\ c = 0, \\
+  S(0, \Phi(j + 2, c')) & \text{if } p = 0,\ k = 2,\ c = c' + 1, \\
+  S(0, 0, 0, 2j + 5) & \text{if } p = 0,\ k = 2,\ c = 0, \\
+  S(0, \Phi(j + 1, c')) & \text{if } p = 0,\ k = 1,\ c = c' + 1, \\
+  S(0, 0, 0, 2j + 3) & \text{if } p = 0,\ k = 1,\ c = 0, \\
+  S(1, \Phi(j', c)) & \text{if } p = 0,\ k = 0,\ j = j' + 1, \\
+  S(0, \Phi(0, c + 2)) & \text{if } p = 0,\ k = 0,\ j = 0, \\
+  S(0, 1, j + 3, c') & \text{if } p = 1,\ k = 2,\ c = c' + 1, \\
+  S(1, 0, 0, 2j + 5) & \text{if } p = 1,\ k = 2,\ c = 0, \\
+  S(0, (3, 0, 0) + \Phi(j + 1, c')) & \text{if } p = 1,\ k = 1,\ c = c' + 1, \\
+  S(0, 1, 1, 2j + 5) & \text{if } p = 1,\ k = 1,\ c = 0, \\
+  S(0, 6, j' + 1, c) & \text{if } p = 1,\ k = 0,\ j = j' + 1, \\
+  S(0, 2, 0, c + 2) & \text{if } p = 1,\ k = 0,\ j = 0,
+\end{cases}
+$$
+
+where $\Phi(j, c)$ is defined by:
+
+$$
+\Phi(j, c) = \begin{cases}
+  \text{Halt} & \text{if } j = 2m \text{ and } c = 0, \\
+  (4m + 2, 0, 0) & \text{if } j = 2m \text{ and } c = 1, \\
+  (4m + 2, 0, 3) & \text{if } j = 2m \text{ and } c = 2, \\
+  (4m + 4, 0, c - 3) & \text{if } j = 2m \text{ and } c \ge 3, \\
+  (4m + 4, 0, 1) & \text{if } j = 2m + 1 \text{ and } c = 0, \\
+  (4m + 3, 0, c) & \text{if } j = 2m + 1 \text{ and } c \ge 1.
+\end{cases}
+$$
 -/
 
 @[expose] public section

@@ -11,18 +11,24 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB0LF_1LC1RA_0RE0RD_---1LE_1LF1RC_1LC1LA`
 
 We define the configuration for $a \ge 0$, $b \ge 1$:
-$$C(a, b) := 0^\infty\,\mathrm{E}{>}\,(10)^a\,1^b\,0^\infty.$$
+
+$$
+C(a, b) := 0^\infty \ \mathrm{E}{>} \ (10)^a \ 1^b \ 0^\infty.
+$$
 
 Starting from $C(0, 3)$, the machine follows the map $T$:
-$$T(C(a, b)) = \begin{cases}
+
+$$
+T(C(a, b)) = \begin{cases}
   C(2a+2, b-2a-2) & \text{if } b > 2a+2, \\
   C(2, 2a+2) & \text{if } b = 1, \\
   \text{Halt} & \text{if } b = 2, \\
   C(\lfloor(6a+2k+2)/4\rfloor, (6a+2k+2) \bmod 4 + 1)
-    & \text{if } a \ge 1,\; b = 2k,\; 2 \le k \le a+1, \\
+    & \text{if } a \ge 1,\ b = 2k,\ 2 \le k \le a+1, \\
   C(\lfloor(6a+2k+6)/4\rfloor, (6a+2k+6) \bmod 4 + 1)
-    & \text{if } a \ge 1,\; b = 2k+1,\; 1 \le k \le a.
-\end{cases}$$
+    & \text{if } a \ge 1,\ b = 2k+1,\ 1 \le k \le a.
+\end{cases}
+$$
 -/
 
 @[expose] public section

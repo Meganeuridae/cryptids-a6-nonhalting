@@ -10,44 +10,57 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1LC_1RC0RF_1RD0LB_1RE0LD_1LF---_0RA1LA`
 
-We define the configurations for $n \ge 0$ (where $L(n) := 0^\infty\,(1100)^n$):
-$$\begin{aligned}
-  R_1(n) &:= L(n)\,100\,\mathrm{A}{>}\,0^\infty, \\
-  R_2(n) &:= L(n)\,100100\,\mathrm{A}{>}\,0^\infty, \\
-  Q(n)   &:= L(n)\,111100\,\mathrm{A}{>}\,0^\infty, \\
-  S_4(n) &:= L(n)\,111100100100\,\mathrm{A}{>}\,0^\infty, \\
-  S_6(n) &:= L(n)\,11111100100100\,\mathrm{A}{>}\,0^\infty.
-\end{aligned}$$
+We define the configurations for $n \ge 0$ (where $L(n) := 0^\infty \ (1100)^n$):
 
-Starting from $S_6(1)$, the machine follows the map $T$:
-$$\begin{aligned}
+$$
+\begin{aligned}
+  R_1(n) &:= L(n) \ 100 \ \mathrm{A}{>} \ 0^\infty, \\
+  R_2(n) &:= L(n) \ 100100 \ \mathrm{A}{>} \ 0^\infty, \\
+  Q(n)   &:= L(n) \ 111100 \ \mathrm{A}{>} \ 0^\infty, \\
+  S_4(n) &:= L(n) \ 111100100100 \ \mathrm{A}{>} \ 0^\infty, \\
+  S_6(n) &:= L(n) \ 11111100100100 \ \mathrm{A}{>} \ 0^\infty.
+\end{aligned}
+$$
+
+Starting from $S_6(1)$, the machine follows the map $T$ (with $w = \lfloor (n-1)/2 \rfloor = 5q + r$
+for $n \ge 1$ and $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
   T(R_1(n)) &= \begin{cases}
     R_1(4) & \text{if } n = 0, \\
     R_1(6) & \text{if } n = 1, \\
     R_1(n+5) & \text{if } n \ge 2,
-  \end{cases} \\[4pt]
+  \end{cases} \\
   T(R_2(n)) &= \begin{cases}
     R_1(4) & \text{if } n = 0, \\
-    H_{R_2}(0, \lfloor (n-1)/2 \rfloor) & \text{if } n \ge 1,
-  \end{cases} \\[4pt]
-  T(Q(n)) &= \begin{cases}
-    R_1(6) & \text{if } n = 0, \\
-    \Phi_Q(n-1)_{0010110}(2) & \text{if } n \ge 1,
-  \end{cases} \\[4pt]
-  T(S_4(n)) &= \begin{cases}
-    R_1(10) & \text{if } n = 0, \\
-    \Phi_{S_4}(n-1)_{0010110}(2) & \text{if } n \ge 1,
-  \end{cases} \\[4pt]
-  T(S_6(n)) &= \begin{cases}
-    R_1(9) & \text{if } n = 0, \\
-    R_2(23) & \text{if } n = 1, \\
-    \Phi_{S_6}(n-2)_{0010110}(2) & \text{if } n \ge 2,
-  \end{cases}
-\end{aligned}$$
-where $H_{R_2}, H_3, H_4, H_5$ and the 7-prefix scan bundles
-$\Phi_Q(b), \Phi_{S_4}(b), \Phi_{S_6}(b)$ are defined in `next_HubTail_r_R2`, `next_HubTail_r_3`,
-`next_HubTail_r_4`, `next_HubTail_r_5`, `next_ScanBundle_r_Q`, `next_ScanBundle_r_S4`, and
-`next_ScanBundle_r_S6`.
+    R_1(31q + 8) & \text{if } n \ge 1 \text{ and } r = 0, \\
+    R_2(31q + 11) & \text{if } n \ge 1 \text{ and } r = 1, \\
+    Q(31q + 19) & \text{if } n \ge 1 \text{ and } r = 2, \\
+    R_2(31q + 26) & \text{if } n \ge 1 \text{ and } r = 3, \\
+    R_1(31q + 44) & \text{if } n \ge 1 \text{ and } r = 4,
+  \end{cases} \\
+  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad T(S_6(1)) = R_2(23),
+\end{aligned}
+$$
+
+and for $H(n) \in \lbrace Q(n), S_4(n), S_6(n) \rbrace$ with $b_0 = n - \delta_H \ge 0$
+($\delta_Q = \delta_{S_4} = 1$, $\delta_{S_6} = 2$), the transition initializes
+$(k, b) = (26, b_0 - 3)$ and iterates the base $31/10$ step while $b \ge 8$ (writing
+$\lfloor (k - 1)/2 \rfloor = 5q + r$ with $r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+(k, b) \mapsto (31q + c_r,\ b - \Delta b_r), \quad (c_r, \Delta b_r) = \begin{cases}
+  (8, 2) & \text{if } r = 0, \\
+  (18, 4) & \text{if } r = 1, \\
+  (30, 5) & \text{if } r = 2, \\
+  (48, 8) & \text{if } r = 3, \\
+  (38, 3) & \text{if } r = 4,
+\end{cases}
+$$
+
+until $b < 8$, where the terminal remainder $(r, b)$ selects $\text{Halt}$ (for $S_6$ at $r = 3$,
+$b \in \lbrace 1, 2 \rbrace$) or the next configuration in $\lbrace R_1, R_2, Q, S_4, S_6 \rbrace$.
 -/
 
 @[expose] public section

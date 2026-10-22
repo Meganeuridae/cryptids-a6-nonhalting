@@ -11,24 +11,30 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1LE_1RC1RA_0LD1RB_1LE1LD_1RF0LA_---0RE`
 
 We define the configuration for $a, b, c \ge 0$:
-$$E(a, b, c) := 0^\infty\,(10)^b\,(11)^{a+1}\,\mathrm{E}{>}\,1^{c+1}\,0^\infty.$$
+
+$$
+E(a, b, c) := 0^\infty \ (10)^b \ (11)^{a+1} \ \mathrm{E}{>} \ 1^{c+1} \ 0^\infty.
+$$
 
 Starting from $E(1, 0, 2)$, the machine follows the map $T$:
-$$T(E(a, b, c)) = \begin{cases}
-  E(a-1, b, 1) & \text{if } a \ge 1,\; c = 0, \\
-  E(1, 0, 1) & \text{if } a = 0,\; b = 0,\; c = 0, \\
-  E(1, 0, 2) & \text{if } a = 0,\; b = 1,\; c = 0, \\
-  E(1, 0, 6) & \text{if } a = 0,\; b = 2,\; c = 0, \\
-  E(1, b-3, 4) & \text{if } a = 0,\; b \ge 3,\; c = 0, \\
-  E(1, 0, 2a+2c+1) & \text{if } b = 0,\; 1 \le c \le 2, \\
-  \text{Halt} & \text{if } b = 0,\; c = 3, \\
-  E(1, a+1, 2c-6) & \text{if } b = 0,\; 4 \le c \le 6, \\
-  E(1, a+3, c-6) & \text{if } b = 0,\; c \ge 7, \\
-  E(1, 0, 2a+2c+2) & \text{if } b = 1,\; 1 \le c \le 2, \\
-  E(1, 2, 2a+2c) & \text{if } b = 2,\; 1 \le c \le 2, \\
-  E(1, b-3, 2a+2c+4) & \text{if } b \ge 3,\; 1 \le c \le 2, \\
-  E(a+2, b-1, c-2) & \text{if } b \ge 1,\; c \ge 3.
-\end{cases}$$
+
+$$
+T(E(a, b, c)) = \begin{cases}
+  E(a-1, b, 1) & \text{if } a \ge 1,\ c = 0, \\
+  E(1, 0, 1) & \text{if } a = 0,\ b = 0,\ c = 0, \\
+  E(1, 0, 2) & \text{if } a = 0,\ b = 1,\ c = 0, \\
+  E(1, 0, 6) & \text{if } a = 0,\ b = 2,\ c = 0, \\
+  E(1, b-3, 4) & \text{if } a = 0,\ b \ge 3,\ c = 0, \\
+  E(1, 0, 2a+2c+1) & \text{if } b = 0,\ 1 \le c \le 2, \\
+  \text{Halt} & \text{if } b = 0,\ c = 3, \\
+  E(1, a+1, 2c-6) & \text{if } b = 0,\ 4 \le c \le 6, \\
+  E(1, a+3, c-6) & \text{if } b = 0,\ c \ge 7, \\
+  E(1, 0, 2a+2c+2) & \text{if } b = 1,\ 1 \le c \le 2, \\
+  E(1, 2, 2a+2c) & \text{if } b = 2,\ 1 \le c \le 2, \\
+  E(1, b-3, 2a+2c+4) & \text{if } b \ge 3,\ 1 \le c \le 2, \\
+  E(a+2, b-1, c-2) & \text{if } b \ge 1,\ c \ge 3.
+\end{cases}
+$$
 -/
 
 @[expose] public section

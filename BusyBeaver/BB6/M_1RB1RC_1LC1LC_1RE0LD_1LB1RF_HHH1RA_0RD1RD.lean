@@ -11,18 +11,24 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1RC_1LC1LC_1RE0LD_1LB1RF_---1RA_0RD1RD`
 
 We define the configuration for $a, b, c \ge 0$:
-$$C(a, b, c) := 0^\infty\,1^{a+2}\,\mathrm{E}{>}\,1^{2b+2}\,0\,1^{2c+2}\,0^\infty.$$
+
+$$
+C(a, b, c) := 0^\infty \ 1^{a+2} \ \mathrm{E}{>} \ 1^{2b+2} \ 0 \ 1^{2c+2} \ 0^\infty.
+$$
 
 Starting from $C(5, 2, 0)$, the machine follows the map $T$:
-$$T(C(a, b, c)) = \begin{cases}
-  \text{Halt} & \text{if } b = 0,\; c = 0, \\
-  C(5, 2, k + 1) & \text{if } a = 2k,\; b = 0,\; c = 1, \\
-  C(2, 0, k + 3) & \text{if } a = 2k + 1,\; b = 0,\; c = 1, \\
-  C(2, k + 3, d) & \text{if } a = 2k,\; b = 0,\; c = d + 2, \\
-  C(5, k + 3, d) & \text{if } a = 2k + 1,\; b = 0,\; c = d + 2, \\
-  C(a + 3, 0, b') & \text{if } b = b' + 1,\; c = 0, \\
-  C(a + 6, b', c') & \text{if } b = b' + 1,\; c = c' + 1.
-\end{cases}$$
+
+$$
+T(C(a, b, c)) = \begin{cases}
+  \text{Halt} & \text{if } b = 0,\ c = 0, \\
+  C(5, 2, k + 1) & \text{if } a = 2k,\ b = 0,\ c = 1, \\
+  C(2, 0, k + 3) & \text{if } a = 2k + 1,\ b = 0,\ c = 1, \\
+  C(2, k + 3, d) & \text{if } a = 2k,\ b = 0,\ c = d + 2, \\
+  C(5, k + 3, d) & \text{if } a = 2k + 1,\ b = 0,\ c = d + 2, \\
+  C(a + 3, 0, b') & \text{if } b = b' + 1,\ c = 0, \\
+  C(a + 6, b', c') & \text{if } b = b' + 1,\ c = c' + 1.
+\end{cases}
+$$
 -/
 
 @[expose] public section

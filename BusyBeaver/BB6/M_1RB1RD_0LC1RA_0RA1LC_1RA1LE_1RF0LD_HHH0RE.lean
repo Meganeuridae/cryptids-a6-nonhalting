@@ -11,18 +11,24 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1RD_0LC1RA_0RA1LC_1RA1LE_1RF0LD_---0RE`
 
 We define the configuration for $a, w \ge 0$ and $b \ge 1$ (with $b$ odd when $a \ge 1$):
-$$D(a, b, w) := 0^\infty\,(10)^a\,1^b\,\mathrm{D}{>}\,1^{w+1}\,0^\infty.$$
+
+$$
+D(a, b, w) := 0^\infty \ (10)^a \ 1^b \ \mathrm{D}{>} \ 1^{w+1} \ 0^\infty.
+$$
 
 Starting from $D(0, 1, 1)$, the machine follows the map $T$:
-$$T(D(a, b, w)) = \begin{cases}
-  D(0, 1, 2k + 2w + 2) & \text{if } a = 0,\; b = 2k + 1,\; w \le 1, \\
-  D(0, 2k + 4, w') & \text{if } a = 0,\; b = 2k + 1,\; w = w' + 2, \\
-  \text{Halt} & \text{if } a = 0,\; b = 2k + 2,\; w = 0, \\
-  D(k + 1, 1, 2w - 1) & \text{if } a = 0,\; b = 2k + 2,\; 1 \le w \le 3, \\
-  D(k + 1, 5, w') & \text{if } a = 0,\; b = 2k + 2,\; w = w' + 4, \\
-  D(a', 1, 2k + 2w + 3) & \text{if } a = a' + 1,\; b = 2k + 1,\; w \le 1, \\
-  D(a', 2k + 5, w') & \text{if } a = a' + 1,\; b = 2k + 1,\; w = w' + 2.
-\end{cases}$$
+
+$$
+T(D(a, b, w)) = \begin{cases}
+  D(0, 1, 2k + 2w + 2) & \text{if } a = 0,\ b = 2k + 1,\ w \le 1, \\
+  D(0, 2k + 4, w') & \text{if } a = 0,\ b = 2k + 1,\ w = w' + 2, \\
+  \text{Halt} & \text{if } a = 0,\ b = 2k + 2,\ w = 0, \\
+  D(k + 1, 1, 2w - 1) & \text{if } a = 0,\ b = 2k + 2,\ 1 \le w \le 3, \\
+  D(k + 1, 5, w') & \text{if } a = 0,\ b = 2k + 2,\ w = w' + 4, \\
+  D(a', 1, 2k + 2w + 3) & \text{if } a = a' + 1,\ b = 2k + 1,\ w \le 1, \\
+  D(a', 2k + 5, w') & \text{if } a = a' + 1,\ b = 2k + 1,\ w = w' + 2.
+\end{cases}
+$$
 -/
 
 @[expose] public section

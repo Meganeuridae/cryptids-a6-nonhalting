@@ -12,25 +12,39 @@ public import BusyBeaver.Cert
 # Busy Beaver Holdout `1RB---_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD`
 
 We define the configuration for $a, b, c, d \ge 0$:
-$$P_1(a, b, c, d) := 0^\infty\,1^b\,(01)^a\,1\,\mathrm{C}{>}\,(01)^c\,1\,(01)^d\,1\,0^\infty.$$
+
+$$
+P_1(a, b, c, d) := 0^\infty \ 1^b \ (01)^a \ 1 \ \mathrm{C}{>} \ (01)^c \ 1 \ (01)^d \ 1 \ 0^\infty.
+$$
 
 Starting from $P_1(1, 4, 1, 1)$, the machine follows the map $T$:
-$$T(P_1(a, b, c, d)) = \begin{cases}
-  P_1(k+c+1, 4, 1, 1) & \text{if } a = 0,\; b = 2k,\text{ and } d = 0, \\
-  P_1(k+c, 4, 1, 2) & \text{if } a = 0,\; b = 2k+1,\text{ and } d = 0, \\
-  P_1(c, 4, 1, 2) & \text{if } a = 1,\; b = 0,\text{ and } d = 0, \\
-  P_1(0, 0, 1, c+2) & \text{if } a = 1,\; b = 1,\text{ and } d = 0, \\
-  P_1(c+3, 4, 1, 1) & \text{if } a = 1,\; b = 2,\text{ and } d = 0, \\
-  \text{Halt} & \text{if } a = 1,\; b \ge 3,\text{ and } d = 0, \\
+
+$$
+T(P_1(a, b, c, d)) = \begin{cases}
+  P_1(k+c+1, 4, 1, 1) & \text{if } a = 0,\ b = 2k,\text{ and } d = 0, \\
+  P_1(k+c, 4, 1, 2) & \text{if } a = 0,\ b = 2k+1,\text{ and } d = 0, \\
+  P_1(c, 4, 1, 2) & \text{if } a = 1,\ b = 0,\text{ and } d = 0, \\
+  P_1(0, 0, 1, c+2) & \text{if } a = 1,\ b = 1,\text{ and } d = 0, \\
+  P_1(c+3, 4, 1, 1) & \text{if } a = 1,\ b = 2,\text{ and } d = 0, \\
+  \text{Halt} & \text{if } a = 1,\ b \ge 3,\text{ and } d = 0, \\
   P_1(a-2, b, 1, c+2) & \text{if } a \ge 2 \text{ and } d = 0, \\
-  \text{Halt} & \text{if } a = 0,\; b = 0,\; c = 0,\text{ and } d \ge 1, \\
-  F(c-1, 1, d+1) & \text{if } a = 0,\; b = 0,\; c \ge 1,\text{ and } d \ge 1, \\
-  F(k+c, 1, d+1) & \text{if } a = 0,\; b = 2k+2,\text{ and } d \ge 1, \\
-  P_1(0, 0, k+c+2, d-1) & \text{if } a = 0,\; b = 2k+1,\text{ and } d \ge 1, \\
+  \text{Halt} & \text{if } a = 0,\ b = 0,\ c = 0,\text{ and } d \ge 1, \\
+  F(c-1, 1, d+1) & \text{if } a = 0,\ b = 0,\ c \ge 1,\text{ and } d \ge 1, \\
+  F(k+c, 1, d+1) & \text{if } a = 0,\ b = 2k+2,\text{ and } d \ge 1, \\
+  P_1(0, 0, k+c+2, d-1) & \text{if } a = 0,\ b = 2k+1,\text{ and } d \ge 1, \\
   P_1(a-1, b, c+2, d-1) & \text{if } a \ge 1 \text{ and } d \ge 1,
-\end{cases}$$
-where $F(m, c, d) = P_1(2m+c+1, 4, 1, d')$ with $d' = d + 1 - m$ if $m \le d$, $d' = 2$ if
-$m > d$ and $m - d$ is odd, and $d' = 1$ if $m > d$ and $m - d$ is even.
+\end{cases}
+$$
+
+where $F(m, c, d)$ is defined by:
+
+$$
+F(m, c, d) = \begin{cases}
+  P_1(2m+c+1, 4, 1, d+1-m) & \text{if } m \le d, \\
+  P_1(2m+c+1, 4, 1, 2) & \text{if } m > d \text{ and } m - d \text{ is odd}, \\
+  P_1(2m+c+1, 4, 1, 1) & \text{if } m > d \text{ and } m - d \text{ is even}.
+\end{cases}
+$$
 -/
 
 @[expose] public section

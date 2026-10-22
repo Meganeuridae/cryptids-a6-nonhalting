@@ -10,23 +10,30 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB1LA_1LC0RE_1LF1LD_1RE0LC_1LB1RA_---0LA`
 
-We define the configuration for $a, b, c \ge 0$ and $d \in \{3, 6\}$:
-$$C(a, b, c, d) := 0^\infty\,1^{a+1}\,\mathrm{C}{>}\,00\,1^{b+4}\,(01)^c\,1^d\,011\,0^\infty,$$
+We define the configuration for $a, b, c \ge 0$ and $d \in \lbrace 3, 6 \rbrace$:
+
+$$
+C(a, b, c, d) := 0^\infty \ 1^{a+1} \ \mathrm{C}{>} \ 00 \ 1^{b+4} \ (01)^c \ 1^d \ 011 \ 0^\infty,
+$$
+
 where $C(a, b, 0, 6) = C(a, b+3, 0, 3)$.
 
 Starting from $C(4, 0, 0, 3)$, the machine follows the map $T$:
-$$T(C(a, b, c, d)) = \begin{cases}
+
+$$
+T(C(a, b, c, d)) = \begin{cases}
   C(a-2, b+3, c, d) & \text{if } a \ge 2, \\
-  C(a+b+4, 3, c-2, d) & \text{if } a \le 1,\; c \ge 2, \\
-  C(a+b+4, 0, 3, 3) & \text{if } a \le 1,\; c = 1,\; d = 6, \\
-  C(a, 0, k+3, 3) & \text{if } a \le 1,\; b = 2k,\; c = 0,\; d = 3, \\
-  \text{Halt} & \text{if } a = 0,\; b = 2k+1,\; c = 0,\; d = 3, \\
-  C(6, 3, k, 3) & \text{if } a = 1,\; b = 2k+1,\; c = 0,\; d = 3, \\
-  C(a, 0, k+3, 6) & \text{if } a \le 1,\; b = 2k+1,\; c = 1,\; d = 3, \\
-  \text{Halt} & \text{if } a = 0,\; b = 2k,\; c = 1,\; d = 3, \\
-  C(6, 0, 3, 3) & \text{if } a = 1,\; b = 0,\; c = 1,\; d = 3, \\
-  C(6, 3, k, 6) & \text{if } a = 1,\; b = 2k+2,\; c = 1,\; d = 3.
-\end{cases}$$
+  C(a+b+4, 3, c-2, d) & \text{if } a \le 1,\ c \ge 2, \\
+  C(a+b+4, 0, 3, 3) & \text{if } a \le 1,\ c = 1,\ d = 6, \\
+  C(a, 0, k+3, 3) & \text{if } a \le 1,\ b = 2k,\ c = 0,\ d = 3, \\
+  \text{Halt} & \text{if } a = 0,\ b = 2k+1,\ c = 0,\ d = 3, \\
+  C(6, 3, k, 3) & \text{if } a = 1,\ b = 2k+1,\ c = 0,\ d = 3, \\
+  C(a, 0, k+3, 6) & \text{if } a \le 1,\ b = 2k+1,\ c = 1,\ d = 3, \\
+  \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 1,\ d = 3, \\
+  C(6, 0, 3, 3) & \text{if } a = 1,\ b = 0,\ c = 1,\ d = 3, \\
+  C(6, 3, k, 6) & \text{if } a = 1,\ b = 2k+2,\ c = 1,\ d = 3.
+\end{cases}
+$$
 -/
 
 @[expose] public section

@@ -11,18 +11,24 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1LF_0RC1RD_1LA1LD_1LE0RA_---1LC_0LA1LA`
 
 We define the configuration for $a \ge 0$, $b \ge 6$:
-$$C(a, b) := 0^\infty\,110\,\mathrm{A}{>}\,(11)^a\,0\,1^b\,0^\infty.$$
+
+$$
+C(a, b) := 0^\infty \ 110 \ \mathrm{A}{>} \ (11)^a \ 0 \ 1^b \ 0^\infty.
+$$
 
 Starting from $C(0, 9)$, the machine follows the map $T$:
-$$T(C(a, b)) = \begin{cases}
-  C(k+1, 9) & \text{if } a = 0,\; b = 2k+6, \\
-  C(a-k+3, 6k+12) & \text{if } a \ge 1,\; b = 2k+6,\; k \le a+2, \\
-  \text{Halt} & \text{if } a \ge 1,\; b = 2k+6,\; k \in \{a+3, a+4\}, \\
-  C(k-a-4, 6a+33) & \text{if } a \ge 1,\; b = 2k+6,\; k \ge a+5, \\
-  C(k-a, 6a+6) & \text{if } b = 2k+1,\; k > a, \\
-  \text{Halt} & \text{if } b = 2k+1,\; a \in \{k, k+1\}, \\
-  C(a-k-1, 6k+9) & \text{if } b = 2k+1,\; a \ge k+2.
-\end{cases}$$
+
+$$
+T(C(a, b)) = \begin{cases}
+  C(k+1, 9) & \text{if } a = 0,\ b = 2k+6, \\
+  C(a-k+3, 6k+12) & \text{if } a \ge 1,\ b = 2k+6,\ k \le a+2, \\
+  \text{Halt} & \text{if } a \ge 1,\ b = 2k+6,\ k \in \lbrace a+3, a+4 \rbrace, \\
+  C(k-a-4, 6a+33) & \text{if } a \ge 1,\ b = 2k+6,\ k \ge a+5, \\
+  C(k-a, 6a+6) & \text{if } b = 2k+1,\ k > a, \\
+  \text{Halt} & \text{if } b = 2k+1,\ a \in \lbrace k, k+1 \rbrace, \\
+  C(a-k-1, 6k+9) & \text{if } b = 2k+1,\ a \ge k+2.
+\end{cases}
+$$
 -/
 
 @[expose] public section

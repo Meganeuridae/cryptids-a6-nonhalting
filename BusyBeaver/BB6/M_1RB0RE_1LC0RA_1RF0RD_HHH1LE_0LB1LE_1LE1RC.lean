@@ -11,35 +11,45 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB0RE_1LC0RA_1RF0RD_---1LE_0LB1LE_1LE1RC`
 
 We define the configuration for $b, k, c \ge 0$:
-$$A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty.$$
+
+$$
+A(b, k, c) := 0^\infty \ 1^c \ 0 \ \mathrm{A}{>} \ 0 \ (10)^k \ 1^b \ 0^\infty.
+$$
 
 Starting from $A(4, 0, 3)$, the machine follows the map $T$:
-$$T(A(b, k, c)) = \begin{cases}
-  A(4, 0, 3) & \text{if } b = 0,\; k = 0,\text{ and } c = 0, \\
-  A(6, 0, 3) & \text{if } b \in \{1, 3\},\; k = 0,\text{ and } c = 0, \\
-  A(3, 0, 3) & \text{if } b = 2,\; k = 0,\text{ and } c = 0, \\
-  \text{Halt} & \text{if } b = 4,\; k = 0,\text{ and } c = 0, \\
-  A(b-4, 0, 5) & \text{if } b \ge 5,\; k = 0,\text{ and } c = 0, \\
+
+$$
+T(A(b, k, c)) = \begin{cases}
+  A(4, 0, 3) & \text{if } b = 0,\ k = 0,\text{ and } c = 0, \\
+  A(6, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace,\ k = 0,\text{ and } c = 0, \\
+  A(3, 0, 3) & \text{if } b = 2,\ k = 0,\text{ and } c = 0, \\
+  \text{Halt} & \text{if } b = 4,\ k = 0,\text{ and } c = 0, \\
+  A(b-4, 0, 5) & \text{if } b \ge 5,\ k = 0,\text{ and } c = 0, \\
   A(b, k-1, 1) & \text{if } k \ge 1 \text{ and } c = 0, \\
   A(2k+6, 0, 3) & \text{if } b = 0 \text{ and } c = 1, \\
-  A(2k+8, 0, 3) & \text{if } b \in \{1, 3\} \text{ and } c = 1, \\
+  A(2k+8, 0, 3) & \text{if } b \in \lbrace 1, 3 \rbrace \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 4 \text{ and } c = 1, \\
   A(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
-  A(5, 0, c-1) & \text{if } b = 2,\; k = 0,\text{ and } c \ge 1, \\
-  F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\; k \ge 1,\text{ and } c \ge 1, \\
+  A(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
+  F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\ k \ge 1,\text{ and } c \ge 1, \\
   A(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
   A(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
   A(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
-\end{cases}$$
+\end{cases}
+$$
+
 where $F(m, p, k, n, c)$ is defined recursively on $m$ (with $k' = k + 2n$):
-$$F(m, p, k, n, c) = \begin{cases}
+
+$$
+F(m, p, k, n, c) = \begin{cases}
   A(2k'+c+7, 0, 3) & \text{if } m = 0 \text{ and } p \le n+1, \\
   A(2(p-n-2)+1, 0, 2(k'+3)+c) & \text{if } m = 0 \text{ and } p \ge n+2, \\
   A(2(k'+4)+1, 0, c) & \text{if } m = 1 \text{ and } p \le n+1, \\
   F(0, p-n-2, 0, k'+3, c) & \text{if } m = 1 \text{ and } p \ge n+2, \\
   F(m-2, k'+4, 0, 0, c) & \text{if } m \ge 2 \text{ and } p \le n+1, \\
   F(m-1, p-n-2, 0, k'+3, c) & \text{if } m \ge 2 \text{ and } p \ge n+2.
-\end{cases}$$
+\end{cases}
+$$
 -/
 
 @[expose] public section

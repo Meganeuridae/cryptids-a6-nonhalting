@@ -10,30 +10,53 @@ public import BusyBeaver.Bridge
 /-!
 # Busy Beaver Holdout `1RB0LE_0RC1RC_0RD1LA_1LD0LA_1LF1LC_---1LC`
 
-We define the configuration for $a, b, d \ge 0$ and $c \in \{0, 1\}$:
-$$D(a, b, c, d) := 0^\infty\,\mathrm{D}{>}\,(10)^a\,(110)^b\,0^c\,1^d\,0^\infty.$$
+We define the configuration for $a, b, d \ge 0$ and $c \in \lbrace 0, 1 \rbrace$:
+
+$$
+D(a, b, c, d) := 0^\infty \ \mathrm{D}{>} \ (10)^a \ (110)^b \ 0^c \ 1^d \ 0^\infty.
+$$
 
 Starting from $D(0, 0, 0, 4)$, the machine follows the map $T$:
-$$\begin{aligned}
+
+$$
+\begin{aligned}
   T(D(a, b, 0, d)) &= \begin{cases}
-    D(0, 0, 1, 1) & \text{if } a = 0,\; b = 0,\text{ and } d = 0, \\
-    D(1, b-1, 1, 2) & \text{if } a = 0,\; b \ge 1,\text{ and } d = 0, \\
+    D(0, 0, 1, 1) & \text{if } a = 0,\ b = 0,\text{ and } d = 0, \\
+    D(1, b-1, 1, 2) & \text{if } a = 0,\ b \ge 1,\text{ and } d = 0, \\
     B(a-1, 0, b, 0) & \text{if } a \ge 1 \text{ and } d = 0, \\
-    D(0, 0, 0, 4) & \text{if } a = 0,\; b = 0,\text{ and } d = 1, \\
-    B(a, 0, 0, 0) & \text{if } a \ge 1,\; b = 0,\text{ and } d = 1, \\
+    D(0, 0, 0, 4) & \text{if } a = 0,\ b = 0,\text{ and } d = 1, \\
+    B(a, 0, 0, 0) & \text{if } a \ge 1,\ b = 0,\text{ and } d = 1, \\
     D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
     D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
     B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
     D(a+2, b, 0, d-2) & \text{if } d \ge 3,
-  \end{cases} \\[4pt]
+  \end{cases} \\
   T(D(a, b, 1, d)) &= \begin{cases}
     D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\
     D(1, b-1, 1, d+2) & \text{if } a = 0 \text{ and } b \ge 1, \\
     B(a-1, 0, b, d) & \text{if } a \ge 1,
   \end{cases}
-\end{aligned}$$
-where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, b, d)$ are defined recursively in `evalB`,
-`evalH`, and `evalA`.
+\end{aligned}
+$$
+
+where $B(a, k, b, d)$, $H(a, b, m)$, and $A(a, k, b, d)$ are defined recursively by:
+
+$$
+\begin{aligned}
+  B(a, k, 0, d) &= H(a, k, d+2), \\
+  B(a, k, b+1, d) &= B(a, k+1, b, d+1), \\
+  H(a, b, 0) &= D(a, b, 0, 3), \\
+  H(a, b, m+1) &= A(a, 0, b, m+3), \\
+  A(a, k, b, d) &= \begin{cases}
+    D(a, k, 1, b+1) & \text{if } d = 0, \\
+    B(a, 0, k, b) & \text{if } d = 1, \\
+    D(a+1, k, 1, b+2) & \text{if } d = 2, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } d = 3, \\
+    H(a+1, b+1, 2k-1) & \text{if } k \ge 1 \text{ and } d = 3, \\
+    A(a, k+1, b, d-2) & \text{if } d \ge 4.
+  \end{cases}
+\end{aligned}
+$$
 -/
 
 @[expose] public section

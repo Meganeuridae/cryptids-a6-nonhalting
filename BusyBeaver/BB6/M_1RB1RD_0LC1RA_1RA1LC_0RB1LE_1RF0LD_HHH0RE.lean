@@ -11,19 +11,25 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1RD_0LC1RA_1RA1LC_0RB1LE_1RF0LD_---0RE`
 
 We define the configuration for $a, w \ge 0$ and $z \ge 1$ (with $z$ odd when $a \ge 1$):
-$$D_1(a, z, w) := 0^\infty\,(10)^a\,1^z\,\mathrm{D}{>}\,1\,1^w\,0^\infty.$$
+
+$$
+D_1(a, z, w) := 0^\infty \ (10)^a \ 1^z \ \mathrm{D}{>} \ 1 \ 1^w \ 0^\infty.
+$$
 
 Starting from $D_1(0, 2, 2)$, the machine follows the map $T$:
-$$T(D_1(a, z, w)) = \begin{cases}
-  D_1(0, 2, 2k + 2w + 2) & \text{if } a = 0,\; z = 2k + 1,\; w \le 1, \\
-  D_1(0, 2k + 4, w') & \text{if } a = 0,\; z = 2k + 1,\; w = w' + 2, \\
-  \text{Halt} & \text{if } a = 0,\; z = 2k + 2,\; w = 0, \\
-  D_1(k, 3, 2w - 1) & \text{if } a = 0,\; z = 2k + 2,\; 1 \le w \le 3, \\
-  D_1(k + 1, 5, w') & \text{if } a = 0,\; z = 2k + 2,\; w = w' + 4, \\
-  D_1(0, 2, 2k + 2w + 3) & \text{if } a = 1,\; z = 2k + 1,\; w \le 1, \\
-  D_1(a', 3, 2k + 2w + 3) & \text{if } a = a' + 2,\; z = 2k + 1,\; w \le 1, \\
-  D_1(a', 2k + 5, w') & \text{if } a = a' + 1,\; z = 2k + 1,\; w = w' + 2.
-\end{cases}$$
+
+$$
+T(D_1(a, z, w)) = \begin{cases}
+  D_1(0, 2, 2k + 2w + 2) & \text{if } a = 0,\ z = 2k + 1,\ w \le 1, \\
+  D_1(0, 2k + 4, w') & \text{if } a = 0,\ z = 2k + 1,\ w = w' + 2, \\
+  \text{Halt} & \text{if } a = 0,\ z = 2k + 2,\ w = 0, \\
+  D_1(k, 3, 2w - 1) & \text{if } a = 0,\ z = 2k + 2,\ 1 \le w \le 3, \\
+  D_1(k + 1, 5, w') & \text{if } a = 0,\ z = 2k + 2,\ w = w' + 4, \\
+  D_1(0, 2, 2k + 2w + 3) & \text{if } a = 1,\ z = 2k + 1,\ w \le 1, \\
+  D_1(a', 3, 2k + 2w + 3) & \text{if } a = a' + 2,\ z = 2k + 1,\ w \le 1, \\
+  D_1(a', 2k + 5, w') & \text{if } a = a' + 1,\ z = 2k + 1,\ w = w' + 2.
+\end{cases}
+$$
 -/
 
 @[expose] public section

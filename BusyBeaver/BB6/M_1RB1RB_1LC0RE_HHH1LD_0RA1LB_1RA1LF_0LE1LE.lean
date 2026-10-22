@@ -11,23 +11,29 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1RB_1LC0RE_---1LD_0RA1LB_1RA1LF_0LE1LE`
 
 We define the configuration for $k \ge 1$, $m \ge 1$, $f \ge 1$:
-$$C(2k, 2m, f) := 0^\infty\,(11)^k\,0\,(11)^m\,0\,\mathrm{D}{>}\,1\,1^f\,0^\infty.$$
+
+$$
+C(2k, 2m, f) := 0^\infty \ (11)^k \ 0 \ (11)^m \ 0 \ \mathrm{D}{>} \ 1 \ 1^f \ 0^\infty.
+$$
 
 Starting from $C(6, 2, 2)$, the machine follows the map $T$:
-$$T(C(2k, 2m, f)) = \begin{cases}
+
+$$
+T(C(2k, 2m, f)) = \begin{cases}
   C(2, 2m-2k+2, f+6k-6) & \text{if } 2 \le k < m, \\
   C(2k-2m+2, 2, f+6m-6) & \text{if } 2 \le m < k, \\
   C(2, 2, f+6k-6) & \text{if } k = m \ge 2, \\
-  C(2k-4, 2j+8, 2) & \text{if } k \ge 3,\; m = 1,\; f = 2j \text{ with } j \ge 1, \\
-  C(2k-4, 2j+8, 5) & \text{if } k \ge 3,\; m = 1,\; f = 2j+1 \text{ with } j \ge 0, \\
-  C(2j+4, 6, 5) & \text{if } k = 2,\; m = 1,\; f = 2j \text{ with } j \ge 1, \\
-  C(2j+8, 2, 2) & \text{if } k = 2,\; m = 1,\; f = 2j+1 \text{ with } j \ge 0, \\
-  C(2m-6, 2j+10, 5) & \text{if } k = 1,\; m \ge 4,\; f = 2j \text{ with } j \ge 1, \\
-  C(2m-6, 2j+12, 2) & \text{if } k = 1,\; m \ge 4,\; f = 2j+1 \text{ with } j \ge 0, \\
-  C(2j+10, 2, 2) & \text{if } k = 1,\; m = 3,\; f = 2j \text{ with } j \ge 1, \\
-  C(2j+8, 6, 5) & \text{if } k = 1,\; m = 3,\; f = 2j+1 \text{ with } j \ge 0, \\
-  \text{Halt} & \text{if } k = 1,\; m \in \{1, 2\}.
-\end{cases}$$
+  C(2k-4, 2j+8, 2) & \text{if } k \ge 3,\ m = 1,\ f = 2j \text{ with } j \ge 1, \\
+  C(2k-4, 2j+8, 5) & \text{if } k \ge 3,\ m = 1,\ f = 2j+1 \text{ with } j \ge 0, \\
+  C(2j+4, 6, 5) & \text{if } k = 2,\ m = 1,\ f = 2j \text{ with } j \ge 1, \\
+  C(2j+8, 2, 2) & \text{if } k = 2,\ m = 1,\ f = 2j+1 \text{ with } j \ge 0, \\
+  C(2m-6, 2j+10, 5) & \text{if } k = 1,\ m \ge 4,\ f = 2j \text{ with } j \ge 1, \\
+  C(2m-6, 2j+12, 2) & \text{if } k = 1,\ m \ge 4,\ f = 2j+1 \text{ with } j \ge 0, \\
+  C(2j+10, 2, 2) & \text{if } k = 1,\ m = 3,\ f = 2j \text{ with } j \ge 1, \\
+  C(2j+8, 6, 5) & \text{if } k = 1,\ m = 3,\ f = 2j+1 \text{ with } j \ge 0, \\
+  \text{Halt} & \text{if } k = 1,\ m \in \lbrace 1, 2 \rbrace.
+\end{cases}
+$$
 -/
 
 @[expose] public section

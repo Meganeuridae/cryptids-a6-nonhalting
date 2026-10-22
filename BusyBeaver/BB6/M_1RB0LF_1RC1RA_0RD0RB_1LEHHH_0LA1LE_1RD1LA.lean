@@ -11,26 +11,32 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB0LF_1RC1RA_0RD0RB_1LE---_0LA1LE_1RD1LA`
 
 We define the configuration for $u, v, w \ge 0$:
-$$J(u, v, w) := 0^\infty\,1^5\,(10)^u\,1\,\mathrm{A}{>}\,11\,(01)^v\,1^w\,01\,0^\infty.$$
+
+$$
+J(u, v, w) := 0^\infty \ 1^5 \ (10)^u \ 1 \ \mathrm{A}{>} \ 11 \ (01)^v \ 1^w \ 01 \ 0^\infty.
+$$
 
 Starting from $J(0, 0, 0)$, the machine follows the map $T$:
-$$T(J(u, v, w)) = \begin{cases}
-  J(0, 0, 2v+12) & \text{if } u = 0,\; w = 0,\; v \text{ is even}, \\
-  J(2, 4, 2v+7) & \text{if } u = 0,\; w = 0,\; v \text{ is odd}, \\
-  J(2, 4, 2v+9) & \text{if } u = 0,\; w = 1,\; v \text{ is even}, \\
-  J(0, 0, 2v+14) & \text{if } u = 0,\; w = 1,\; v \text{ is odd}, \\
-  J(2, v+4, 1) & \text{if } u = 0,\; w = 2,\; v \text{ is even}, \\
-  J(0, v+4, 1) & \text{if } u = 0,\; w = 2,\; v \text{ is odd}, \\
-  J(v+3, 0, w-3) & \text{if } u = 0,\; w \ge 3, \\
-  J(0, 0, 2v+12) & \text{if } u = 1,\; w = 0, \\
-  J(2, 4, 2u+2v+5) & \text{if } u \ge 2,\; w = 0,\; u \text{ is even}, \\
-  J(0, 0, 2u+2v+10) & \text{if } u \ge 3,\; w = 0,\; u \text{ is odd}, \\
-  \text{Halt} & \text{if } u = 1,\; w = 1, \\
-  J(0, 0, 2v+10) & \text{if } u = 2,\; w = 1, \\
-  J(2, u, 2v+5) & \text{if } u \ge 4,\; w = 1,\; u \text{ is even}, \\
-  J(0, u, 2v+5) & \text{if } u \ge 3,\; w = 1,\; u \text{ is odd}, \\
-  J(u-1, v+2, w-2) & \text{if } u \ge 1,\; w \ge 2.
-\end{cases}$$
+
+$$
+T(J(u, v, w)) = \begin{cases}
+  J(0, 0, 2v+12) & \text{if } u = 0,\ w = 0,\ v \text{ is even}, \\
+  J(2, 4, 2v+7) & \text{if } u = 0,\ w = 0,\ v \text{ is odd}, \\
+  J(2, 4, 2v+9) & \text{if } u = 0,\ w = 1,\ v \text{ is even}, \\
+  J(0, 0, 2v+14) & \text{if } u = 0,\ w = 1,\ v \text{ is odd}, \\
+  J(2, v+4, 1) & \text{if } u = 0,\ w = 2,\ v \text{ is even}, \\
+  J(0, v+4, 1) & \text{if } u = 0,\ w = 2,\ v \text{ is odd}, \\
+  J(v+3, 0, w-3) & \text{if } u = 0,\ w \ge 3, \\
+  J(0, 0, 2v+12) & \text{if } u = 1,\ w = 0, \\
+  J(2, 4, 2u+2v+5) & \text{if } u \ge 2,\ w = 0,\ u \text{ is even}, \\
+  J(0, 0, 2u+2v+10) & \text{if } u \ge 3,\ w = 0,\ u \text{ is odd}, \\
+  \text{Halt} & \text{if } u = 1,\ w = 1, \\
+  J(0, 0, 2v+10) & \text{if } u = 2,\ w = 1, \\
+  J(2, u, 2v+5) & \text{if } u \ge 4,\ w = 1,\ u \text{ is even}, \\
+  J(0, u, 2v+5) & \text{if } u \ge 3,\ w = 1,\ u \text{ is odd}, \\
+  J(u-1, v+2, w-2) & \text{if } u \ge 1,\ w \ge 2.
+\end{cases}
+$$
 -/
 
 @[expose] public section

@@ -11,23 +11,29 @@ public import BusyBeaver.Bridge
 # Busy Beaver Holdout `1RB1LD_1RC0RA_1LA1RE_0LA0LB_0RB1RF_---1RD`
 
 We define the configuration for $a, b, d \ge 0$:
-$$C(a, b, d) := 0^\infty\,1^a\,(10)^b\,\mathrm{A}{>}\,1^d\,0^\infty.$$
+
+$$
+C(a, b, d) := 0^\infty \ 1^a \ (10)^b \ \mathrm{A}{>} \ 1^d \ 0^\infty.
+$$
 
 Starting from $C(0, 0, 0)$, the machine follows the map $T$:
-$$T(C(a, b, d)) = \begin{cases}
+
+$$
+T(C(a, b, d)) = \begin{cases}
   C(a+1, 0, 2b+2) & \text{if } d = 0, \\
-  C(a-3, b+2, d-1) & \text{if } a \ge 3,\; d \ge 1, \\
-  C(0, b+1, d-1) & \text{if } a = 2,\; d \ge 1, \\
-  C(1, b+3, d-1) & \text{if } a = 1,\; b \ge 1,\; d \ge 1, \\
-  C(0, 0, d+2) & \text{if } a = 1,\; b = 0,\; d \ge 1, \\
-  C(0, 2, 5) & \text{if } a = 0,\; b = 0,\; d = 1, \\
-  C(0, 2, 2b+1) & \text{if } a = 0,\; b \ge 1,\; d = 1, \\
-  C(3d-4, 3, 2b-2d+3) & \text{if } a = 0,\; d \ge 2,\; b \ge d-1, \\
-  \text{Halt} & \text{if } a = 0,\; d = b+2, \\
-  C(3b+2, 0, 6) & \text{if } a = 0,\; d = b+3, \\
-  C(3b+4, 0, 4) & \text{if } a = 0,\; d = b+4, \\
-  C(3b+3, 2, d-b-5) & \text{if } a = 0,\; d \ge b+5.
-\end{cases}$$
+  C(a-3, b+2, d-1) & \text{if } a \ge 3,\ d \ge 1, \\
+  C(0, b+1, d-1) & \text{if } a = 2,\ d \ge 1, \\
+  C(1, b+3, d-1) & \text{if } a = 1,\ b \ge 1,\ d \ge 1, \\
+  C(0, 0, d+2) & \text{if } a = 1,\ b = 0,\ d \ge 1, \\
+  C(0, 2, 5) & \text{if } a = 0,\ b = 0,\ d = 1, \\
+  C(0, 2, 2b+1) & \text{if } a = 0,\ b \ge 1,\ d = 1, \\
+  C(3d-4, 3, 2b-2d+3) & \text{if } a = 0,\ d \ge 2,\ b \ge d-1, \\
+  \text{Halt} & \text{if } a = 0,\ d = b+2, \\
+  C(3b+2, 0, 6) & \text{if } a = 0,\ d = b+3, \\
+  C(3b+4, 0, 4) & \text{if } a = 0,\ d = b+4, \\
+  C(3b+3, 2, d-b-5) & \text{if } a = 0,\ d \ge b+5.
+\end{cases}
+$$
 -/
 
 @[expose] public section
