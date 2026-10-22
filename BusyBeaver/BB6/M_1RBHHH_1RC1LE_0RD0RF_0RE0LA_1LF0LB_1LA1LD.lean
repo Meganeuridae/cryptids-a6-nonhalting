@@ -1917,7 +1917,47 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .P_1 0 (b' + 1) c (d + 1) =>
     if (b' + 1) % 2 = 0 then some (evalP4_4 (b' / 2 + c) 1 (d + 2))
     else some (.P_1 0 0 (b' / 2 + c + 2) d)
-  | .P_1 (a + 1) b c (d + 1) => some (.P_1 a b (c + 2) d)
+  | .P_1 (a + 1) b c (d + 1) =>
+    let k := min (a + 1) (d + 1)
+    some (.P_1 (a + 1 - k) b (c + 2 * k) (d + 1 - k))
+
+private theorem reaches_P1_diag (k : ℕ) (a b c d : ℕ) :
+    CollatzReachesStar next (.P_1 (a + k) b c (d + k)) (.P_1 a b (c + 2 * k) d) := by
+  induction k generalizing c with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.P_1 (a + (k + 1)) b c (d + (k + 1))) =
+        some (.P_1 (a + k) b (c + 2) (d + k)) := by
+      have h1 : a + (k + 1) = (a + k) + 1 := by omega
+      have h2 : d + (k + 1) = (d + k) + 1 := by omega
+      rw [h1, h2]
+      simp [next]
+    have ih' := ih (c + 2)
+    have hc : c + 2 + 2 * k = c + 2 * (k + 1) := by omega
+    rw [hc] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_P1_drain (a b c d : ℕ) :
+    CollatzStepsTo next (.P_1 (a + 1) b c (d + 1))
+      (some (.P_1 (a + 1 - min (a + 1) (d + 1)) b
+        (c + 2 * min (a + 1) (d + 1))
+        (d + 1 - min (a + 1) (d + 1)))) := by
+  let k := min (a + 1) (d + 1)
+  have hk_pos : 0 < k := by
+    dsimp [k]
+    have : 0 < a + 1 := Nat.succ_pos a
+    have : 0 < d + 1 := Nat.succ_pos d
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m, hm⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hk_pos)
+  have h_head : next (.P_1 (a + 1) b c (d + 1)) = some (.P_1 a b (c + 2) d) := by simp [next]
+  have h_star := reaches_P1_diag m (a + 1 - k) b (c + 2) (d + 1 - k)
+  have ha : a + 1 - k + m = a := by omega
+  have hd : d + 1 - k + m = d := by omega
+  have hc : c + 2 + 2 * m = c + 2 * k := by omega
+  rw [ha, hd, hc] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem stepsTo_P23_4 : ∀ (isP3 : Bool) (a c : ℕ),
     CollatzStepsTo next (if isP3 then .P_3 a 4 c else .P_2 a 4 c)
@@ -1966,7 +2006,13 @@ theorem is_valid_highLevel_acceleration :
         split_ifs with hb
         · exact CollatzStepsTo.head (by simp [next, hb]) (stepsTo_P4_4 (b' / 2 + c) 1 (d + 2))
         · exact CollatzStepsTo.of_eq (by simp [next, toState, hb])
-    · exact CollatzStepsTo.of_eq (by simp [next, toState, highLevelNext])
+    · have h_eq : Option.map toState (highLevelNext (HighLevelState.P_1 (a + 1) b c (d + 1))) =
+          some (.P_1 (a + 1 - min (a + 1) (d + 1)) b
+            (c + 2 * min (a + 1) (d + 1))
+            (d + 1 - min (a + 1) (d + 1))) := by
+        simp [highLevelNext, toState]
+      rw [h_eq]
+      exact reaches_P1_drain a b c d
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

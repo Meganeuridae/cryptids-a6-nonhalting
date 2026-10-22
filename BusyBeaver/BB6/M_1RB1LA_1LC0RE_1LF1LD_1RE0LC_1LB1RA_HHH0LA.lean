@@ -1165,16 +1165,17 @@ def stepM6Pos (a : Bool) (b c : ℕ) : Option HighLevelState :=
   some (.C_6 (b + 4 + if a then 1 else 0) 3 c)
 
 /-- High-level accelerated transition function on $C(a, b, c, d)$, obtained by composing transitions
-through $M$ and $L$. -/
+through $M$ and $L$ and accelerating the linear drain on $a$. -/
 def highLevelNext : HighLevelState → Option HighLevelState
-  | .C_3 0 b c => stepM3 false b c
-  | .C_3 1 b c => stepM3 true b c
-  | .C_3 (a + 2) b c => some (.C_3 a (b + 3) c)
-  | .C_6 0 b 0 => stepM3 false (b + 3) 0
-  | .C_6 1 b 0 => stepM3 true (b + 3) 0
-  | .C_6 0 b (c + 1) => stepM6Pos false b c
-  | .C_6 1 b (c + 1) => stepM6Pos true b c
-  | .C_6 (a + 2) b c => some (.C_6 a (b + 3) c)
+  | .C_3 a b c =>
+    if a % 2 = 0 then stepM3 false (b + 3 * (a / 2)) c
+    else stepM3 true (b + 3 * (a / 2)) c
+  | .C_6 a b 0 =>
+    if a % 2 = 0 then stepM3 false (b + 3 * (a / 2) + 3) 0
+    else stepM3 true (b + 3 * (a / 2) + 3) 0
+  | .C_6 a b (c + 1) =>
+    if a % 2 = 0 then stepM6Pos false (b + 3 * (a / 2)) c
+    else stepM6Pos true (b + 3 * (a / 2)) c
 
 private theorem stepsTo_L3 (a : Bool) (b : ℕ) :
     CollatzStepsTo next (.L_3 a b) ((stepL3 a b).map toState) := by
@@ -1203,6 +1204,38 @@ private theorem stepsTo_M6Pos (a : Bool) (b c : ℕ) :
     CollatzStepsTo next (.M_6_pos a b c) ((stepM6Pos a b c).map toState) := by
   rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
 
+private theorem reaches_C3_drain (k : ℕ) (a b c : ℕ) :
+    CollatzReachesStar next (.C_3 (2 * k + a) b c) (.C_3 a (b + 3 * k) c) := by
+  induction k generalizing b with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.zero_add, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.C_3 (2 * (k + 1) + a) b c) = some (.C_3 (2 * k + a) (b + 3) c) := by
+      have : 2 * (k + 1) + a = (2 * k + a) + 2 := by omega
+      rw [this]
+      rfl
+    have ih' := ih (b + 3)
+    have h_arith : b + 3 + 3 * k = b + 3 * (k + 1) := by omega
+    rw [h_arith] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_C6_drain (k : ℕ) (a b c : ℕ) :
+    CollatzReachesStar next (.C_6 (2 * k + a) b c) (.C_6 a (b + 3 * k) c) := by
+  induction k generalizing b with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.zero_add, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.C_6 (2 * (k + 1) + a) b c) = some (.C_6 (2 * k + a) (b + 3) c) := by
+      have : 2 * (k + 1) + a = (2 * k + a) + 2 := by omega
+      rw [this]
+      rfl
+    have ih' := ih (b + 3)
+    have h_arith : b + 3 + 3 * k = b + 3 * (k + 1) := by omega
+    rw [h_arith] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
 /-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
 of `target`. -/
 theorem is_valid_highLevel_acceleration :
@@ -1210,17 +1243,60 @@ theorem is_valid_highLevel_acceleration :
   refine is_valid_acceleration.of_collatz (embed := toState)
     (CollatzReachesStar.refl next start) ?_
   rintro (⟨a, b, c⟩ | ⟨a, b, c⟩)
-  · rcases a with _ | _ | a
-    · exact CollatzStepsTo.head rfl (stepsTo_M3 false b c)
-    · exact CollatzStepsTo.head rfl (stepsTo_M3 true b c)
-    · exact CollatzStepsTo.of_eq rfl
-  · rcases a with _ | _ | a <;> rcases c with _ | c
-    · exact CollatzStepsTo.head rfl (stepsTo_M3 false (b + 3) 0)
-    · exact CollatzStepsTo.head rfl (stepsTo_M6Pos false b c)
-    · exact CollatzStepsTo.head rfl (stepsTo_M3 true (b + 3) 0)
-    · exact CollatzStepsTo.head rfl (stepsTo_M6Pos true b c)
-    · exact CollatzStepsTo.of_eq rfl
-    · exact CollatzStepsTo.of_eq rfl
+  · have h_drain : CollatzReachesStar next (.C_3 a b c) (.C_3 (a % 2) (b + 3 * (a / 2)) c) := by
+      have h_eq : a = 2 * (a / 2) + a % 2 := (Nat.div_add_mod a 2).symm
+      conv_lhs => rw [h_eq]
+      exact reaches_C3_drain (a / 2) (a % 2) b c
+    rcases Nat.mod_two_eq_zero_or_one a with hmod | hmod
+    · have h_step : CollatzStepsTo next (.C_3 0 (b + 3 * (a / 2)) c)
+          ((highLevelNext (.C_3 a b c)).map toState) := by
+        dsimp [highLevelNext]
+        rw [hmod]
+        exact CollatzStepsTo.head rfl (stepsTo_M3 false (b + 3 * (a / 2)) c)
+      rw [hmod] at h_drain
+      exact CollatzStepsTo.of_reachesStar h_drain h_step
+    · have h_step : CollatzStepsTo next (.C_3 1 (b + 3 * (a / 2)) c)
+          ((highLevelNext (.C_3 a b c)).map toState) := by
+        dsimp [highLevelNext]
+        rw [hmod]
+        exact CollatzStepsTo.head rfl (stepsTo_M3 true (b + 3 * (a / 2)) c)
+      rw [hmod] at h_drain
+      exact CollatzStepsTo.of_reachesStar h_drain h_step
+  · have h_drain : CollatzReachesStar next (.C_6 a b c) (.C_6 (a % 2) (b + 3 * (a / 2)) c) := by
+      have h_eq : a = 2 * (a / 2) + a % 2 := (Nat.div_add_mod a 2).symm
+      conv_lhs => rw [h_eq]
+      exact reaches_C6_drain (a / 2) (a % 2) b c
+    rcases c with _ | c
+    · rcases Nat.mod_two_eq_zero_or_one a with hmod | hmod
+      · have h_step : CollatzStepsTo next (.C_6 0 (b + 3 * (a / 2)) 0)
+            ((highLevelNext (.C_6 a b 0)).map toState) := by
+          dsimp [highLevelNext]
+          rw [hmod]
+          exact CollatzStepsTo.head rfl (stepsTo_M3 false (b + 3 * (a / 2) + 3) 0)
+        rw [hmod] at h_drain
+        exact CollatzStepsTo.of_reachesStar h_drain h_step
+      · have h_step : CollatzStepsTo next (.C_6 1 (b + 3 * (a / 2)) 0)
+            ((highLevelNext (.C_6 a b 0)).map toState) := by
+          dsimp [highLevelNext]
+          rw [hmod]
+          exact CollatzStepsTo.head rfl (stepsTo_M3 true (b + 3 * (a / 2) + 3) 0)
+        rw [hmod] at h_drain
+        exact CollatzStepsTo.of_reachesStar h_drain h_step
+    · rcases Nat.mod_two_eq_zero_or_one a with hmod | hmod
+      · have h_step : CollatzStepsTo next (.C_6 0 (b + 3 * (a / 2)) (c + 1))
+            ((highLevelNext (.C_6 a b (c + 1))).map toState) := by
+          dsimp [highLevelNext]
+          rw [hmod]
+          exact CollatzStepsTo.head rfl (stepsTo_M6Pos false (b + 3 * (a / 2)) c)
+        rw [hmod] at h_drain
+        exact CollatzStepsTo.of_reachesStar h_drain h_step
+      · have h_step : CollatzStepsTo next (.C_6 1 (b + 3 * (a / 2)) (c + 1))
+            ((highLevelNext (.C_6 a b (c + 1))).map toState) := by
+          dsimp [highLevelNext]
+          rw [hmod]
+          exact CollatzStepsTo.head rfl (stepsTo_M6Pos true (b + 3 * (a / 2)) c)
+        rw [hmod] at h_drain
+        exact CollatzStepsTo.of_reachesStar h_drain h_step
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

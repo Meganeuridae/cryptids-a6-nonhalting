@@ -117,7 +117,8 @@ $$
     D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
     D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
     B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
-    D(a+2, b, 0, d-2) & \text{if } d \ge 3,
+    D(a + d - 1, b, 0, 1) & \text{if } d \ge 3 \text{ and } d \text{ is odd}, \\
+    D(a + d - 2, b, 0, 2) & \text{if } d \ge 3 \text{ and } d \text{ is even},
   \end{cases} \\
   T(D(a, b, 1, d)) &= \begin{cases}
     D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\
@@ -183,7 +184,8 @@ $$
     D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
     D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
     B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
-    D(a+2, b, 0, d-2) & \text{if } d \ge 3,
+    D(a + d - 1, b, 0, 1) & \text{if } d \ge 3 \text{ and } d \text{ is odd}, \\
+    D(a + d - 2, b, 0, 2) & \text{if } d \ge 3 \text{ and } d \text{ is even},
   \end{cases} \\
   T(D(a, b, 1, d)) &= \begin{cases}
     D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\
@@ -317,7 +319,7 @@ T(J(u, v, w)) = \begin{cases}
   J(0, 0, 2v+10) & \text{if } u = 2,\ w = 1, \\
   J(2, u, 2v+5) & \text{if } u \ge 4,\ w = 1,\ u \text{ is even}, \\
   J(0, u, 2v+5) & \text{if } u \ge 3,\ w = 1,\ u \text{ is odd}, \\
-  J(u-1, v+2, w-2) & \text{if } u \ge 1,\ w \ge 2.
+  J(u - k, v + 2k, w - 2k) & \text{if } u \ge 1,\ w \ge 2 \text{ with } k = \min(u, \lfloor w/2 \rfloor).
 \end{cases}
 $$
 
@@ -333,7 +335,7 @@ Starting from $S(0, 2, 0, 0)$ (reached after 10 steps from the blank tape), the 
 
 $$
 T(S(p, k, j, c)) = \begin{cases}
-  S(p, k', j + 2, c') & \text{if } k = k' + 3,\ c = c' + 1, \\
+  S(p, k - 3m, j + 2m, c - m) & \text{if } k \ge 3,\ c \ge 1 \text{ with } m = \min(\lfloor k/3 \rfloor, c), \phantom{phantom} \\
   S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\ c = 0, \\
   S(0, \Phi(j + 2, c')) & \text{if } p = 0,\ k = 2,\ c = c' + 1, \\
   S(0, 0, 0, 2j + 5) & \text{if } p = 0,\ k = 2,\ c = 0, \\
@@ -563,7 +565,7 @@ T(E(a, b, c)) = \begin{cases}
   E(1, 0, 2a+2c+2) & \text{if } b = 1,\ 1 \le c \le 2, \\
   E(1, 2, 2a+2c) & \text{if } b = 2,\ 1 \le c \le 2, \\
   E(1, b-3, 2a+2c+4) & \text{if } b \ge 3,\ 1 \le c \le 2, \\
-  E(a+2, b-1, c-2) & \text{if } b \ge 1,\ c \ge 3.
+  E(a + 2k, b - k, c - 2k) & \text{if } b \ge 1,\ c \ge 3 \text{ with } k = \min(b, \lfloor (c-1)/2 \rfloor).
 \end{cases}
 $$
 
@@ -655,8 +657,8 @@ T(C(a, b, c)) = \begin{cases}
   C(2, 0, k + 3) & \text{if } a = 2k + 1,\ b = 0,\ c = 1, \\
   C(2, k + 3, d) & \text{if } a = 2k,\ b = 0,\ c = d + 2, \\
   C(5, k + 3, d) & \text{if } a = 2k + 1,\ b = 0,\ c = d + 2, \\
-  C(a + 3, 0, b') & \text{if } b = b' + 1,\ c = 0, \\
-  C(a + 6, b', c') & \text{if } b = b' + 1,\ c = c' + 1.
+  C(a + 6(b + 1), 0, c - (b + 1)) & \text{if } b + 1 \le c, \\
+  C(a + 6c + 3, 0, b - c) & \text{if } b + 1 > c.
 \end{cases}
 $$
 
@@ -678,7 +680,7 @@ T(D(a, b, w)) = \begin{cases}
   D(k + 1, 1, 2w - 1) & \text{if } a = 0,\ b = 2k + 2,\ 1 \le w \le 3, \\
   D(k + 1, 5, w') & \text{if } a = 0,\ b = 2k + 2,\ w = w' + 4, \\
   D(a', 1, 2k + 2w + 3) & \text{if } a = a' + 1,\ b = 2k + 1,\ w \le 1, \\
-  D(a', 2k + 5, w') & \text{if } a = a' + 1,\ b = 2k + 1,\ w = w' + 2.
+  D(a - m, 2k + 1 + 4m, w - 2m) & \text{if } a \ge 1,\ b = 2k + 1,\ w \ge 2 \text{ with } m = \min(a, \lfloor w/2 \rfloor).
 \end{cases}
 $$
 
@@ -734,7 +736,7 @@ T(D_1(a, z, w)) = \begin{cases}
   D_1(k + 1, 5, w') & \text{if } a = 0,\ z = 2k + 2,\ w = w' + 4, \\
   D_1(0, 2, 2k + 2w + 3) & \text{if } a = 1,\ z = 2k + 1,\ w \le 1, \\
   D_1(a', 3, 2k + 2w + 3) & \text{if } a = a' + 2,\ z = 2k + 1,\ w \le 1, \\
-  D_1(a', 2k + 5, w') & \text{if } a = a' + 1,\ z = 2k + 1,\ w = w' + 2.
+  D_1(a - m, 2k + 1 + 4m, w - 2m) & \text{if } a \ge 1,\ z = 2k + 1,\ w \ge 2 \text{ with } m = \min(a, \lfloor w/2 \rfloor).
 \end{cases}
 $$
 
@@ -756,7 +758,7 @@ T(P_2(a, b, c)) = \begin{cases}
   P_2(2, 0, a+4) & \text{if } b = 0 \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 0 \text{ and } c = 2, \\
   P_2(2, a+2, c-3) & \text{if } b = 0 \text{ and } c \ge 3, \\
-  P_2(a+2, b-1, c-1) & \text{if } b \ge 1 \text{ and } c \ge 1.
+  P_2(a + 2k, b - k, c - k) & \text{if } b \ge 1 \text{ and } c \ge 1 \text{ with } k = \min(b, c).
 \end{cases}
 $$
 
@@ -783,7 +785,7 @@ T(P_1(a, b, c, d)) = \begin{cases}
   F(c-1, 1, d+1) & \text{if } a = 0,\ b = 0,\ c \ge 1,\text{ and } d \ge 1, \\
   F(k+c, 1, d+1) & \text{if } a = 0,\ b = 2k+2,\text{ and } d \ge 1, \\
   P_1(0, 0, k+c+2, d-1) & \text{if } a = 0,\ b = 2k+1,\text{ and } d \ge 1, \\
-  P_1(a-1, b, c+2, d-1) & \text{if } a \ge 1 \text{ and } d \ge 1,
+  P_1(a - k, b, c + 2k, d - k) & \text{if } a \ge 1 \text{ and } d \ge 1 \text{ with } k = \min(a, d),
 \end{cases}
 $$
 

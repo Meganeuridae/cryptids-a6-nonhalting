@@ -985,7 +985,9 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .S_def 2 j 0 => some (.S_def 0 0 (2 * j + 5))
   | .S_def 2 j (c + 1) => evalC .S_def (j + 2) c
   | .S_def (k + 3) j 0 => some (.S_def (k + 1) 0 (2 * j + 5))
-  | .S_def (k + 3) j (c + 1) => some (.S_def k (j + 2) c)
+  | .S_def (k + 3) j (c + 1) =>
+    let m := min ((k + 3) / 3) (c + 1)
+    some (.S_def (k + 3 - 3 * m) (j + 2 * m) (c + 1 - m))
   | .S_hat 0 0 c => some (.S_def 2 0 (c + 2))
   | .S_hat 0 (j + 1) c => some (.S_def 6 (j + 1) c)
   | .S_hat 1 j 0 => some (.S_def 1 1 (2 * j + 5))
@@ -993,7 +995,91 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .S_hat 2 j 0 => some (.S_hat 0 0 (2 * j + 5))
   | .S_hat 2 j (c + 1) => some (.S_def 1 (j + 3) c)
   | .S_hat (k + 3) j 0 => some (.S_hat (k + 1) 0 (2 * j + 5))
-  | .S_hat (k + 3) j (c + 1) => some (.S_hat k (j + 2) c)
+  | .S_hat (k + 3) j (c + 1) =>
+    let m := min ((k + 3) / 3) (c + 1)
+    some (.S_hat (k + 3 - 3 * m) (j + 2 * m) (c + 1 - m))
+
+private theorem reaches_S_def_diag (m : ℕ) (k j c : ℕ) :
+    CollatzReachesStar next
+      (.S_def (k + 3 * m) j (c + m))
+      (.S_def k (j + 2 * m) c) := by
+  induction m generalizing j with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h_next : next (.S_def (k + 3 * (m + 1)) j (c + (m + 1))) =
+        some (.S_def (k + 3 * m) (j + 2) (c + m)) := by
+      have h1 : k + 3 * (m + 1) = (k + 3 * m) + 3 := by omega
+      have h2 : c + (m + 1) = (c + m) + 1 := by omega
+      rw [h1, h2]
+      simp [next]
+    have ih' := ih (j + 2)
+    have hj : j + 2 + 2 * m = j + 2 * (m + 1) := by omega
+    rw [hj] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_S_def_drain (k j c : ℕ) :
+    CollatzStepsTo next (.S_def (k + 3) j (c + 1))
+      (some (.S_def (k + 3 - 3 * min ((k + 3) / 3) (c + 1))
+        (j + 2 * min ((k + 3) / 3) (c + 1))
+        (c + 1 - min ((k + 3) / 3) (c + 1)))) := by
+  let m := min ((k + 3) / 3) (c + 1)
+  have hm_pos : 0 < m := by
+    dsimp [m]
+    have : 0 < (k + 3) / 3 := by omega
+    have : 0 < c + 1 := Nat.succ_pos c
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
+  have h_head : next (.S_def (k + 3) j (c + 1)) =
+      some (.S_def k (j + 2) c) := by simp [next]
+  have h_star := reaches_S_def_diag m' (k + 3 - 3 * m) (j + 2) (c + 1 - m)
+  have hk : k + 3 - 3 * m + 3 * m' = k := by omega
+  have hj : j + 2 + 2 * m' = j + 2 * m := by omega
+  have hc : c + 1 - m + m' = c := by omega
+  rw [hk, hj, hc] at h_star
+  exact CollatzReachesPlus.head h_head h_star
+
+private theorem reaches_S_hat_diag (m : ℕ) (k j c : ℕ) :
+    CollatzReachesStar next
+      (.S_hat (k + 3 * m) j (c + m))
+      (.S_hat k (j + 2 * m) c) := by
+  induction m generalizing j with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h_next : next (.S_hat (k + 3 * (m + 1)) j (c + (m + 1))) =
+        some (.S_hat (k + 3 * m) (j + 2) (c + m)) := by
+      have h1 : k + 3 * (m + 1) = (k + 3 * m) + 3 := by omega
+      have h2 : c + (m + 1) = (c + m) + 1 := by omega
+      rw [h1, h2]
+      simp [next]
+    have ih' := ih (j + 2)
+    have hj : j + 2 + 2 * m = j + 2 * (m + 1) := by omega
+    rw [hj] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_S_hat_drain (k j c : ℕ) :
+    CollatzStepsTo next (.S_hat (k + 3) j (c + 1))
+      (some (.S_hat (k + 3 - 3 * min ((k + 3) / 3) (c + 1))
+        (j + 2 * min ((k + 3) / 3) (c + 1))
+        (c + 1 - min ((k + 3) / 3) (c + 1)))) := by
+  let m := min ((k + 3) / 3) (c + 1)
+  have hm_pos : 0 < m := by
+    dsimp [m]
+    have : 0 < (k + 3) / 3 := by omega
+    have : 0 < c + 1 := Nat.succ_pos c
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
+  have h_head : next (.S_hat (k + 3) j (c + 1)) =
+      some (.S_hat k (j + 2) c) := by simp [next]
+  have h_star := reaches_S_hat_diag m' (k + 3 - 3 * m) (j + 2) (c + 1 - m)
+  have hk : k + 3 - 3 * m + 3 * m' = k := by omega
+  have hj : j + 2 + 2 * m' = j + 2 * m := by omega
+  have hc : c + 1 - m + m' = c := by omega
+  rw [hk, hj, hc] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem stepsTo_C_def (a b : ℕ) :
     CollatzStepsTo next (.C_def a b) ((evalC .S_def a b).map toState) := by
@@ -1034,14 +1120,30 @@ theorem is_valid_highLevel_acceleration :
     · rcases c with _ | c
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.head rfl (stepsTo_C_def (j + 2) c)
-    · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
+    · rcases c with _ | c
+      · exact CollatzStepsTo.of_eq rfl
+      · have h_eq : Option.map toState
+              (highLevelNext (HighLevelState.S_def (k + 3) j (c + 1))) =
+            some (.S_def (k + 3 - 3 * min ((k + 3) / 3) (c + 1))
+              (j + 2 * min ((k + 3) / 3) (c + 1))
+              (c + 1 - min ((k + 3) / 3) (c + 1))) := rfl
+        rw [h_eq]
+        exact reaches_S_def_drain k j c
   · rcases k with _ | _ | _ | k
     · rcases j with _ | j <;> exact CollatzStepsTo.of_eq rfl
     · rcases c with _ | c
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.head rfl (stepsTo_C_ones3 (j + 1) c)
     · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
-    · rcases c with _ | c <;> exact CollatzStepsTo.of_eq rfl
+    · rcases c with _ | c
+      · exact CollatzStepsTo.of_eq rfl
+      · have h_eq : Option.map toState
+              (highLevelNext (HighLevelState.S_hat (k + 3) j (c + 1))) =
+            some (.S_hat (k + 3 - 3 * min ((k + 3) / 3) (c + 1))
+              (j + 2 * min ((k + 3) / 3) (c + 1))
+              (c + 1 - min ((k + 3) / 3) (c + 1))) := rfl
+        rw [h_eq]
+        exact reaches_S_hat_drain k j c
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

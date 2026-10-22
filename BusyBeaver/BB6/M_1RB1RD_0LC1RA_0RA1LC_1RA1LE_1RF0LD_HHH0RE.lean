@@ -933,7 +933,50 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .D_succ_odd (a + 1) k 0 => some (.D_succ_odd a 0 (2 * k + 3))
   | .D_succ_odd (a + 1) k 1 => some (.D_succ_odd a 0 (2 * k + 5))
   | .D_succ_odd 0 k (w + 2) => some (.D_0_odd (k + 2) w)
-  | .D_succ_odd (a + 1) k (w + 2) => some (.D_succ_odd a (k + 2) w)
+  | .D_succ_odd (a + 1) k (w + 2) =>
+    let m := min (a + 1) ((w + 2) / 2)
+    some (.D_succ_odd (a + 1 - m) (k + 2 * m) (w + 2 - 2 * m))
+
+private theorem reaches_D_succ_odd_diag (m : ℕ) (a k w : ℕ) :
+    CollatzReachesStar next
+      (.D_succ_odd (a + m) k (w + 2 * m))
+      (.D_succ_odd a (k + 2 * m) w) := by
+  induction m generalizing k with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h_next : next (.D_succ_odd (a + (m + 1)) k (w + 2 * (m + 1))) =
+        some (.D_succ_odd (a + m) (k + 2) (w + 2 * m)) := by
+      have h1 : a + (m + 1) = (a + m) + 1 := by omega
+      have h2 : w + 2 * (m + 1) = (w + 2 * m) + 2 := by omega
+      rw [h1, h2]
+      simp [next]
+    have ih' := ih (k + 2)
+    have hk : k + 2 + 2 * m = k + 2 * (m + 1) := by omega
+    rw [hk] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_D_succ_odd_drain (a k w : ℕ) :
+    CollatzStepsTo next (.D_succ_odd (a + 1) k (w + 2))
+      (some (.D_succ_odd (a + 1 - min (a + 1) ((w + 2) / 2))
+        (k + 2 * min (a + 1) ((w + 2) / 2))
+        (w + 2 - 2 * min (a + 1) ((w + 2) / 2)))) := by
+  let m := min (a + 1) ((w + 2) / 2)
+  have hm_pos : 0 < m := by
+    dsimp [m]
+    have : 0 < a + 1 := Nat.succ_pos a
+    have : 0 < (w + 2) / 2 := by omega
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
+  have h_head : next (.D_succ_odd (a + 1) k (w + 2)) =
+      some (.D_succ_odd a (k + 2) w) := by simp [next]
+  have h_star := reaches_D_succ_odd_diag m' (a + 1 - m) (k + 2) (w + 2 - 2 * m)
+  have ha : a + 1 - m + m' = a := by omega
+  have hk : k + 2 + 2 * m' = k + 2 * m := by omega
+  have hw : w + 2 - 2 * m + 2 * m' = w := by omega
+  rw [ha, hk, hw] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 /-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
 of `target`. -/
@@ -958,7 +1001,14 @@ theorem is_valid_highLevel_acceleration :
     · exact CollatzStepsTo.of_eq rfl
     · exact CollatzStepsTo.head (s₂ := .P_2 a (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
     · exact CollatzStepsTo.head (s₂ := .P_2 a (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
-    · exact CollatzStepsTo.of_eq rfl
+    · have h_eq : Option.map toState
+            (highLevelNext (HighLevelState.D_succ_odd (a + 1) k (w + 2))) =
+          some (.D_succ_odd (a + 1 - min (a + 1) ((w + 2) / 2))
+            (k + 2 * min (a + 1) ((w + 2) / 2))
+            (w + 2 - 2 * min (a + 1) ((w + 2) / 2))) := by
+        simp [highLevelNext, toState]
+      rw [h_eq]
+      exact reaches_D_succ_odd_drain a k w
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/
