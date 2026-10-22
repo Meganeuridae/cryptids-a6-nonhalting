@@ -13,20 +13,20 @@ public import BusyBeaver.Bridge
 We define the configuration for $a, k, d, c \ge 0$:
 
 $$
-A(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
+C(a, k, d, c) := 0^\infty \ (10)^a \ (11)^k \ \mathrm{C}{>} \ (11)^d \ (10)^c \ 1111 \ 0^\infty.
 $$
 
-Starting from $A(0, 0, 0, 1)$ (reached after 27 steps from the blank tape), the machine follows the
+Starting from $C(0, 0, 0, 1)$ (reached after 27 steps from the blank tape), the machine follows the
 map $T$:
 
 $$
-T(A(a, k, d, c)) = \begin{cases}
-  A(a, k - c, 0, d + 2c + 1) & \text{if } k \ge 1,\ k > c, \\
-  A(a, 0, d + 2k, c - k) & \text{if } k \ge 1,\ k \le c, \\
-  A(a', d + 1, 2, c') & \text{if } a = a' + 1,\ k = 0,\ c = c' + 2, \\
-  A(a', d + 2, 0, 1) & \text{if } a = a' + 1,\ k = 0,\ c = 1, \\
-  A(a', d + 2, 0, 0) & \text{if } a = a' + 1,\ k = 0,\ c = 0, \\
-  A(d + 1, 0, 0, c' + 1) & \text{if } a = 0,\ k = 0,\ c = c' + 1, \\
+T(C(a, k, d, c)) = \begin{cases}
+  C(a, k - c, 0, d + 2c + 1) & \text{if } k \ge 1,\ k > c, \\
+  C(a, 0, d + 2k, c - k) & \text{if } k \ge 1,\ k \le c, \\
+  C(a', d + 1, 2, c') & \text{if } a = a' + 1,\ k = 0,\ c = c' + 2, \\
+  C(a', d + 2, 0, 1) & \text{if } a = a' + 1,\ k = 0,\ c = 1, \\
+  C(a', d + 2, 0, 0) & \text{if } a = a' + 1,\ k = 0,\ c = 0, \\
+  C(d + 1, 0, 0, c' + 1) & \text{if } a = 0,\ k = 0,\ c = c' + 1, \\
   \text{Halt} & \text{if } a = 0,\ k = 0,\ c = 0.
 \end{cases}
 $$

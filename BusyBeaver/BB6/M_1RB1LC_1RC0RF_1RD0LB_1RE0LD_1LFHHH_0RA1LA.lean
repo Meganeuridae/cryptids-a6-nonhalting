@@ -41,49 +41,58 @@ $$
     R_2(31q + 26) & \text{if } n \ge 1 \text{ and } r = 3, \\
     R_1(31q + 44) & \text{if } n \ge 1 \text{ and } r = 4,
   \end{cases} \\
-  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad T(S_6(1)) = R_2(23),
+  T(Q(0)) &= R_1(6), \quad T(S_4(0)) = R_1(10), \quad T(S_6(0)) = R_1(9), \quad
+    T(S_6(1)) = R_2(23), \\
+  T(Q(b+1)) &= \Phi_Q(2, b, 3), \quad T(S_4(b+1)) = \Phi_{S_4}(2, b, 3), \quad
+    T(S_6(b+2)) = \Phi_{S_6}(2, b, 3),
 \end{aligned}
 $$
 
-and for $H(n) \in \lbrace Q(n), S_4(n), S_6(n) \rbrace$ with $b_0 = n - \delta_H \ge 0$
-($\delta_Q = \delta_{S_4} = 1$, $\delta_{S_6} = 2$):
-
-$$
-T(H(n)) = \begin{cases}
-  E_H(4 - b_0,\ 25) & \text{if } b_0 \le 3, \\
-  \Phi_H(b_0 - 4,\ 25) & \text{if } b_0 \ge 4,
-\end{cases}
-$$
-
-where for $\lfloor (k - 1)/2 \rfloor = 5q + r$ ($r \in \lbrace 0, 1, 2, 3, 4 \rbrace$) and
-$(c_r, \Delta b_r) = ((8, 2), (18, 4), (30, 5), (50, 8), (38, 3))$:
-
-$$
-\Phi_H(b, k) = \begin{cases}
-  E_H(0,\ k) & \text{if } b = 0, \\
-  E_H(7,\ k) & \text{if } b = 1, \\
-  \Phi_H(b - \Delta b_r,\ 31q + c_r) & \text{if } b \ge \Delta b_r, \\
-  E_H(\Delta b_r - b,\ 31q + c_r) & \text{if } 2 \le b < \Delta b_r,
-\end{cases}
-$$
-
-with terminal exit table $E_H(d, m)$ ($d \in \lbrace 0, \dots, 7 \rbrace$) and tail maps
-$\tau_3, \tau_4, \tau_5$ (for $w = 5p + s$ with $s \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+where for each $H \in \lbrace Q, S_4, S_6 \rbrace$, the scan transducer $\Phi_H(a, b, i)$ with
+prefix index $i \in \lbrace 0, 1, 2, 3, 4, 5, 6 \rbrace$ (corresponding to `[0]`,
+`[0,0,1,0,1,0]`, `[0,0,1,0]`, `[0,0,1,0,1,1,0]`, `[0,0]`, `[0,1,0]`, `[]`) is defined recursively
+on $b \ge 0$ (writing $\lfloor (a + 3)/2 \rfloor = 5q + r$ with
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$) by:
 
 $$
 \begin{aligned}
-  E_Q(d, m) &= \bigl(R_1(m),\ S_6(m-4),\ S_6(m-6),\ R_1(m-10),\ S_6(m-15),\ R_1(m-19),\
-    R_2(m-24),\ S_6(m-2)\bigr)_d, \\
-  E_{S_4}(d, m) &= \bigl(R_2(m+3),\ R_1(m-1),\ Q(m-2),\ R_1(m-3),\ S_4(m-14),\ R_1(m-15),\
-    R_1(m-19),\ \tau_5(\lfloor(m-1)/2\rfloor)\bigr)_d, \\
-  E_{S_6}(d, m) &= \bigl(S_4(m+5),\ R_1(m+8),\ R_1(m+3),\ R_2(m-3),\ \text{Halt},\
-    \tau_3(\lfloor(m-20)/2\rfloor),\ R_1(m-18),\ \tau_4(\lfloor(m-1)/2\rfloor)\bigr)_d, \\
-  \tau_3(5p + s) &= \bigl(R_1(31p+10),\ Q(31p+16),\ R_2(31p+23),\ \text{Halt},\
-    R_2(31p+37)\bigr)_s, \\
-  \tau_4(5p + s) &= \bigl(R_1(31p+16),\ R_2(31p+15),\ R_1(31p+25),\ S_6(31p+28),\
-    R_2(31p+41)\bigr)_s, \\
-  \tau_5(5p + s) &= \bigl(R_1(31p+12),\ R_1(31p+15),\ R_2(31p+26),\ Q(31p+34),\
-    R_1(31p+45)\bigr)_s.
+  \Phi_H(a, 0, i) &= \bigl(E_H^{(0)}(a)\bigr)_i, \\
+  \Phi_H(a, 1, 0) &= E_H^{(1)}(a), \quad \Phi_H(a, 1, 2) = E_H^{(2)}(a), \\
+  \Phi_H(a, b+2, 0) &= \Phi_H(31q + c_r, b, j_r), \quad
+    (c_r, j_r) = \bigl((4, 0), (7, 5), (16, 4), (22, 2), (28, 1)\bigr)_r, \\
+  \Phi_H(a, b+2, 2) &= \Phi_H(a + 5, b, 3), \\
+  \Phi_H(a, b+1, i) &= \begin{cases}
+    \Phi_H(a + 6, b, 0) & \text{if } i = 1, \\
+    \Phi_H(a + 9, b, 4) & \text{if } i = 3, \\
+    \Phi_H(a + 3, b, 5) & \text{if } i = 4, \\
+    \Phi_H(a + 4, b, 6) & \text{if } i = 5, \\
+    \Phi_H(a + 3, b, 0) & \text{if } i = 6,
+  \end{cases}
+\end{aligned}
+$$
+
+with base-case tables $E_H^{(0)}(a)$ (for $i = 0, \dots, 6$), $E_H^{(1)}(a)$, $E_H^{(2)}(a)$ and
+tail maps $\tau_3(w), \tau_4(w), \tau_5(w)$ (writing $w = 5q + r$ with
+$r \in \lbrace 0, 1, 2, 3, 4 \rbrace$):
+
+$$
+\begin{aligned}
+  E_Q^{(0)}(a) &= \bigl(R_1(a+4),\ S_6(a+6),\ R_2(a+4),\ S_6(a+8),\ R_1(a+4),\ S_6(a+5),\
+    S_6(a+3)\bigr), \\
+  E_{S_4}^{(0)}(a) &= \bigl(R_2(a+7),\ R_1(a+9),\ R_1(a+9),\ S_4(a+9),\ R_1(a+11),\ Q(a+9),\
+    R_1(a+6)\bigr), \\
+  E_{S_6}^{(0)}(a) &= \bigl(S_4(a+9),\ R_1(a+18),\ R_1(a+10),\ \text{Halt},\ R_2(a+11),\ R_1(a+14),\
+    R_1(a+15)\bigr), \\
+  E_Q^{(1)}(a) &= S_6(a+2), \quad E_Q^{(2)}(a) = R_1(a+9), \\
+  E_{S_4}^{(1)}(a) &= \tau_5(\lfloor (a+1)/2 \rfloor + 1), \quad E_{S_4}^{(2)}(a) = R_1(a+13), \\
+  E_{S_6}^{(1)}(a) &= \tau_4(\lfloor (a+1)/2 \rfloor + 1), \quad
+    E_{S_6}^{(2)}(a) = \tau_3(\lfloor (a+8)/2 \rfloor), \\
+  \tau_3(5q + r) &= \bigl(R_1(31q+10),\ Q(31q+16),\ R_2(31q+23),\ \text{Halt},\
+    R_2(31q+37)\bigr)_r, \\
+  \tau_4(5q + r) &= \bigl(R_1(31q+16),\ R_2(31q+15),\ R_1(31q+25),\ S_6(31q+28),\
+    R_2(31q+41)\bigr)_r, \\
+  \tau_5(5q + r) &= \bigl(R_1(31q+12),\ R_1(31q+15),\ R_2(31q+26),\ Q(31q+34),\
+    R_1(31q+45)\bigr)_r.
 \end{aligned}
 $$
 -/

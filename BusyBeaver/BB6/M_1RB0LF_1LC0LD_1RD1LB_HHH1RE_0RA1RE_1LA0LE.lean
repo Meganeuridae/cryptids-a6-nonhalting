@@ -13,7 +13,7 @@ public import BusyBeaver.Bridge
 We define the configuration for $b, k, c \ge 0$:
 
 $$
-A(b, k, c) := 0^\infty \ 1^b \ (10)^k \ \mathrm{F}{>} \ 00 \ 1^c \ 0^\infty.
+A(b, k, c) := 0^\infty \ 1^b \ (01)^k \ \mathrm{F}{>} \ 00 \ 1^c \ 0^\infty.
 $$
 
 Starting from $A(5, 0, 2)$ (reached after 33 steps from the blank tape), the machine follows the
@@ -156,7 +156,7 @@ private theorem cfg_A_eq_F_R (b k c : Nat) :
     cfg_A b k c = F_R b k (([1] : List (Fin 2)) ^ c +> default) := rfl
 
 /-- Canonical tape pattern
-$A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
+$A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
 def pat_A : TapePattern (Fin 2) (Fin 6) :=
   { left  := .rep [1, 0] 1 (.rep [1] 0 .default)
     head  := some F
@@ -1067,10 +1067,10 @@ theorem has_collatz_reduction : HasCollatzReduction target := ⟨ps, is_closed_p
 
 /-- Symbolic configuration state space for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. -/
 inductive State
-  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
   /-- $Odd(p, k, n, m, c) :=
-  0^\infty\,1^{2p+1}\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
+  0^\infty\,1^{2p+1}\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
   | Odd (p k n m c : ℕ)
   /-- $ETail(k, m, c) := 0^\infty\,1^{2k+9}\,\mathrm{E}{>}\,(01)^m\,1^c\,0^\infty$. -/
   | ETail (k m c : ℕ)
@@ -1165,10 +1165,10 @@ theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start :=
 /-! ## High-Level Collatz-Like Acceleration -/
 
 /-- Single-family state space
-$A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$
+$A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$
 for the high-level Collatz-like acceleration. -/
 inductive HighLevelState where
-  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
 
 /-- Initial state $A(5, 0, 2)$ for the high-level Collatz-like acceleration. -/

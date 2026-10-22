@@ -1812,10 +1812,10 @@ def ETail_cfg (k m c : Nat) : Cfg (Fin 2) (Fin 6) :=
 
 /-- Symbolic configuration state space for `1RB0LF_1LC0LD_1RD1LB_---1RE_0RA1RE_1LA0LE`. -/
 inductive State
-  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
   /-- $Odd(p, k, n, m, c) :=
-  0^\infty\,1^{2p+1}\,(10)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
+  0^\infty\,1^{2p+1}\,(01)^k\,\mathrm{F}{>}\,0\,0\,1^{2n}\,(01)^{m+1}\,1^c\,0^\infty$. -/
   | Odd (p k n m c : ℕ)
   /-- $ETail(k, m, c) := 0^\infty\,1^{2k+9}\,\mathrm{E}{>}\,(01)^m\,1^c\,0^\infty$. -/
   | ETail (k m c : ℕ)
@@ -1870,7 +1870,7 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
-  /-- $A(b, k, c) := 0^\infty\,1^b\,(10)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^b\,(01)^k\,\mathrm{F}{>}\,00\,1^c\,0^\infty$. -/
   | A (b k c : ℕ)
 
 def highLevelStart : HighLevelState := .A 5 0 2
@@ -2568,7 +2568,7 @@ theorem is_valid_acceleration : IsValidAcceleration target start encode next := 
 
 theorem isHalt_iff_acceleration : IsHalt target ↔ CollatzHalts next start := by sorry
 inductive HighLevelState
-  /-- $A'(b, k, c) := 0^\infty\,1^c\,00\,{<}\mathrm{A}\,(01)^k\,1^b\,0^\infty$. -/
+  /-- $A(b, k, c) := 0^\infty\,1^c\,0\,\mathrm{A}{>}\,0\,(10)^k\,1^b\,0^\infty$. -/
   | A (b k c : ℕ)
 
 def highLevelStart : HighLevelState := .A 4 0 3
