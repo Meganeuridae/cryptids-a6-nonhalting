@@ -30,7 +30,8 @@ $$
     D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
     D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
     B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
-    D(a+2, b, 0, d-2) & \text{if } d \ge 3,
+    D(a+d-1, b, 0, 1) & \text{if } d \ge 3 \text{ and } d \text{ is odd}, \\
+    D(a+d-2, b, 0, 2) & \text{if } d \ge 3 \text{ and } d \text{ is even},
   \end{cases} \\
   T(D(a, b, 1, d)) &= \begin{cases}
     D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\
@@ -1201,7 +1202,46 @@ def highLevelNext : HighLevelState → Option HighLevelState
       fun b => some (.D1 (a + 2) b 3)
   | .D0 a b 2 =>
     Nat.casesOn a (some (.D1 1 b 2)) fun a => evalB a 0 (b + 1) 0
-  | .D0 a b (d + 3) => some (.D0 (a + 2) b (d + 1))
+  | .D0 a b (d + 3) =>
+    if d % 2 = 0 then some (.D0 (a + d + 2) b 1)
+    else some (.D0 (a + d + 1) b 2)
+
+private theorem reaches_D0_step : ∀ (k : ℕ) (a b w : ℕ),
+    1 ≤ w → CollatzReachesStar next (.D0 a b (2 * k + w)) (.D0 (a + 2 * k) b w)
+  | 0, a, b, w, _ => by
+    simp only [Nat.mul_zero, Nat.zero_add]
+    exact CollatzReachesStar.refl next _
+  | k + 1, a, b, w, hw => by
+    have h_step : next (.D0 a b (2 * (k + 1) + w)) = some (.D0 (a + 2) b (2 * k + w)) := by
+      have h1 : 2 * (k + 1) + w = (2 * k + w - 1) + 3 := by omega
+      have h2 : (2 * k + w - 1) + 1 = 2 * k + w := by omega
+      rw [h1]
+      have hn : next (.D0 a b ((2 * k + w - 1) + 3)) =
+          some (.D0 (a + 2) b ((2 * k + w - 1) + 1)) := by
+        simp [next]
+      rw [h2] at hn
+      exact hn
+    have ih := reaches_D0_step k (a + 2) b w hw
+    have ha : a + 2 + 2 * k = a + 2 * (k + 1) := by omega
+    rw [ha] at ih
+    exact CollatzReachesStar.head h_step ih
+
+private theorem reaches_D0_drain (a b d : ℕ) :
+    CollatzStepsTo next (.D0 a b (d + 3))
+      (if d % 2 = 0 then some (.D0 (a + d + 2) b 1)
+       else some (.D0 (a + d + 1) b 2)) := by
+  have h_head : next (.D0 a b (d + 3)) = some (.D0 (a + 2) b (d + 1)) := by simp [next]
+  split_ifs with hd
+  · have h_star := reaches_D0_step (d / 2) (a + 2) b 1 (by omega)
+    have hd_eq : 2 * (d / 2) + 1 = d + 1 := by omega
+    have ha_eq : a + 2 + 2 * (d / 2) = a + d + 2 := by omega
+    rw [hd_eq, ha_eq] at h_star
+    exact CollatzReachesPlus.head h_head h_star
+  · have h_star := reaches_D0_step (d / 2) (a + 2) b 2 (by omega)
+    have hd_eq : 2 * (d / 2) + 2 = d + 1 := by omega
+    have ha_eq : a + 2 + 2 * (d / 2) = a + d + 1 := by omega
+    rw [hd_eq, ha_eq] at h_star
+    exact CollatzReachesPlus.head h_head h_star
 
 private theorem reaches_B : ∀ (b a k d : ℕ),
     CollatzReachesStar next (.B a k b d) (.B a (k + b) 0 (d + 2 * b))
@@ -1286,7 +1326,13 @@ theorem is_valid_highLevel_acceleration :
     · rcases a with _ | a
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.head rfl (stepsTo_B a 0 (b + 1) 0)
-    · exact CollatzStepsTo.of_eq rfl
+    · have h_eq : Option.map toState (highLevelNext (HighLevelState.D0 a b (d + 3))) =
+          (if d % 2 = 0 then some (.D0 (a + d + 2) b 1)
+           else some (.D0 (a + d + 1) b 2)) := by
+        dsimp [highLevelNext]
+        split_ifs <;> rfl
+      rw [h_eq]
+      exact reaches_D0_drain a b d
   · rcases a with _ | a
     · rcases b with _ | b <;> exact CollatzStepsTo.of_eq rfl
     · exact CollatzStepsTo.head rfl (stepsTo_B a 0 b d)

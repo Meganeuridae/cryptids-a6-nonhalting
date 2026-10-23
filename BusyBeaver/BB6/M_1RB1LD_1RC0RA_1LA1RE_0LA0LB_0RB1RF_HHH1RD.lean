@@ -21,7 +21,7 @@ Starting from $C(0, 0, 0)$ (the blank tape, 0 steps), the machine follows the ma
 $$
 T(C(a, b, d)) = \begin{cases}
   C(a+1, 0, 2b+2) & \text{if } d = 0, \\
-  C(a-3, b+2, d-1) & \text{if } a \ge 3,\ d \ge 1, \\
+  C(a-3m, b+2m, d-m) & \text{if } a \ge 3,\ d \ge 1, \\
   C(0, b+1, d-1) & \text{if } a = 2,\ d \ge 1, \\
   C(1, b+3, d-1) & \text{if } a = 1,\ b \ge 1,\ d \ge 1, \\
   C(0, 0, d+2) & \text{if } a = 1,\ b = 0,\ d \ge 1, \\
@@ -31,9 +31,11 @@ T(C(a, b, d)) = \begin{cases}
   \text{Halt} & \text{if } a = 0,\ d = b+2, \\
   C(3b+2, 0, 6) & \text{if } a = 0,\ d = b+3, \\
   C(3b+4, 0, 4) & \text{if } a = 0,\ d = b+4, \\
-  C(3b+3, 2, d-b-5) & \text{if } a = 0,\ d \ge b+5.
+  C(3b+3, 2, d-b-5) & \text{if } a = 0,\ d \ge b+5,
 \end{cases}
 $$
+
+where $m = \min(\lfloor a/3 \rfloor, d)$.
 -/
 
 @[expose] public section
@@ -1260,7 +1262,9 @@ def highLevelEncode (s : HighLevelState) : Cfg (Fin 2) (Fin 6) :=
 $(01)^c$ shift transitions. -/
 def highLevelNext : HighLevelState → Option HighLevelState
   | .C a b 0 => some (.C (a + 1) 0 (2 * b + 2))
-  | .C (a + 3) b (d + 1) => some (.C a (b + 2) d)
+  | .C (a + 3) b (d + 1) =>
+    let k := min ((a + 3) / 3) (d + 1)
+    some (.C (a + 3 - 3 * k) (b + 2 * k) (d + 1 - k))
   | .C 2 b (d + 1) => some (.C 0 (b + 1) d)
   | .C 1 (b + 1) (d + 1) => some (.C 1 (b + 3) d)
   | .C 1 0 (d + 1) => some (.C 0 0 (d + 3))
@@ -1272,6 +1276,43 @@ def highLevelNext : HighLevelState → Option HighLevelState
     else if d = b + 1 then some (.C (3 * b + 2) 0 6)
     else if d = b + 2 then some (.C (3 * b + 4) 0 4)
     else some (.C (3 * b + 3) 2 (d - b - 3))
+
+private theorem reaches_A_diag (k : ℕ) (a b d : ℕ) :
+    CollatzReachesStar next (.A (a + 3 * k) b 0 (d + k)) (.A a (b + 2 * k) 0 d) := by
+  induction k generalizing b with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.A (a + 3 * (k + 1)) b 0 (d + (k + 1))) =
+        some (.A (a + 3 * k) (b + 2) 0 (d + k)) := by
+      have h1 : a + 3 * (k + 1) = (a + 3 * k) + 3 := by omega
+      have h2 : d + (k + 1) = (d + k) + 1 := by omega
+      rw [h1, h2]
+      rfl
+    have ih' := ih (b + 2)
+    have hb : b + 2 + 2 * k = b + 2 * (k + 1) := by omega
+    rw [hb] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_C_drain (a b d : ℕ) :
+    let k := min ((a + 3) / 3) (d + 1)
+    CollatzStepsTo next (.A (a + 3) b 0 (d + 1))
+      (some (.A (a + 3 - 3 * k) (b + 2 * k) 0 (d + 1 - k))) := by
+  intro k
+  have hk_pos : 0 < k := by
+    dsimp [k]
+    have : 0 < (a + 3) / 3 := by omega
+    have : 0 < d + 1 := Nat.succ_pos d
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m, hm⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hk_pos)
+  have h_head : next (.A (a + 3) b 0 (d + 1)) = some (.A a (b + 2) 0 d) := rfl
+  have h_star := reaches_A_diag m (a + 3 - 3 * k) (b + 2) (d + 1 - k)
+  have ha : a + 3 - 3 * k + 3 * m = a := by omega
+  have hd : d + 1 - k + m = d := by omega
+  have hb : b + 2 + 2 * m = b + 2 * k := by omega
+  rw [ha, hd, hb] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem stepsTo_drain_c : ∀ (c a b d : ℕ),
     CollatzStepsTo next (.A a b (c + 1) d) (some (.A a (b + c + 1) 0 d))
@@ -1325,7 +1366,7 @@ theorem is_valid_highLevel_acceleration :
     · have h1 := stepsTo_drain_c b 0 0 d
       rw [Nat.zero_add] at h1
       exact CollatzStepsTo.head rfl h1
-    · exact CollatzStepsTo.of_eq rfl
+    · exact reaches_C_drain a b d
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

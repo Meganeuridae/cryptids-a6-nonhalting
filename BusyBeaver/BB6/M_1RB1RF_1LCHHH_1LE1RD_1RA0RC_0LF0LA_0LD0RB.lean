@@ -28,9 +28,11 @@ T(P_2(a, b, c)) = \begin{cases}
   P_2(2, 0, a+4) & \text{if } b = 0 \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 0 \text{ and } c = 2, \\
   P_2(2, a+2, c-3) & \text{if } b = 0 \text{ and } c \ge 3, \\
-  P_2(a+2, b-1, c-1) & \text{if } b \ge 1 \text{ and } c \ge 1.
+  P_2(a+2m, b-m, c-m) & \text{if } b \ge 1 \text{ and } c \ge 1,
 \end{cases}
 $$
+
+where $m = \min(b, c)$.
 -/
 
 @[expose] public section
@@ -749,7 +751,47 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .P_2 a 0 1 => some (.P_2 2 0 (a + 4))
   | .P_2 _ 0 2 => none
   | .P_2 a 0 (c + 3) => some (.P_2 2 (a + 2) c)
-  | .P_2 a (b + 1) (c + 1) => some (.P_2 (a + 2) b c)
+  | .P_2 a (b + 1) (c + 1) =>
+    let k := min (b + 1) (c + 1)
+    some (.P_2 (a + 2 * k) (b + 1 - k) (c + 1 - k))
+
+private theorem reaches_P2_diag (k : ℕ) (a b c : ℕ) :
+    CollatzReachesStar next (.P_2 a (b + k) (c + k)) (.P_2 (a + 2 * k) b c) := by
+  induction k generalizing a with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.P_2 a (b + (k + 1)) (c + (k + 1))) =
+        some (.P_2 (a + 2) (b + k) (c + k)) := by
+      have h1 : b + (k + 1) = (b + k) + 1 := by omega
+      have h2 : c + (k + 1) = (c + k) + 1 := by omega
+      rw [h1, h2]
+      simp [next]
+    have ih' := ih (a + 2)
+    have ha : a + 2 + 2 * k = a + 2 * (k + 1) := by omega
+    rw [ha] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_P2_drain (a b c : ℕ) :
+    CollatzStepsTo next (.P_2 a (b + 1) (c + 1))
+      (some (.P_2 (a + 2 * min (b + 1) (c + 1))
+        (b + 1 - min (b + 1) (c + 1))
+        (c + 1 - min (b + 1) (c + 1)))) := by
+  let k := min (b + 1) (c + 1)
+  have hk_pos : 0 < k := by
+    dsimp [k]
+    have : 0 < b + 1 := Nat.succ_pos b
+    have : 0 < c + 1 := Nat.succ_pos c
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m, hm⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hk_pos)
+  have h_head : next (.P_2 a (b + 1) (c + 1)) = some (.P_2 (a + 2) b c) := by simp [next]
+  have h_star := reaches_P2_diag m (a + 2) (b + 1 - k) (c + 1 - k)
+  have hb : b + 1 - k + m = b := by omega
+  have hc : c + 1 - k + m = c := by omega
+  have ha : a + 2 + 2 * m = a + 2 * k := by omega
+  rw [hb, hc, ha] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem next_P1_succ (a b c : ℕ) :
     next (.P_1 a (b + 1) (c + 1)) = some (.P_1 (a + 2) b c) := by
@@ -857,7 +899,13 @@ theorem is_valid_highLevel_acceleration :
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.of_eq rfl
-    · exact CollatzStepsTo.of_eq (by simp [next, toState, highLevelNext])
+    · have h_eq : highLevelNext (.P_2 a (b + 1) (c + 1)) =
+          some (.P_2 (a + 2 * min (b + 1) (c + 1))
+            (b + 1 - min (b + 1) (c + 1))
+            (c + 1 - min (b + 1) (c + 1))) := by
+        simp [highLevelNext]
+      rw [h_eq]
+      exact reaches_P2_drain a b c
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

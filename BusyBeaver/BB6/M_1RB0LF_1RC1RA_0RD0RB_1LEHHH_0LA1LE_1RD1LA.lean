@@ -35,9 +35,11 @@ T(J(u, v, w)) = \begin{cases}
   J(0, 0, 2v+10) & \text{if } u = 2,\ w = 1, \\
   J(2, u, 2v+5) & \text{if } u \ge 4,\ w = 1,\ u \text{ is even}, \\
   J(0, u, 2v+5) & \text{if } u \ge 3,\ w = 1,\ u \text{ is odd}, \\
-  J(u-1, v+2, w-2) & \text{if } u \ge 1,\ w \ge 2.
+  J(u-m, v+2m, w-2m) & \text{if } u \ge 1,\ w \ge 2,
 \end{cases}
 $$
+
+where $m = \min(u, \lfloor w/2 \rfloor)$.
 -/
 
 @[expose] public section
@@ -1258,7 +1260,49 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .J (u + 3) v 1 =>
     if (u + 1) % 2 = 0 then some (.J 2 (u + 3) (2 * v + 5))
     else some (.J 0 (u + 3) (2 * v + 5))
-  | .J (u + 1) v (w + 2) => some (.J u (v + 2) w)
+  | .J (u + 1) v (w + 2) =>
+    let k := min (u + 1) ((w + 2) / 2)
+    some (.J (u + 1 - k) (v + 2 * k) (w + 2 - 2 * k))
+
+private theorem reaches_J_diag (k : ℕ) (u v w : ℕ) :
+    CollatzReachesStar next (.J (u + k) v (w + 2 * k)) (.J u (v + 2 * k) w) := by
+  induction k generalizing v with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.J (u + (k + 1)) v (w + 2 * (k + 1))) =
+        some (.J (u + k) (v + 2) (w + 2 * k)) := by
+      have h1 : u + (k + 1) = (u + k) + 1 := by omega
+      have h2 : w + 2 * (k + 1) = (w + 2 * k) + 2 := by omega
+      rw [h1, h2]
+      rcases u + k with _ | _ | _ <;> rfl
+    have ih' := ih (v + 2)
+    have h_v : v + 2 + 2 * k = v + 2 * (k + 1) := by omega
+    rw [h_v] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_J_drain (u v w : ℕ) :
+    let k := min (u + 1) ((w + 2) / 2)
+    CollatzStepsTo next (.J (u + 1) v (w + 2))
+      (some (.J (u + 1 - k) (v + 2 * k) (w + 2 - 2 * k))) := by
+  intro k
+  have hk_pos : 0 < k := by
+    dsimp [k]
+    have : 0 < u + 1 := Nat.succ_pos u
+    have : 0 < (w + 2) / 2 := by omega
+    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+  obtain ⟨m, hm⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hk_pos)
+  have h_head : next (.J (u + 1) v (w + 2)) = some (.J u (v + 2) w) := by
+    rcases u with _ | _ | _ <;> rfl
+  have h_star := reaches_J_diag m (u - m) (v + 2) (w - 2 * m)
+  have hu : u - m + m = u := by omega
+  have hw : w - 2 * m + 2 * m = w := by omega
+  have hu' : u - m = u + 1 - k := by omega
+  have hw' : w - 2 * m = w + 2 - 2 * k := by omega
+  have hv' : v + 2 + 2 * m = v + 2 * k := by omega
+  rw [hu, hw, hu', hw', hv'] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem reaches_SE : ∀ (b m k : ℕ),
     CollatzReachesStar next (.S_E b m k) (.S_E (b % 2) (m + b / 2) k)
@@ -1359,7 +1403,7 @@ theorem is_valid_highLevel_acceleration :
       exact CollatzStepsTo.head rfl
         (CollatzStepsTo.of_eq (by simp [next, toState, highLevelNext, hw]))
     · exact CollatzStepsTo.of_eq rfl
-    · exact CollatzStepsTo.of_eq rfl
+    · exact reaches_J_drain 0 v w
   · rcases w with _ | _ | w
     · dsimp [highLevelNext]
       have h1 := reaches_SE1 u 0 (v + 2)
@@ -1402,7 +1446,7 @@ theorem is_valid_highLevel_acceleration :
           exact CollatzStepsTo.head rfl
             (CollatzStepsTo.of_reachesStar h1
               (CollatzStepsTo.of_eq (by simp [next, toState, hu', hw])))
-    · exact CollatzStepsTo.of_eq rfl
+    · exact reaches_J_drain (u + 1) v w
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

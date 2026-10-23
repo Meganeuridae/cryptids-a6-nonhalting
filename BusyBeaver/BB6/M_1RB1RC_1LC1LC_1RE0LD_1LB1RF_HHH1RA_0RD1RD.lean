@@ -26,8 +26,8 @@ T(C(a, b, c)) = \begin{cases}
   C(2, 0, k + 3) & \text{if } a = 2k + 1,\ b = 0,\ c = 1, \\
   C(2, k + 3, d) & \text{if } a = 2k,\ b = 0,\ c = d + 2, \\
   C(5, k + 3, d) & \text{if } a = 2k + 1,\ b = 0,\ c = d + 2, \\
-  C(a + 3, 0, b') & \text{if } b = b' + 1,\ c = 0, \\
-  C(a + 6, b', c') & \text{if } b = b' + 1,\ c = c' + 1.
+  C(a + 6b, 0, c - b) & \text{if } 1 \le b \le c, \\
+  C(a + 6c + 3, 0, b - c - 1) & \text{if } b \ge c + 1.
 \end{cases}
 $$
 -/
@@ -933,8 +933,89 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .C a 0 (d + 2) =>
     if a % 2 = 0 then some (.C 2 (a / 2 + 3) d)
     else some (.C 5 (a / 2 + 3) d)
-  | .C a (b + 1) 0 => some (.C (a + 3) 0 b)
-  | .C a (b + 1) (c + 1) => some (.C (a + 6) b c)
+  | .C a (b + 1) c =>
+    if b + 1 ≤ c then some (.C (a + 6 * (b + 1)) 0 (c - (b + 1)))
+    else some (.C (a + 6 * c + 3) 0 (b - c))
+
+private theorem reaches_C0_diag (k : ℕ) (a b c : ℕ) :
+    CollatzReachesStar next (.C_0 a (b + k) (c + k)) (.C_0 (a + 3 * k) b c) := by
+  induction k generalizing a with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.C_0 a (b + (k + 1)) (c + (k + 1))) =
+        some (.C_0 (a + 3) (b + k) (c + k)) := rfl
+    have ih' := ih (a + 3)
+    have h_arith : a + 3 + 3 * k = a + 3 * (k + 1) := by omega
+    rw [h_arith] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_C1_diag (k : ℕ) (a b c : ℕ) :
+    CollatzReachesStar next (.C_1 a (b + k) (c + k)) (.C_1 (a + 3 * k) b c) := by
+  induction k generalizing a with
+  | zero =>
+    simp only [Nat.add_zero, Nat.mul_zero]
+    exact CollatzReachesStar.refl next _
+  | succ k ih =>
+    have h_next : next (.C_1 a (b + (k + 1)) (c + (k + 1))) =
+        some (.C_1 (a + 3) (b + k) (c + k)) := rfl
+    have ih' := ih (a + 3)
+    have h_arith : a + 3 + 3 * k = a + 3 * (k + 1) := by omega
+    rw [h_arith] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_C0_drain_le (b : ℕ) (a c : ℕ) (hbc : b + 1 ≤ c) :
+    CollatzReachesPlus next (.C_0 a (b + 1) c) (.C_0 (a + 3 * (b + 1)) 0 (c - (b + 1))) := by
+  have h_head : next (.C_0 a (b + 1) c) = some (.C_0 (a + 3) b (c - 1)) := by
+    rcases c with _ | c
+    · omega
+    · rfl
+  have h_star := reaches_C0_diag b (a + 3) 0 (c - (b + 1))
+  have h_b : 0 + b = b := by omega
+  have h_c : c - (b + 1) + b = c - 1 := by omega
+  have h_a : a + 3 + 3 * b = a + 3 * (b + 1) := by omega
+  rw [h_b, h_c, h_a] at h_star
+  exact CollatzReachesPlus.head h_head h_star
+
+private theorem reaches_C1_drain_le (b : ℕ) (a c : ℕ) (hbc : b + 1 ≤ c) :
+    CollatzReachesPlus next (.C_1 a (b + 1) c) (.C_1 (a + 3 * (b + 1)) 0 (c - (b + 1))) := by
+  have h_head : next (.C_1 a (b + 1) c) = some (.C_1 (a + 3) b (c - 1)) := by
+    rcases c with _ | c
+    · omega
+    · rfl
+  have h_star := reaches_C1_diag b (a + 3) 0 (c - (b + 1))
+  have h_b : 0 + b = b := by omega
+  have h_c : c - (b + 1) + b = c - 1 := by omega
+  have h_a : a + 3 + 3 * b = a + 3 * (b + 1) := by omega
+  rw [h_b, h_c, h_a] at h_star
+  exact CollatzReachesPlus.head h_head h_star
+
+private theorem reaches_C0_drain_gt (b c : ℕ) (a : ℕ) (hbc : ¬(b + 1 ≤ c)) :
+    CollatzReachesPlus next (.C_0 a (b + 1) c) (.C_1 (a + 3 * c + 1) 0 (b - c)) := by
+  have h_star := reaches_C0_diag c a (b + 1 - c) 0
+  have h_b : b + 1 - c + c = b + 1 := by omega
+  have h_c : 0 + c = c := by omega
+  rw [h_b, h_c] at h_star
+  have h_step : next (.C_0 (a + 3 * c) (b + 1 - c) 0) =
+      some (.C_1 (a + 3 * c + 1) 0 (b - c)) := by
+    have : b + 1 - c = (b - c) + 1 := by omega
+    rw [this]
+    rfl
+  exact CollatzStepsTo.of_reachesStar h_star (CollatzStepsTo.of_eq h_step)
+
+private theorem reaches_C1_drain_gt (b c : ℕ) (a : ℕ) (hbc : ¬(b + 1 ≤ c)) :
+    CollatzReachesPlus next (.C_1 a (b + 1) c) (.C_0 (a + 3 * c + 2) 0 (b - c)) := by
+  have h_star := reaches_C1_diag c a (b + 1 - c) 0
+  have h_b : b + 1 - c + c = b + 1 := by omega
+  have h_c : 0 + c = c := by omega
+  rw [h_b, h_c] at h_star
+  have h_step : next (.C_1 (a + 3 * c) (b + 1 - c) 0) =
+      some (.C_0 (a + 3 * c + 2) 0 (b - c)) := by
+    have : b + 1 - c = (b - c) + 1 := by omega
+    rw [this]
+    rfl
+  exact CollatzStepsTo.of_reachesStar h_star (CollatzStepsTo.of_eq h_step)
 
 /-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
 of `target`. -/
@@ -949,25 +1030,49 @@ theorem is_valid_highLevel_acceleration :
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
-    · rcases c with _ | c
-      · have hmod : (a + 3) % 2 ≠ 0 := by omega
-        have hdiv : (a + 3) / 2 = a / 2 + 1 := by omega
-        exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, hmod, hdiv, next])
-      · have hmod : (a + 6) % 2 = 0 := by omega
-        have hdiv : (a + 6) / 2 = a / 2 + 3 := by omega
-        exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, hmod, hdiv, next])
+    · by_cases hbc : b + 1 ≤ c
+      · have h_step := reaches_C0_drain_le b (a / 2) c hbc
+        have hmod : (a + 6 * (b + 1)) % 2 = 0 := by omega
+        have hdiv : (a + 6 * (b + 1)) / 2 = a / 2 + 3 * (b + 1) := by omega
+        dsimp [highLevelNext]
+        split_ifs
+        simp only [Option.map_some, toState]
+        split_ifs
+        rw [hdiv]
+        exact h_step
+      · have h_step := reaches_C0_drain_gt b c (a / 2) hbc
+        have hmod : (a + 6 * c + 3) % 2 ≠ 0 := by omega
+        have hdiv : (a + 6 * c + 3) / 2 = a / 2 + 3 * c + 1 := by omega
+        dsimp [highLevelNext]
+        split_ifs
+        simp only [Option.map_some, toState]
+        split_ifs
+        rw [hdiv]
+        exact h_step
   · rcases b with _ | b
     · rcases c with _ | _ | d
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
       · exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, next])
-    · rcases c with _ | c
-      · have hmod : (a + 3) % 2 = 0 := by omega
-        have hdiv : (a + 3) / 2 = a / 2 + 2 := by omega
-        exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, hmod, hdiv, next])
-      · have hmod : (a + 6) % 2 ≠ 0 := by omega
-        have hdiv : (a + 6) / 2 = a / 2 + 3 := by omega
-        exact CollatzStepsTo.of_eq (by simp [toState, highLevelNext, ha, hmod, hdiv, next])
+    · by_cases hbc : b + 1 ≤ c
+      · have h_step := reaches_C1_drain_le b (a / 2) c hbc
+        have hmod : (a + 6 * (b + 1)) % 2 ≠ 0 := by omega
+        have hdiv : (a + 6 * (b + 1)) / 2 = a / 2 + 3 * (b + 1) := by omega
+        dsimp [highLevelNext]
+        split_ifs
+        simp only [Option.map_some, toState]
+        split_ifs
+        rw [hdiv]
+        exact h_step
+      · have h_step := reaches_C1_drain_gt b c (a / 2) hbc
+        have hmod : (a + 6 * c + 3) % 2 = 0 := by omega
+        have hdiv : (a + 6 * c + 3) / 2 = a / 2 + 3 * c + 2 := by omega
+        dsimp [highLevelNext]
+        split_ifs
+        simp only [Option.map_some, toState]
+        split_ifs
+        rw [hdiv]
+        exact h_step
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/
