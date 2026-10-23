@@ -33,13 +33,14 @@ T(A(b, k, c)) = \begin{cases}
   A(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
   A(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
   F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\ k \ge 1,\text{ and } c \ge 1, \\
-  A(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
-  A(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
-  A(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
+  A(1, k + 2\lfloor c/2 \rfloor - 1, c \bmod 2) & \text{if } b = 0 \text{ and } c \ge 2, \\
+  A(1, k + 2\lfloor c/2 \rfloor, c \bmod 2) & \text{if } b = 1 \text{ and } c \ge 2, \\
+  A(b - 2m, k + 2m, c - 2m) & \text{if } b \ge 3 \text{ and } c \ge 2,
 \end{cases}
 $$
 
-where $F(m, p, k, n, c)$ is defined recursively on $m$ (with $k' = k + 2n$):
+where $m = \min(\lfloor (b-1)/2 \rfloor, \lfloor c/2 \rfloor)$, and $F(m, p, k, n, c)$ is defined
+recursively on $m$ (with $k' = k + 2n$):
 
 $$
 F(m, p, k, n, c) = \begin{cases}
@@ -1217,11 +1218,85 @@ def highLevelNext : HighLevelState → Option HighLevelState
     Nat.casesOn b none fun b =>
     some (.A (b + 1) 0 (2 * k + 7))
   | .A b k (c + 2) =>
-    Nat.casesOn b (some (.A 1 (k + 1) c)) fun b =>
-    Nat.casesOn b (some (.A 1 (k + 2) c)) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2) + 1) (c % 2))) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2 + 1)) (c % 2))) fun b =>
     Nat.casesOn b
       (Nat.casesOn k (some (.A 5 0 (c + 1))) fun k => some (evalOdd k 2 0 0 (c + 1))) fun b =>
-    some (.A (b + 1) (k + 2) c)
+    let m := min ((b + 2) / 2) ((c + 2) / 2)
+    some (.A (b + 3 - 2 * m) (k + 2 * m) (c + 2 - 2 * m))
+
+private theorem reaches_A_b1_diag (m : ℕ) (k c : ℕ) :
+    CollatzReachesStar next (.A 1 k (c + 2 * m)) (.A 1 (k + 2 * m) c) := by
+  induction m generalizing k with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h_next : next (.A 1 k (c + 2 * (m + 1))) =
+        some (.A 1 (k + 2) (c + 2 * m)) := by
+      have hc : c + 2 * (m + 1) = (c + 2 * m) + 2 := by omega
+      rw [hc]
+      rfl
+    have ih' := ih (k + 2)
+    have hk : k + 2 + 2 * m = k + 2 * (m + 1) := by omega
+    rw [hk] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_A_b0_drain (k c : ℕ) :
+    CollatzStepsTo next (.A 0 k (c + 2))
+      (some (.A 1 (k + 2 * (c / 2) + 1) (c % 2))) := by
+  have h_head : next (.A 0 k (c + 2)) = some (.A 1 (k + 1) c) := rfl
+  have h_star := reaches_A_b1_diag (c / 2) (k + 1) (c % 2)
+  have hc : c % 2 + 2 * (c / 2) = c := by omega
+  have hk : k + 1 + 2 * (c / 2) = k + 2 * (c / 2) + 1 := by omega
+  rw [hc, hk] at h_star
+  exact CollatzReachesPlus.head h_head h_star
+
+private theorem reaches_A_b1_drain (k c : ℕ) :
+    CollatzStepsTo next (.A 1 k (c + 2))
+      (some (.A 1 (k + 2 * (c / 2 + 1)) (c % 2))) := by
+  have h_head : next (.A 1 k (c + 2)) = some (.A 1 (k + 2) c) := rfl
+  have h_star := reaches_A_b1_diag (c / 2) (k + 2) (c % 2)
+  have hc : c % 2 + 2 * (c / 2) = c := by omega
+  have hk : k + 2 + 2 * (c / 2) = k + 2 * (c / 2 + 1) := by omega
+  rw [hc, hk] at h_star
+  exact CollatzReachesPlus.head h_head h_star
+
+private theorem reaches_A_b3_diag (m : ℕ) (b k c : ℕ) :
+    CollatzReachesStar next (.A (b + 2 * m + 1) k (c + 2 * m))
+      (.A (b + 1) (k + 2 * m) c) := by
+  induction m generalizing k with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h_next : next (.A (b + 2 * (m + 1) + 1) k (c + 2 * (m + 1))) =
+        some (.A (b + 2 * m + 1) (k + 2) (c + 2 * m)) := by
+      have hb : b + 2 * (m + 1) + 1 = (b + 2 * m) + 3 := by omega
+      have hc : c + 2 * (m + 1) = (c + 2 * m) + 2 := by omega
+      rw [hb, hc]
+      rfl
+    have ih' := ih (k + 2)
+    have hk : k + 2 + 2 * m = k + 2 * (m + 1) := by omega
+    rw [hk] at ih'
+    exact CollatzReachesStar.head h_next ih'
+
+private theorem reaches_A_b3_drain (b k c : ℕ) :
+    CollatzStepsTo next (.A (b + 3) k (c + 2))
+      (some (.A (b + 3 - 2 * min ((b + 2) / 2) ((c + 2) / 2))
+        (k + 2 * min ((b + 2) / 2) ((c + 2) / 2))
+        (c + 2 - 2 * min ((b + 2) / 2) ((c + 2) / 2)))) := by
+  let m := min ((b + 2) / 2) ((c + 2) / 2)
+  have hm_pos : 0 < m := by omega
+  obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
+  have h_head : next (.A (b + 3) k (c + 2)) = some (.A (b + 1) (k + 2) c) := rfl
+  have h_star := reaches_A_b3_diag m' (b + 2 - 2 * m) (k + 2) (c + 2 - 2 * m)
+  have hb1 : b + 2 - 2 * m + 2 * m' + 1 = b + 1 := by omega
+  have hc1 : c + 2 - 2 * m + 2 * m' = c := by omega
+  have hb2 : b + 2 - 2 * m + 1 = b + 3 - 2 * m := by omega
+  have hk1 : k + 2 + 2 * m' = k + 2 * m := by omega
+  rw [hb1, hc1, hb2, hk1] at h_star
+  exact CollatzReachesPlus.head h_head h_star
 
 private theorem reaches_Odd_n : ∀ (n p k m c : ℕ),
     CollatzReachesStar next (.Odd p k n m c) (.Odd (p - n) (k + 2 * n) 0 m c)
@@ -1285,12 +1360,17 @@ theorem is_valid_highLevel_acceleration :
     · exact CollatzStepsTo.of_eq rfl
     · exact CollatzStepsTo.of_eq rfl
   · rcases b with _ | _ | _ | b
-    · exact CollatzStepsTo.of_eq rfl
-    · exact CollatzStepsTo.of_eq rfl
+    · exact reaches_A_b0_drain k c
+    · exact reaches_A_b1_drain k c
     · rcases k with _ | k
       · exact CollatzStepsTo.of_eq rfl
       · exact CollatzStepsTo.head rfl (stepsTo_Odd k 2 0 0 (c + 1))
-    · exact CollatzStepsTo.of_eq rfl
+    · have h_eq : Option.map toState (highLevelNext (.A (b + 3) k (c + 2))) =
+          some (.A (b + 3 - 2 * min ((b + 2) / 2) ((c + 2) / 2))
+            (k + 2 * min ((b + 2) / 2) ((c + 2) / 2))
+            (c + 2 - 2 * min ((b + 2) / 2) ((c + 2) / 2))) := rfl
+      rw [h_eq]
+      exact reaches_A_b3_drain b k c
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

@@ -90,9 +90,9 @@ T(E(a, k, c)) = \begin{cases}
   E(3, m + 4, 2j + 2) & \text{if } a = 2m + 1,\ k = 1,\ c = 2j + 7, \\
   E(3, m + 1, 2k' + 1) & \text{if } a = 2m,\ k = k' + 2,\ c = 0, \\
   E(4, m + 2, 2k' + 1) & \text{if } a = 2m + 1,\ k = k' + 2,\ c = 0, \\
-  E(a + 6, k', 2j + 1) & \text{if } k = k' + 2,\ c = 2j + 1, \\
-  E(a + 3, 1, 2k' + 2) & \text{if } k = k' + 2,\ c = 2, \\
-  E(a + 6, k' + 1, 2j + 2) & \text{if } k = k' + 2,\ c = 2j + 4.
+  E(a + 6\lfloor k/2 \rfloor, k \bmod 2, c) & \text{if } k \ge 2,\ c \ge 1,\ c \text{ is odd}, \\
+  E(a + 3, 1, 2k - 2) & \text{if } k \ge 2,\ c = 2, \\
+  E(a + 6m, k - m, c - 2m) & \text{if } k \ge 2,\ c \ge 4,\ c \text{ is even with } m = \min(k - 1, \lfloor (c - 1)/2 \rfloor).
 \end{cases}
 $$
 
@@ -252,9 +252,9 @@ T(A(b, k, c)) = \begin{cases}
   A(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
   A(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
   F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\ k \ge 1,\text{ and } c \ge 1, \\
-  A(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
-  A(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
-  A(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
+  A(1, k + 2\lfloor c/2 \rfloor - 1, c \bmod 2) & \text{if } b = 0 \text{ and } c \ge 2, \\
+  A(1, k + 2\lfloor c/2 \rfloor, c \bmod 2) & \text{if } b = 1 \text{ and } c \ge 2, \\
+  A(b - \lfloor c/2 \rfloor, k + 2\lfloor c/2 \rfloor, c \bmod 2) & \text{if } b \ge 3 \text{ and } c \ge 2,
 \end{cases}
 $$
 
@@ -335,7 +335,7 @@ Starting from $S(0, 2, 0, 0)$ (reached after 10 steps from the blank tape), the 
 
 $$
 T(S(p, k, j, c)) = \begin{cases}
-  S(p, k - 3m, j + 2m, c - m) & \text{if } k \ge 3,\ c \ge 1 \text{ with } m = \min(\lfloor k/3 \rfloor, c), \phantom{phantom} \\
+  S(p, k - 3m, j + 2m, c - m) & \text{if } k \ge 3,\ c \ge 1 \text{ with } m = \min(\lfloor k/3 \rfloor, c), \\
   S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\ c = 0, \\
   S(0, \Phi(j + 2, c')) & \text{if } p = 0,\ k = 2,\ c = c' + 1, \\
   S(0, 0, 0, 2j + 5) & \text{if } p = 0,\ k = 2,\ c = 0, \\
@@ -389,9 +389,9 @@ T(A(b, k, c)) = \begin{cases}
   A(b-4, 0, 2k+7) & \text{if } b \ge 5 \text{ and } c = 1, \\
   A(5, 0, c-1) & \text{if } b = 2,\ k = 0,\text{ and } c \ge 1, \\
   F(k-1, 2, 0, 0, c-1) & \text{if } b = 2,\ k \ge 1,\text{ and } c \ge 1, \\
-  A(1, k+1, c-2) & \text{if } b = 0 \text{ and } c \ge 2, \\
-  A(1, k+2, c-2) & \text{if } b = 1 \text{ and } c \ge 2, \\
-  A(b-2, k+2, c-2) & \text{if } b \ge 3 \text{ and } c \ge 2,
+  A(1, k + 2\lfloor c/2 \rfloor - 1, c \bmod 2) & \text{if } b = 0 \text{ and } c \ge 2, \\
+  A(1, k + 2\lfloor c/2 \rfloor, c \bmod 2) & \text{if } b = 1 \text{ and } c \ge 2, \\
+  A(b - \lfloor c/2 \rfloor, k + 2\lfloor c/2 \rfloor, c \bmod 2) & \text{if } b \ge 3 \text{ and } c \ge 2,
 \end{cases}
 $$
 
@@ -418,23 +418,22 @@ $$
 
 noting that at $c = 0$ the two families satisfy $C(a, b, 0, 6) = C(a, b+3, 0, 3)$.
 
-Starting from $C(4, 0, 0, 3)$ (reached after 162 steps from the blank tape), the machine follows the map $T$:
+Starting from $C(4, 0, 0, 3)$ (reached after 162 steps from the blank tape), the machine follows the map $T$ (with $r = a \bmod 2$ and $b' = b + 3\lfloor a/2 \rfloor$):
 
 $$
 T(C(a, b, c, d)) = \begin{cases}
-  C(a-2, b+3, c, d) & \text{if } a \ge 2, \\
-  C(a+b+4, 3, c-2, d) & \text{if } a \le 1,\ c \ge 2, \\
-  C(a+b+4, 0, 3, 3) & \text{if } a \le 1,\ c = 1,\ d = 6, \\
-  C(a, 0, k+3, 3) & \text{if } a \le 1,\ b = 2k,\ c = 0,\ d = 3, \\
-  \text{Halt} & \text{if } a = 0,\ b = 2k+1,\ c = 0,\ d = 3, \\
-  C(6, 3, k, 3) & \text{if } a = 1,\ b = 2k+1,\ c = 0,\ d = 3, \\
-  \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 0,\ d = 6, \\
-  C(6, 3, k+1, 3) & \text{if } a = 1,\ b = 2k,\ c = 0,\ d = 6, \\
-  C(a, 0, k+5, 3) & \text{if } a \le 1,\ b = 2k+1,\ c = 0,\ d = 6, \\
-  C(a, 0, k+3, 6) & \text{if } a \le 1,\ b = 2k+1,\ c = 1,\ d = 3, \\
-  \text{Halt} & \text{if } a = 0,\ b = 2k,\ c = 1,\ d = 3, \\
-  C(6, 0, 3, 3) & \text{if } a = 1,\ b = 0,\ c = 1,\ d = 3, \\
-  C(6, 3, k, 6) & \text{if } a = 1,\ b = 2k+2,\ c = 1,\ d = 3.
+  C(b' + r + 4, 3, c - 2, d) & \text{if } c \ge 2, \\
+  C(b' + r + 4, 0, 3, 3) & \text{if } c = 1,\ d = 6, \\
+  C(r, 0, k + 3, 3) & \text{if } b' = 2k,\ c = 0,\ d = 3, \\
+  \text{Halt} & \text{if } r = 0,\ b' = 2k + 1,\ c = 0,\ d = 3, \\
+  C(6, 3, k, 3) & \text{if } r = 1,\ b' = 2k + 1,\ c = 0,\ d = 3, \\
+  \text{Halt} & \text{if } r = 0,\ b' = 2k,\ c = 0,\ d = 6, \\
+  C(6, 3, k + 1, 3) & \text{if } r = 1,\ b' = 2k,\ c = 0,\ d = 6, \\
+  C(r, 0, k + 5, 3) & \text{if } b' = 2k + 1,\ c = 0,\ d = 6, \\
+  C(r, 0, k + 3, 6) & \text{if } b' = 2k + 1,\ c = 1,\ d = 3, \\
+  \text{Halt} & \text{if } r = 0,\ b' = 2k,\ c = 1,\ d = 3, \\
+  C(6, 0, 3, 3) & \text{if } r = 1,\ b' = 0,\ c = 1,\ d = 3, \\
+  C(6, 3, k, 6) & \text{if } r = 1,\ b' = 2k + 2,\ c = 1,\ d = 3.
 \end{cases}
 $$
 
@@ -527,7 +526,7 @@ Starting from $C(0, 0, 0)$ (the blank tape, 0 steps), the machine follows the ma
 $$
 T(C(a, b, d)) = \begin{cases}
   C(a+1, 0, 2b+2) & \text{if } d = 0, \\
-  C(a-3, b+2, d-1) & \text{if } a \ge 3,\ d \ge 1, \\
+  C(a - 3k, b + 2k, d - k) & \text{if } a \ge 3,\ d \ge 1 \text{ with } k = \min(\lfloor a/3 \rfloor, d), \\
   C(0, b+1, d-1) & \text{if } a = 2,\ d \ge 1, \\
   C(1, b+3, d-1) & \text{if } a = 1,\ b \ge 1,\ d \ge 1, \\
   C(0, 0, d+2) & \text{if } a = 1,\ b = 0,\ d \ge 1, \\
@@ -657,8 +656,8 @@ T(C(a, b, c)) = \begin{cases}
   C(2, 0, k + 3) & \text{if } a = 2k + 1,\ b = 0,\ c = 1, \\
   C(2, k + 3, d) & \text{if } a = 2k,\ b = 0,\ c = d + 2, \\
   C(5, k + 3, d) & \text{if } a = 2k + 1,\ b = 0,\ c = d + 2, \\
-  C(a + 6(b + 1), 0, c - (b + 1)) & \text{if } b + 1 \le c, \\
-  C(a + 6c + 3, 0, b - c) & \text{if } b + 1 > c.
+  C(a + 6b, 0, c - b) & \text{if } 1 \le b \le c, \\
+  C(a + 6c + 3, 0, b - c - 1) & \text{if } b \ge c + 1.
 \end{cases}
 $$
 

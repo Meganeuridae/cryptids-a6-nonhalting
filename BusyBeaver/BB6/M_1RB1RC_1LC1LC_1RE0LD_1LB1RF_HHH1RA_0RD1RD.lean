@@ -26,8 +26,8 @@ T(C(a, b, c)) = \begin{cases}
   C(2, 0, k + 3) & \text{if } a = 2k + 1,\ b = 0,\ c = 1, \\
   C(2, k + 3, d) & \text{if } a = 2k,\ b = 0,\ c = d + 2, \\
   C(5, k + 3, d) & \text{if } a = 2k + 1,\ b = 0,\ c = d + 2, \\
-  C(a + 3, 0, b') & \text{if } b = b' + 1,\ c = 0, \\
-  C(a + 6, b', c') & \text{if } b = b' + 1,\ c = c' + 1.
+  C(a + 6b, 0, c - b) & \text{if } 1 \le b \le c, \\
+  C(a + 6c + 3, 0, b - c - 1) & \text{if } b \ge c + 1.
 \end{cases}
 $$
 -/

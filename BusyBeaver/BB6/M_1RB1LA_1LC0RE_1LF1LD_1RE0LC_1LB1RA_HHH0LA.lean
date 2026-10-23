@@ -23,8 +23,8 @@ the map $T$:
 
 $$
 T(C(a, b, c, d)) = \begin{cases}
-  C(a-2, b+3, c, d) & \text{if } a \ge 2, \\
-  C(a+b+4, 3, c-2, d) & \text{if } a \le 1,\ c \ge 2, \\
+  C(a \bmod 2, b + 3\lfloor a/2 \rfloor, c, d) & \text{if } a \ge 2, \\
+  C(a + b + 3\lfloor c/2 \rfloor + 1, 3, c \bmod 2, d) & \text{if } a \le 1,\ c \ge 2, \\
   C(a+b+4, 0, 3, 3) & \text{if } a \le 1,\ c = 1,\ d = 6, \\
   C(a, 0, k+3, 3) & \text{if } a \le 1,\ b = 2k,\ c = 0,\ d = 3, \\
   \text{Halt} & \text{if } a = 0,\ b = 2k+1,\ c = 0,\ d = 3, \\

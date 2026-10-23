@@ -33,11 +33,11 @@ T(P_1(a, b, c, d)) = \begin{cases}
   F(c-1, 1, d+1) & \text{if } a = 0,\ b = 0,\ c \ge 1,\text{ and } d \ge 1, \\
   F(k+c, 1, d+1) & \text{if } a = 0,\ b = 2k+2,\text{ and } d \ge 1, \\
   P_1(0, 0, k+c+2, d-1) & \text{if } a = 0,\ b = 2k+1,\text{ and } d \ge 1, \\
-  P_1(a-1, b, c+2, d-1) & \text{if } a \ge 1 \text{ and } d \ge 1,
+  P_1(a-m, b, c+2m, d-m) & \text{if } a \ge 1 \text{ and } d \ge 1,
 \end{cases}
 $$
 
-where $F(m, c, d)$ is defined by:
+where $m = \min(a, d)$ and $F(m, c, d)$ is defined by:
 
 $$
 F(m, c, d) = \begin{cases}

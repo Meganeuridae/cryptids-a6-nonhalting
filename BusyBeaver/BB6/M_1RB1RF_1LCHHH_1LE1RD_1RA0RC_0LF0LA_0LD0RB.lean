@@ -28,9 +28,11 @@ T(P_2(a, b, c)) = \begin{cases}
   P_2(2, 0, a+4) & \text{if } b = 0 \text{ and } c = 1, \\
   \text{Halt} & \text{if } b = 0 \text{ and } c = 2, \\
   P_2(2, a+2, c-3) & \text{if } b = 0 \text{ and } c \ge 3, \\
-  P_2(a+2, b-1, c-1) & \text{if } b \ge 1 \text{ and } c \ge 1.
+  P_2(a+2m, b-m, c-m) & \text{if } b \ge 1 \text{ and } c \ge 1,
 \end{cases}
 $$
+
+where $m = \min(b, c)$.
 -/
 
 @[expose] public section

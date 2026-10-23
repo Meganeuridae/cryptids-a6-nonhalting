@@ -33,9 +33,11 @@ T(E(a, b, c)) = \begin{cases}
   E(1, 0, 2a+2c+2) & \text{if } b = 1,\ 1 \le c \le 2, \\
   E(1, 2, 2a+2c) & \text{if } b = 2,\ 1 \le c \le 2, \\
   E(1, b-3, 2a+2c+4) & \text{if } b \ge 3,\ 1 \le c \le 2, \\
-  E(a+2, b-1, c-2) & \text{if } b \ge 1,\ c \ge 3.
+  E(a+2m, b-m, c-2m) & \text{if } b \ge 1,\ c \ge 3,
 \end{cases}
 $$
+
+where $m = \min(b, \lfloor (c-1)/2 \rfloor)$.
 -/
 
 @[expose] public section

@@ -21,7 +21,7 @@ map $T$:
 
 $$
 T(S(p, k, j, c)) = \begin{cases}
-  S(p, k', j + 2, c') & \text{if } k = k' + 3,\ c = c' + 1, \\
+  S(p, k - 3m, j + 2m, c - m) & \text{if } k \ge 3,\ c \ge 1, \\
   S(p, k' + 1, 0, 2j + 5) & \text{if } k = k' + 3,\ c = 0, \\
   S(0, \Phi(j + 2, c')) & \text{if } p = 0,\ k = 2,\ c = c' + 1, \\
   S(0, 0, 0, 2j + 5) & \text{if } p = 0,\ k = 2,\ c = 0, \\
@@ -38,7 +38,7 @@ T(S(p, k, j, c)) = \begin{cases}
 \end{cases}
 $$
 
-where $\Phi(j, c)$ is defined by:
+where $m = \min(\lfloor k/3 \rfloor, c)$, and $\Phi(j, c)$ is defined by:
 
 $$
 \Phi(j, c) = \begin{cases}

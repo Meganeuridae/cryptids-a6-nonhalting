@@ -28,9 +28,11 @@ T(D_1(a, z, w)) = \begin{cases}
   D_1(k + 1, 5, w') & \text{if } a = 0,\ z = 2k + 2,\ w = w' + 4, \\
   D_1(0, 2, 2k + 2w + 3) & \text{if } a = 1,\ z = 2k + 1,\ w \le 1, \\
   D_1(a', 3, 2k + 2w + 3) & \text{if } a = a' + 2,\ z = 2k + 1,\ w \le 1, \\
-  D_1(a', 2k + 5, w') & \text{if } a = a' + 1,\ z = 2k + 1,\ w = w' + 2.
+  D_1(a - m, 2k + 4m + 1, w - 2m) & \text{if } a \ge 1,\ z = 2k + 1,\ w \ge 2,
 \end{cases}
 $$
+
+where $m = \min(a, \lfloor w/2 \rfloor)$.
 -/
 
 @[expose] public section
@@ -955,10 +957,12 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .D_1_succ_odd 1 k 1 => some (.D_1_0_odd 1 (2 * k + 5))
   | .D_1_succ_odd (a + 2) k 0 => some (.D_1_succ_odd a 1 (2 * k + 3))
   | .D_1_succ_odd (a + 2) k 1 => some (.D_1_succ_odd a 1 (2 * k + 5))
-  | .D_1_succ_odd 0 k (w + 2) => some (.D_1_0_odd (k + 2) w)
-  | .D_1_succ_odd (a + 1) k (w + 2) =>
-    let m := min (a + 1) ((w + 2) / 2)
-    some (.D_1_succ_odd (a + 1 - m) (k + 2 * m) (w + 2 - 2 * m))
+  | .D_1_succ_odd a k (w + 2) =>
+    let m := (w + 2) / 2
+    if a + 1 ≤ m then
+      some (.D_1_0_odd (k + 2 * (a + 1)) (w - 2 * a))
+    else
+      some (.D_1_succ_odd (a - m) (k + 2 * m) (w + 2 - 2 * m))
 
 private theorem reaches_D_1_succ_odd_diag (m : ℕ) (a k w : ℕ) :
     CollatzReachesStar next
@@ -980,22 +984,33 @@ private theorem reaches_D_1_succ_odd_diag (m : ℕ) (a k w : ℕ) :
     rw [hk] at ih'
     exact CollatzReachesStar.head h_next ih'
 
-private theorem reaches_D_1_succ_odd_drain (a k w : ℕ) :
-    CollatzStepsTo next (.D_1_succ_odd (a + 1) k (w + 2))
-      (some (.D_1_succ_odd (a + 1 - min (a + 1) ((w + 2) / 2))
-        (k + 2 * min (a + 1) ((w + 2) / 2))
-        (w + 2 - 2 * min (a + 1) ((w + 2) / 2)))) := by
-  let m := min (a + 1) ((w + 2) / 2)
-  have hm_pos : 0 < m := by
-    dsimp [m]
-    have : 0 < a + 1 := Nat.succ_pos a
-    have : 0 < (w + 2) / 2 := by omega
-    exact Nat.lt_min.mpr ⟨‹_›, ‹_›⟩
+private theorem reaches_D_1_succ_odd_drain_le (a k w : ℕ) (h : a + 1 ≤ (w + 2) / 2) :
+    CollatzStepsTo next (.D_1_succ_odd a k (w + 2))
+      (some (.D_1_0_odd (k + 2 * (a + 1)) (w - 2 * a))) := by
+  have h_star := reaches_D_1_succ_odd_diag a 0 k (w - 2 * a + 2)
+  have ha : 0 + a = a := by omega
+  have hw : w - 2 * a + 2 + 2 * a = w + 2 := by omega
+  rw [ha, hw] at h_star
+  have h_last : next (.D_1_succ_odd 0 (k + 2 * a) (w - 2 * a + 2)) =
+      some (.D_1_0_odd (k + 2 * (a + 1)) (w - 2 * a)) := by
+    have hk : k + 2 * a + 2 = k + 2 * (a + 1) := by omega
+    simp [next, hk]
+  exact CollatzStepsTo.of_reachesStar h_star (CollatzStepsTo.of_eq h_last)
+
+private theorem reaches_D_1_succ_odd_drain_gt (a k w : ℕ) (h : ¬ a + 1 ≤ (w + 2) / 2) :
+    CollatzStepsTo next (.D_1_succ_odd a k (w + 2))
+      (some (.D_1_succ_odd (a - (w + 2) / 2) (k + 2 * ((w + 2) / 2))
+        (w + 2 - 2 * ((w + 2) / 2)))) := by
+  let m := (w + 2) / 2
+  have hm_pos : 0 < m := by omega
   obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
-  have h_head : next (.D_1_succ_odd (a + 1) k (w + 2)) =
-      some (.D_1_succ_odd a (k + 2) w) := by simp [next]
-  have h_star := reaches_D_1_succ_odd_diag m' (a + 1 - m) (k + 2) (w + 2 - 2 * m)
-  have ha : a + 1 - m + m' = a := by omega
+  have h_head : next (.D_1_succ_odd a k (w + 2)) =
+      some (.D_1_succ_odd (a - 1) (k + 2) w) := by
+    have ha1 : a = (a - 1) + 1 := by omega
+    rw [ha1]
+    simp [next]
+  have h_star := reaches_D_1_succ_odd_diag m' (a - m) (k + 2) (w + 2 - 2 * m)
+  have ha : a - m + m' = a - 1 := by omega
   have hk : k + 2 + 2 * m' = k + 2 * m := by omega
   have hw : w + 2 - 2 * m + 2 * m' = w := by omega
   rw [ha, hk, hw] at h_star
@@ -1023,28 +1038,41 @@ theorem is_valid_highLevel_acceleration :
     · exact CollatzStepsTo.head rfl (CollatzStepsTo.of_eq rfl)
     · exact CollatzStepsTo.head rfl (CollatzStepsTo.of_eq rfl)
     · exact CollatzStepsTo.of_eq rfl
-  · rcases a with _ | _ | a <;> rcases w with _ | _ | w
-    · exact CollatzStepsTo.head (s₂ := .P_1 (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
-    · exact CollatzStepsTo.head (s₂ := .P_1 (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
-    · exact CollatzStepsTo.of_eq rfl
-    · exact CollatzStepsTo.head (s₂ := .P_2 0 (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
-    · exact CollatzStepsTo.head (s₂ := .P_2 0 (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
-    · have h_eq : Option.map toState
-            (highLevelNext (HighLevelState.D_1_succ_odd 1 k (w + 2))) =
-          some (.D_1_succ_odd (1 - min 1 ((w + 2) / 2))
-            (k + 2 * min 1 ((w + 2) / 2))
-            (w + 2 - 2 * min 1 ((w + 2) / 2))) := rfl
-      rw [h_eq]
-      exact reaches_D_1_succ_odd_drain 0 k w
-    · exact CollatzStepsTo.head (s₂ := .P_2 (a + 1) (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
-    · exact CollatzStepsTo.head (s₂ := .P_2 (a + 1) (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
-    · have h_eq : Option.map toState
-            (highLevelNext (HighLevelState.D_1_succ_odd (a + 2) k (w + 2))) =
-          some (.D_1_succ_odd (a + 2 - min (a + 2) ((w + 2) / 2))
-            (k + 2 * min (a + 2) ((w + 2) / 2))
-            (w + 2 - 2 * min (a + 2) ((w + 2) / 2))) := rfl
-      rw [h_eq]
-      exact reaches_D_1_succ_odd_drain (a + 1) k w
+  · rcases w with _ | _ | w
+    · rcases a with _ | _ | a
+      · exact CollatzStepsTo.head (s₂ := .P_1 (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
+      · exact CollatzStepsTo.head (s₂ := .P_2 0 (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
+      · exact CollatzStepsTo.head (s₂ := .P_2 (a + 1) (2 * k + 4)) rfl (CollatzStepsTo.of_eq rfl)
+    · rcases a with _ | _ | a
+      · exact CollatzStepsTo.head (s₂ := .P_1 (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
+      · exact CollatzStepsTo.head (s₂ := .P_2 0 (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
+      · exact CollatzStepsTo.head (s₂ := .P_2 (a + 1) (2 * k + 6)) rfl (CollatzStepsTo.of_eq rfl)
+    · by_cases h : a + 1 ≤ (w + 2) / 2
+      · have h_eq : Option.map toState
+            (highLevelNext (HighLevelState.D_1_succ_odd a k (w + 2))) =
+          some (.D_1_0_odd (k + 2 * (a + 1)) (w - 2 * a)) := by
+          rcases a with _ | _ | a
+          · dsimp [highLevelNext]; split_ifs
+            · rfl
+            · omega
+          · dsimp [highLevelNext]; split_ifs
+            · rfl
+            · omega
+          · dsimp [highLevelNext]; split_ifs; rfl
+        rw [h_eq]
+        exact reaches_D_1_succ_odd_drain_le a k w h
+      · have h_eq : Option.map toState
+            (highLevelNext (HighLevelState.D_1_succ_odd a k (w + 2))) =
+          some (.D_1_succ_odd (a - (w + 2) / 2) (k + 2 * ((w + 2) / 2))
+            (w + 2 - 2 * ((w + 2) / 2))) := by
+          rcases a with _ | _ | a
+          · omega
+          · dsimp [highLevelNext]; split_ifs
+            · omega
+            · rfl
+          · dsimp [highLevelNext]; split_ifs; rfl
+        rw [h_eq]
+        exact reaches_D_1_succ_odd_drain_gt a k w h
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

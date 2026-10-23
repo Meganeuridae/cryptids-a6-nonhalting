@@ -21,7 +21,7 @@ Starting from $C(0, 0, 0)$ (the blank tape, 0 steps), the machine follows the ma
 $$
 T(C(a, b, d)) = \begin{cases}
   C(a+1, 0, 2b+2) & \text{if } d = 0, \\
-  C(a-3, b+2, d-1) & \text{if } a \ge 3,\ d \ge 1, \\
+  C(a-3m, b+2m, d-m) & \text{if } a \ge 3,\ d \ge 1, \\
   C(0, b+1, d-1) & \text{if } a = 2,\ d \ge 1, \\
   C(1, b+3, d-1) & \text{if } a = 1,\ b \ge 1,\ d \ge 1, \\
   C(0, 0, d+2) & \text{if } a = 1,\ b = 0,\ d \ge 1, \\
@@ -31,9 +31,11 @@ T(C(a, b, d)) = \begin{cases}
   \text{Halt} & \text{if } a = 0,\ d = b+2, \\
   C(3b+2, 0, 6) & \text{if } a = 0,\ d = b+3, \\
   C(3b+4, 0, 4) & \text{if } a = 0,\ d = b+4, \\
-  C(3b+3, 2, d-b-5) & \text{if } a = 0,\ d \ge b+5.
+  C(3b+3, 2, d-b-5) & \text{if } a = 0,\ d \ge b+5,
 \end{cases}
 $$
+
+where $m = \min(\lfloor a/3 \rfloor, d)$.
 -/
 
 @[expose] public section

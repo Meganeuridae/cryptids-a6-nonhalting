@@ -37,7 +37,7 @@ T(E(a, k, c)) = \begin{cases}
   E(3, m + 4, 2j + 2) & \text{if } a = 2m + 1,\ k = 1,\ c = 2j + 7, \\
   E(3, m + 1, 2k' + 1) & \text{if } a = 2m,\ k = k' + 2,\ c = 0, \\
   E(4, m + 2, 2k' + 1) & \text{if } a = 2m + 1,\ k = k' + 2,\ c = 0, \\
-  E(a + 6, k', 2j + 1) & \text{if } k = k' + 2,\ c = 2j + 1, \\
+  E(a + 6\lfloor k/2 \rfloor, k \bmod 2, 2j + 1) & \text{if } k \ge 2,\ c = 2j + 1, \\
   E(a + 3, 1, 2k' + 2) & \text{if } k = k' + 2,\ c = 2, \\
   E(a + 6, k' + 1, 2j + 2) & \text{if } k = k' + 2,\ c = 2j + 4.
 \end{cases}
@@ -1011,9 +1011,88 @@ def highLevelNext : HighLevelState → Option HighLevelState
     if (a + 2) % 2 = 0 then some (.E 3 ((a + 2) / 2) (2 * k + 1))
     else some (.E 4 ((a + 2) / 2 + 1) (2 * k + 1))
   | .E a (k + 2) (d + 1) =>
-    if d % 2 = 0 then some (.E (a + 6) k (d + 1))
+    if d % 2 = 0 then some (.E (a + 6 * (k / 2 + 1)) (k % 2) (d + 1))
     else if d = 1 then some (.E (a + 3) 1 (2 * k + 2))
-    else some (.E (a + 6) (k + 1) (d - 1))
+    else
+      let m := min (k + 1) (d / 2)
+      some (.E (a + 6 * m) (k + 2 - m) (d + 1 - 2 * m))
+
+private theorem reaches_E_even_step (m : ℕ) (a k d : ℕ) (hd : d % 2 = 0) :
+    CollatzReachesStar next (.E a (k + 2 * m) (d + 1)) (.E (a + 6 * m) k (d + 1)) := by
+  induction m generalizing a with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h1 : next (.E a (k + 2 * (m + 1)) (d + 1)) =
+        some (.M_1 (a + 3) (k + 2 * m) d) := by
+      have hk : k + 2 * (m + 1) = (k + 2 * m) + 2 := by omega
+      rw [hk]
+      rfl
+    have h2 : next (.M_1 (a + 3) (k + 2 * m) d) =
+        some (.E (a + 6) (k + 2 * m) (d + 1)) := by
+      simp [next, hd]
+    have ih' := ih (a + 6)
+    have ha : a + 6 + 6 * m = a + 6 * (m + 1) := by omega
+    rw [ha] at ih'
+    exact CollatzReachesStar.head h1 (CollatzReachesStar.head h2 ih')
+
+private theorem reaches_E_even_drain (a k d : ℕ) (hd : d % 2 = 0) :
+    CollatzStepsTo next (.E a (k + 2) (d + 1))
+      (some (.E (a + 6 * (k / 2 + 1)) (k % 2) (d + 1))) := by
+  have h1 : next (.E a (k + 2) (d + 1)) = some (.M_1 (a + 3) k d) := rfl
+  have h2 : next (.M_1 (a + 3) k d) = some (.E (a + 6) k (d + 1)) := by simp [next, hd]
+  have h_star := reaches_E_even_step (k / 2) (a + 6) (k % 2) d hd
+  have hk : k % 2 + 2 * (k / 2) = k := by omega
+  have ha : a + 6 + 6 * (k / 2) = a + 6 * (k / 2 + 1) := by omega
+  rw [hk, ha] at h_star
+  exact CollatzReachesPlus.head h1 (CollatzReachesStar.head h2 h_star)
+
+private theorem reaches_E_odd_diag (m : ℕ) (a k d : ℕ) (hd : d % 2 ≠ 0) :
+    CollatzReachesStar next (.E a (k + m + 1) (d + 2 * m + 1))
+      (.E (a + 6 * m) (k + 1) (d + 1)) := by
+  induction m generalizing a with
+  | zero =>
+    simp only [Nat.mul_zero, Nat.add_zero]
+    exact CollatzReachesStar.refl next _
+  | succ m ih =>
+    have h1 : next (.E a (k + (m + 1) + 1) (d + 2 * (m + 1) + 1)) =
+        some (.M_1 (a + 3) (k + m) (d + 2 * (m + 1))) := by
+      have hk : k + (m + 1) + 1 = (k + m) + 2 := by omega
+      have hd' : d + 2 * (m + 1) + 1 = (d + 2 * (m + 1)) + 1 := by omega
+      rw [hk, hd']
+      rfl
+    have h2 : next (.M_1 (a + 3) (k + m) (d + 2 * (m + 1))) =
+        some (.E (a + 6) (k + m + 1) (d + 2 * m + 1)) := by
+      have hmod : d % 2 = 1 := by omega
+      have hne1 : d + 2 * (m + 1) ≠ 1 := by omega
+      have hsub : d + 2 * (m + 1) - 1 = d + 2 * m + 1 := by omega
+      simp [next, hmod, hne1, hsub]
+    have ih' := ih (a + 6)
+    have ha : a + 6 + 6 * m = a + 6 * (m + 1) := by omega
+    rw [ha] at ih'
+    exact CollatzReachesStar.head h1 (CollatzReachesStar.head h2 ih')
+
+private theorem reaches_E_odd_drain (a k d : ℕ) (hd : d % 2 ≠ 0) (hd1 : d ≠ 1) :
+    CollatzStepsTo next (.E a (k + 2) (d + 1))
+      (some (.E (a + 6 * min (k + 1) (d / 2))
+        (k + 2 - min (k + 1) (d / 2))
+        (d + 1 - 2 * min (k + 1) (d / 2)))) := by
+  let m := min (k + 1) (d / 2)
+  have hm_pos : 0 < m := by omega
+  obtain ⟨m', hm'⟩ := Nat.exists_eq_succ_of_ne_zero (ne_of_gt hm_pos)
+  have h1 : next (.E a (k + 2) (d + 1)) = some (.M_1 (a + 3) k d) := rfl
+  have h2 : next (.M_1 (a + 3) k d) = some (.E (a + 6) (k + 1) (d - 1)) := by
+    simp [next, hd, hd1]
+  have hd_sub_odd : (d - 2 * m) % 2 ≠ 0 := by omega
+  have h_star := reaches_E_odd_diag m' (a + 6) (k + 1 - m) (d - 2 * m) hd_sub_odd
+  have hk1 : k + 1 - m + m' + 1 = k + 1 := by omega
+  have hd1' : d - 2 * m + 2 * m' + 1 = d - 1 := by omega
+  have ha : a + 6 + 6 * m' = a + 6 * m := by omega
+  have hk2 : k + 1 - m + 1 = k + 2 - m := by omega
+  have hd2 : d - 2 * m + 1 = d + 1 - 2 * m := by omega
+  rw [hk1, hd1', ha, hk2, hd2] at h_star
+  exact CollatzReachesPlus.head h1 (CollatzReachesStar.head h2 h_star)
 
 /-- `highLevelStart`, `highLevelEncode`, and `highLevelNext` form a valid Collatz-like acceleration
 of `target`. -/
@@ -1066,9 +1145,22 @@ theorem is_valid_highLevel_acceleration :
       · have ha' : a % 2 ≠ 0 := by omega
         exact CollatzStepsTo.head h_step1
           (CollatzStepsTo.of_eq (by simp [next, toState, hd_mod, ha']))
-    · dsimp [highLevelNext]
-      split_ifs <;>
-        exact CollatzStepsTo.head rfl (CollatzStepsTo.of_eq (by simp [next, toState, *]))
+    · by_cases hd : d % 2 = 0
+      · have h_eq : Option.map toState (highLevelNext (.E a (k + 2) (d + 1))) =
+            some (.E (a + 6 * (k / 2 + 1)) (k % 2) (d + 1)) := by
+          dsimp [highLevelNext]; split_ifs; rfl
+        rw [h_eq]
+        exact reaches_E_even_drain a k d hd
+      · by_cases hd1 : d = 1
+        · subst hd1
+          exact CollatzStepsTo.head rfl (CollatzStepsTo.of_eq rfl)
+        · have h_eq : Option.map toState (highLevelNext (.E a (k + 2) (d + 1))) =
+              some (.E (a + 6 * min (k + 1) (d / 2))
+                (k + 2 - min (k + 1) (d / 2))
+                (d + 1 - 2 * min (k + 1) (d / 2))) := by
+            dsimp [highLevelNext]; split_ifs; rfl
+          rw [h_eq]
+          exact reaches_E_odd_drain a k d hd hd1
 
 /-- `target` halts from the blank tape if and only if the high-level acceleration `highLevelNext`
 halts from `highLevelStart`. -/

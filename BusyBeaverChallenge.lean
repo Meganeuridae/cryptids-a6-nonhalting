@@ -731,9 +731,11 @@ def highLevelNext : HighLevelState → Option HighLevelState
     if (a + 2) % 2 = 0 then some (.E 3 ((a + 2) / 2) (2 * k + 1))
     else some (.E 4 ((a + 2) / 2 + 1) (2 * k + 1))
   | .E a (k + 2) (d + 1) =>
-    if d % 2 = 0 then some (.E (a + 6) k (d + 1))
+    if d % 2 = 0 then some (.E (a + 6 * (k / 2 + 1)) (k % 2) (d + 1))
     else if d = 1 then some (.E (a + 3) 1 (2 * k + 2))
-    else some (.E (a + 6) (k + 1) (d - 1))
+    else
+      let m := min (k + 1) (d / 2)
+      some (.E (a + 6 * m) (k + 2 - m) (d + 1 - 2 * m))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
@@ -1918,11 +1920,12 @@ def highLevelNext : HighLevelState → Option HighLevelState
     Nat.casesOn b none fun b =>
     some (.A (b + 1) 0 (2 * k + 7))
   | .A b k (c + 2) =>
-    Nat.casesOn b (some (.A 1 (k + 1) c)) fun b =>
-    Nat.casesOn b (some (.A 1 (k + 2) c)) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2) + 1) (c % 2))) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2 + 1)) (c % 2))) fun b =>
     Nat.casesOn b
       (Nat.casesOn k (some (.A 5 0 (c + 1))) fun k => some (evalOdd k 2 0 0 (c + 1))) fun b =>
-    some (.A (b + 1) (k + 2) c)
+    let m := min ((b + 2) / 2) ((c + 2) / 2)
+    some (.A (b + 3 - 2 * m) (k + 2 * m) (c + 2 - 2 * m))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
@@ -2622,11 +2625,12 @@ def highLevelNext : HighLevelState → Option HighLevelState
     Nat.casesOn b none fun b =>
     some (.A (b + 1) 0 (2 * k + 7))
   | .A b k (c + 2) =>
-    Nat.casesOn b (some (.A 1 (k + 1) c)) fun b =>
-    Nat.casesOn b (some (.A 1 (k + 2) c)) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2) + 1) (c % 2))) fun b =>
+    Nat.casesOn b (some (.A 1 (k + 2 * (c / 2 + 1)) (c % 2))) fun b =>
     Nat.casesOn b
       (Nat.casesOn k (some (.A 5 0 (c + 1))) fun k => some (evalOdd k 2 0 0 (c + 1))) fun b =>
-    some (.A (b + 1) (k + 2) c)
+    let m := min ((b + 2) / 2) ((c + 2) / 2)
+    some (.A (b + 3 - 2 * m) (k + 2 * m) (c + 2 - 2 * m))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
@@ -4723,10 +4727,12 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .D_succ_odd 0 k 1 => some (.D_0_odd 0 (2 * k + 5))
   | .D_succ_odd (a + 1) k 0 => some (.D_succ_odd a 0 (2 * k + 3))
   | .D_succ_odd (a + 1) k 1 => some (.D_succ_odd a 0 (2 * k + 5))
-  | .D_succ_odd 0 k (w + 2) => some (.D_0_odd (k + 2) w)
-  | .D_succ_odd (a + 1) k (w + 2) =>
-    let m := min (a + 1) ((w + 2) / 2)
-    some (.D_succ_odd (a + 1 - m) (k + 2 * m) (w + 2 - 2 * m))
+  | .D_succ_odd a k (w + 2) =>
+    let m := (w + 2) / 2
+    if a + 1 ≤ m then
+      some (.D_0_odd (k + 2 * (a + 1)) (w - 2 * a))
+    else
+      some (.D_succ_odd (a - m) (k + 2 * m) (w + 2 - 2 * m))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry
@@ -4943,10 +4949,12 @@ def highLevelNext : HighLevelState → Option HighLevelState
   | .D_1_succ_odd 1 k 1 => some (.D_1_0_odd 1 (2 * k + 5))
   | .D_1_succ_odd (a + 2) k 0 => some (.D_1_succ_odd a 1 (2 * k + 3))
   | .D_1_succ_odd (a + 2) k 1 => some (.D_1_succ_odd a 1 (2 * k + 5))
-  | .D_1_succ_odd 0 k (w + 2) => some (.D_1_0_odd (k + 2) w)
-  | .D_1_succ_odd (a + 1) k (w + 2) =>
-    let m := min (a + 1) ((w + 2) / 2)
-    some (.D_1_succ_odd (a + 1 - m) (k + 2 * m) (w + 2 - 2 * m))
+  | .D_1_succ_odd a k (w + 2) =>
+    let m := (w + 2) / 2
+    if a + 1 ≤ m then
+      some (.D_1_0_odd (k + 2 * (a + 1)) (w - 2 * a))
+    else
+      some (.D_1_succ_odd (a - m) (k + 2 * m) (w + 2 - 2 * m))
 
 theorem is_valid_highLevel_acceleration :
     IsValidAcceleration target highLevelStart highLevelEncode highLevelNext := by sorry

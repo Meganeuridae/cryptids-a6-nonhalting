@@ -30,7 +30,8 @@ $$
     D(a+2, b-1, 1, 3) & \text{if } b \ge 1 \text{ and } d = 1, \\
     D(1, b, 1, 2) & \text{if } a = 0 \text{ and } d = 2, \\
     B(a-1, 0, b+1, 0) & \text{if } a \ge 1 \text{ and } d = 2, \\
-    D(a+2, b, 0, d-2) & \text{if } d \ge 3,
+    D(a+d-1, b, 0, 1) & \text{if } d \ge 3 \text{ and } d \text{ is odd}, \\
+    D(a+d-2, b, 0, 2) & \text{if } d \ge 3 \text{ and } d \text{ is even},
   \end{cases} \\
   T(D(a, b, 1, d)) &= \begin{cases}
     D(0, 0, 1, d+1) & \text{if } a = 0 \text{ and } b = 0, \\

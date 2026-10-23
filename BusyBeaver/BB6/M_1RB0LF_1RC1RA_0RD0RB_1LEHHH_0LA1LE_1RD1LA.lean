@@ -35,9 +35,11 @@ T(J(u, v, w)) = \begin{cases}
   J(0, 0, 2v+10) & \text{if } u = 2,\ w = 1, \\
   J(2, u, 2v+5) & \text{if } u \ge 4,\ w = 1,\ u \text{ is even}, \\
   J(0, u, 2v+5) & \text{if } u \ge 3,\ w = 1,\ u \text{ is odd}, \\
-  J(u-1, v+2, w-2) & \text{if } u \ge 1,\ w \ge 2.
+  J(u-m, v+2m, w-2m) & \text{if } u \ge 1,\ w \ge 2,
 \end{cases}
 $$
+
+where $m = \min(u, \lfloor w/2 \rfloor)$.
 -/
 
 @[expose] public section
