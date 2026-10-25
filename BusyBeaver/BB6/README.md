@@ -116,7 +116,7 @@ $$
 
 ### [`1RB0LC_1LC0RD_1LF1LA_1LB1RE_1RB1LE_---0LE`](./M_1RB0LC_1LC0RD_1LF1LA_1LB1RE_1RB1LE_HHH0LE.lean)
 
-Eliminating $(a, f)$ from the 4-counter configuration $C(a, f, g, d) := 0^\infty \ 1^a \ (110)^f \ 1 \ \mathrm{C}{>} \ 0 \ (10)^g \ 1 \ (00)^d \ 0^\infty$ reduces the dynamics to two counters $(g, d)$ over the three entry families $C_0(g, d) := C(0, 0, g, d)$, $C_2(g, d) := C(2, 0, g, d)$, and $C_5(g, d) := C(5, 0, g, d)$. Starting from $C_2(0, 0)$, the machine follows:
+Eliminating $(a, f)$ from the 4-counter configuration $C(a, f, g, d) := 0^\infty \ 1^{a+1} \ \mathrm{C}{>} \ 00 \ 1^{f+4} \ (01)^g \ 1^3 \ (01111)^d \ 011 \ 0^\infty$ reduces the dynamics to two counters $(g, d)$ over the three entry families $C_0(g, d) := C(0, 0, g, d)$, $C_2(g, d) := C(2, 0, g, d)$, and $C_5(g, d) := C(5, 0, g, d)$. Starting from $C_2(0, 0)$, the machine follows:
 
 $$
 T(C_0(g, d)) = G(0, 0, g, d), \quad T(C_2(g, d)) = G(0, 3, g, d), \quad T(C_5(g, d)) = G(1, 6, g, d),
@@ -229,7 +229,7 @@ T(A(b, c)) = \begin{cases}
 \end{cases}
 $$
 
-where $F(m, p, n, c)$ is defined recursively on $m$:
+where $F(m, p, n, c)$ (`evalOdd`) is defined recursively on $m$:
 
 $$
 F(m, p, n, c) = \begin{cases}
@@ -388,7 +388,7 @@ T(A(b, c)) = \begin{cases}
 \end{cases}
 $$
 
-where $F(m, p, n, c)$ is defined recursively on $m$:
+where $F(m, p, n, c)$ (`evalOdd`) is defined recursively on $m$:
 
 $$
 F(m, p, n, c) = \begin{cases}
@@ -419,7 +419,7 @@ $$
 
 ### [`1RB1LA_1LC0RE_1LF1LD_1RE0LC_1LB1RA_---0LA`](./M_1RB1LA_1LC0RE_1LF1LD_1RE0LC_1LB1RA_HHH0LA.lean)
 
-Contracting the Syracuse $c + 2 \mapsto c$ sweep $(r, b) \mapsto \bigl((b + r) \bmod 2,\ 3\lfloor (b + r)/2 \rfloor + 9\bigr)$ (`syracuseScan`) on $C_d(r, b, c) := 0^\infty \ 1^{r+1} \ \mathrm{C}{>} \ 00 \ 1^{b+4} \ (01)^c \ 1^d \ 011 \ 0^\infty$ restricts $b \in \lbrace 0, 12 \rbrace$ and reduces the machine to a **single counter** $c \ge 0$ across $C_{3,0}(r, c) := C_3(r, 0, c)$, $C_{3,12}(c) := C_3(0, 12, c)$, $C_{6,0}(r, c) := C_6(r, 0, c)$, and $C_{6,12}(c) := C_6(0, 12, c)$. Starting from $C_{3,0}(0, 6)$ (encoded as `.C3_0 false 6`, reached after 204 steps), let $\Sigma(r, b, k)$ iterate $(r, b) \mapsto \bigl((b + r) \bmod 2,\ 3\lfloor (b + r)/2 \rfloor + 9\bigr)$ $k$ times; then:
+Contracting the Syracuse $c + 2 \mapsto c$ sweep $(r, b) \mapsto \bigl((b + r) \bmod 2,\ 3\lfloor (b + r)/2 \rfloor + 9\bigr)$ (`syracuseScan`) on $C_d(r, b, c) := 0^\infty \ 1^{r+1} \ \mathrm{C}{>} \ 00 \ 1^{b+4} \ (01)^c \ 1^d \ 011 \ 0^\infty$ restricts $b \in \lbrace 0, 12 \rbrace$ and reduces the machine to a **single counter** $c \ge 0$ across $C_{3,0}(r, c) := C_3(r, 0, c)$, $C_{3,12}(c) := C_3(0, 12, c)$, $C_{6,0}(r, c) := C_6(r, 0, c)$, and $C_{6,12}(c) := C_6(0, 12, c)$. Starting from $C_{3,0}(0, 6)$ (encoded as `.C3_0 false 6`, reached after 322 steps, one macro-step after $C_3(0, 6, 0)$ at step 200), let $\Sigma(r, b, k)$ iterate $(r, b) \mapsto \bigl((b + r) \bmod 2,\ 3\lfloor (b + r)/2 \rfloor + 9\bigr)$ $k$ times; then:
 
 $$
 \begin{aligned}
@@ -430,7 +430,30 @@ $$
 \end{aligned}
 $$
 
-where `finishC3` ($F_3$) and `finishC6` ($F_6$) evaluate the terminal $c \bmod 2 \in \lbrace 0, 1 \rbrace$ exit in closed form.
+where `finishC3` ($F_3((r, b), p)$) and `finishC6` ($F_6((r, b), p)$) evaluate the terminal $p = c \bmod 2 \in \lbrace 0, 1 \rbrace$ exit in closed form:
+
+$$
+\begin{aligned}
+  F_3((r, b), 0) &= \begin{cases}
+    C_{3,0}(r, \lfloor b/2 \rfloor + 3) & \text{if } b \text{ is even}, \\
+    C_{3,12}(\lfloor b/2 \rfloor) & \text{if } b \text{ is odd and } r = 1, \\
+    \text{Halt} & \text{if } b \text{ is odd and } r = 0,
+  \end{cases} \\
+  F_3((r, b), 1) &= \begin{cases}
+    C_{6,0}(r, \lfloor b/2 \rfloor + 3) & \text{if } b \text{ is odd}, \\
+    \text{Halt} & \text{if } b \text{ is even and } r = 0, \\
+    C_{6,0}(1, 13) & \text{if } b = 0 \text{ and } r = 1, \\
+    C_{6,12}(\lfloor b/2 \rfloor - 1) & \text{if } b \ge 2 \text{ is even and } r = 1,
+  \end{cases} \\
+  F_6((r, b), 0) &= \begin{cases}
+    C_{3,0}(r, \lfloor b/2 \rfloor + 5) & \text{if } b \text{ is odd}, \\
+    C_{3,12}(\lfloor b/2 \rfloor + 1) & \text{if } b \text{ is even and } r = 1, \\
+    \text{Halt} & \text{if } b \text{ is even and } r = 0,
+  \end{cases} \\
+  F_6((r, b), 1) &= F_3\bigl((s_1 \bmod 2,\ 3\lfloor s_1/2 \rfloor + 9),\ 1\bigr),
+    \quad s = b + r,\ s_1 = 3\lfloor s/2 \rfloor + 6 + (s \bmod 2).
+\end{aligned}
+$$
 
 ### [`1RB1LA_1RC1RE_1LD0RB_1LA0LC_0RF0RD_0RB---`](./M_1RB1LA_1RC1RE_1LD0RB_1LA0LC_0RF0RD_0RBHHH.lean)
 
@@ -568,13 +591,51 @@ $$
 T(E(a, b, c)) = \begin{cases}
   F_0(\lfloor a/2 \rfloor, b, c) & \text{if } a \text{ is even}, \\
   \text{Halt} & \text{if } a = 1, \\
-  E(b + 3a - 6,\ c + 3,\ 0) & \text{if } a \ge 3 \text{ is odd}.
+  E(b + 3a - 6,\ c + 3,\ 0) & \text{if } a \ge 3 \text{ is odd},
 \end{cases}
+$$
+
+where $F_0(k, b, c)$, $F_1(k, b, c)$, and $F_{\ge 2}(d, k, b, c)$ (`evalF0`, `evalF1`, and `evalFGe2`, evaluating $F(0, 2k, b, c)$, $F(1, 2k, b, c)$, and $F(d + 2, 2k, b, c)$) are defined by:
+
+$$
+\begin{aligned}
+  F_0(k, b, c) &= \begin{cases}
+    E(1, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_1(0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_1(b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(c + 3, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(2, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(b + 2, c + 3, 0) & \text{if } k = 1, \\
+    F_1(k - 2, b + 3, c) & \text{if } k \ge 2,
+  \end{cases} \\
+  F_1(k, b, c) &= \begin{cases}
+    E(2, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_{\ge 2}(0, 0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_{\ge 2}(0, b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(c + 4, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(3, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(b + 4, c, 0) & \text{if } k = 1 \text{ and } b \text{ is odd}, \\
+    F_{\ge 2}(0, b/2, c + 3, 0) & \text{if } k = 1 \text{ and } b \text{ is even}, \\
+    F_{\ge 2}(0, k - 2, b + 3, c) & \text{if } k \ge 2,
+  \end{cases} \\
+  F_{\ge 2}(d, k, b, c) &= \begin{cases}
+    E(d + 3, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_{\ge 2}(d + 1, 0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_{\ge 2}(d + 1, b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(d + c + 5, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(d + 4, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(d + 1, b + 4, c) & \text{if } k = 1, \\
+    F_{\ge 2}(d + 1, k - 2, b + 3, c) & \text{if } k \ge 2.
+  \end{cases}
+\end{aligned}
 $$
 
 ### [`1RB1LE_1LC0RA_0RF0LD_1LE1LA_1RC0LB_---1RC`](./M_1RB1LE_1LC0RA_0RF0LD_1LE1LA_1RC0LB_HHH1RC.lean)
 
-Eliminating the auxiliary family $B(a, b, c)$ via `evalB` and draining $2k + 2 < b$ via `drainA` reduces the machine to a single-family, 2-counter map on $A(k, b) := 0^\infty \ {<}\mathrm{C} \ (10)^{2k+2} \ 110 \ (10)^b \ 0^\infty$, starting from $A(0, 0)$:
+Eliminating the auxiliary family $B(a, b, c)$ via `evalB` and draining $2k + 2 < b$ via `drainA` reduces the machine to a single-family, 2-counter map on $A(k, b) := 0^\infty \ \mathrm{C}{>} \ 0 \ (10)^{2k+2} \ 110 \ (10)^b \ 0^\infty$, starting from $A(0, 0)$:
 
 $$
 T(A(k, b)) = \begin{cases}
@@ -638,17 +699,70 @@ Eliminating the four transient families $W, M, S, R$ (via `evalCPos`, `evalW`, `
 $$
 \begin{aligned}
   T(C_0(a, b)) &= \begin{cases}
-    \mathrm{evalCPos}(2, 1, 0, 0) & \text{if } a = 0 \text{ and } b = 0, \\
+    C_+(2, 1, 0, 0) & \text{if } a = 0 \text{ and } b = 0, \\
     \text{Halt} & \text{if } a = 0 \text{ and } b = 1, \\
-    \mathrm{evalCPos}(2, b - 2, 0, 0) & \text{if } a = 0 \text{ and } b \ge 2, \\
-    \mathrm{evalCPos}(a, b, 0, 0) & \text{if } a \ge 1,
+    C_+(2, b - 2, 0, 0) & \text{if } a = 0 \text{ and } b \ge 2, \\
+    C_+(a, b, 0, 0) & \text{if } a \ge 1,
   \end{cases} \\
   T(C_1(a, b, c)) &= \begin{cases}
     \text{Halt} & \text{if } a = 0,\ b = 0,\text{ and } c = 0, \\
-    \mathrm{evalCPos}(2, 1, c, 1) & \text{if } a = 0,\ b = 0,\text{ and } c \ge 1, \\
+    C_+(2, 1, c, 1) & \text{if } a = 0,\ b = 0,\text{ and } c \ge 1, \\
     C_0(c + 2,\ 0) & \text{if } a = 0 \text{ and } b = 1, \\
-    \mathrm{evalCPos}(2, b - 2, c, 1) & \text{if } a = 0 \text{ and } b \ge 2, \\
-    \mathrm{evalCPos}(a, b, c, 1) & \text{if } a \ge 1.
+    C_+(2, b - 2, c, 1) & \text{if } a = 0 \text{ and } b \ge 2, \\
+    C_+(a, b, c, 1) & \text{if } a \ge 1,
+  \end{cases}
+\end{aligned}
+$$
+
+where for $d \in \lbrace 0, 1 \rbrace$ (with $c = 0$ whenever $d = 0$), the helpers $C_+$ (`evalCPos`), $W$ (`evalW`), $M$ (`evalM`, recursive on $k$), $S$ (`evalS`), and $R$ (`evalR`) are defined by:
+
+$$
+\begin{aligned}
+  C_+(a, b, c, d) &= \begin{cases}
+    S(0, 2, 0, 0) & \text{if } b = 0,\ d = 1,\ c = 0,\text{ and } a = 1, \\
+    M(a - 2, 0, 0, 0, 0) & \text{if } b = 0,\ d = 1,\ c = 0,\text{ and } a \ge 2, \\
+    S(0, 1, c, d) & \text{if } b = 0,\ (d = 0 \text{ or } c \ge 1),\text{ and } a = 1, \\
+    W(a - 2, 2, c, d) & \text{if } b = 0,\ (d = 0 \text{ or } c \ge 1),\text{ and } a \ge 2, \\
+    S(0, b + 1, c, d) & \text{if } b \ge 1 \text{ and } a = 1, \\
+    M(a - 2, 0, b - 1, c, d) & \text{if } b \ge 1 \text{ and } a \ge 2,
+  \end{cases} \\
+  W(k, b, c, d) &= \begin{cases}
+    C_0(2, b) & \text{if } k = 0 \text{ and } d = 0, \\
+    C_1(2, b, c) & \text{if } k = 0 \text{ and } d = 1, \\
+    S(0, b + 3, c, d) & \text{if } k = 1, \\
+    M(k - 2, 0, b + 1, c, d) & \text{if } k \ge 2,
+  \end{cases} \\
+  M(k, u, b, c, d) &= \begin{cases}
+    S(u + 2, b, c, d) & \text{if } k = 0, \\
+    C_1(0, 0, u + 5) & \text{if } k = 1,\ b = 0,\text{ and } d = 0, \\
+    C_1(0, 3, u + 5) & \text{if } k = 2,\ b = 0,\text{ and } d = 0, \\
+    C_1(0, 4, u + 5) & \text{if } k = 3,\ b = 0,\text{ and } d = 0, \\
+    C_1(2, 2, u + 5) & \text{if } k = 4,\ b = 0,\text{ and } d = 0, \\
+    S(0, 5, u + 5, 1) & \text{if } k = 5,\ b = 0,\text{ and } d = 0, \\
+    M(k - 6, 0, 3, u + 5, 1) & \text{if } k \ge 6,\ b = 0,\text{ and } d = 0, \\
+    W(k - 1, 2(u + c) + 6, 0, 0) & \text{if } k \ge 1,\ b = 0,\text{ and } d = 1, \\
+    W(k - 1, 2u + 6, 0, 0) & \text{if } k \ge 1,\ b = 1,\text{ and } d = 0, \\
+    M(k - 1, u + 2, 0, 0, 0) & \text{if } k \ge 1,\ b = 1,\ d = 1,\text{ and } c = 0, \\
+    W(k - 1, 2u + 6, c, 1) & \text{if } k \ge 1,\ b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    M(k - 1, u + 2, b - 2, c, d) & \text{if } k \ge 1 \text{ and } b \ge 2,
+  \end{cases} \\
+  S(a, b, c, d) &= \begin{cases}
+    C_0(a + 2, 0) & \text{if } b = 0 \text{ and } d = 0, \\
+    C_0(0, 2(a + c) + 4) & \text{if } b = 0 \text{ and } d = 1, \\
+    C_0(0, 2a + 4) & \text{if } b = 1 \text{ and } d = 0, \\
+    R(a + 1, 0, 0, 0) & \text{if } b = 1,\ d = 1,\text{ and } c = 0, \\
+    C_1(0, 2a + 4, c) & \text{if } b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    R(a + 1, b - 2, c, d) & \text{if } b \ge 2,
+  \end{cases} \\
+  R(a, b, c, d) &= \begin{cases}
+    C_0(0, 2a + 7) & \text{if } b = 0 \text{ and } d = 0, \\
+    C_0(0, 2(a + c) + 5) & \text{if } b = 0 \text{ and } d = 1, \\
+    C_0(0, 2a + 5) & \text{if } b = 1 \text{ and } d = 0, \\
+    \text{Halt} & \text{if } (b = 1,\ d = 1,\ c = 0) \text{ or } (b = 2,\ d = 0), \\
+    C_1(0, 2a + 5, c) & \text{if } b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    C_0(a + c + 3, 0) & \text{if } b = 2 \text{ and } d = 1, \\
+    C_0(a + 3, b - 3) & \text{if } b \ge 3 \text{ and } d = 0, \\
+    C_1(a + 3, b - 3, c) & \text{if } b \ge 3 \text{ and } d = 1.
   \end{cases}
 \end{aligned}
 $$
@@ -729,7 +843,7 @@ $$
 C(a, c) := 0^\infty \ 1^{a+2} \ \mathrm{E}{>} \ 110 \ 1^{2c+2} \ 0^\infty.
 $$
 
-Starting from $C(8, 1)$ (reached after 167 steps from the blank tape), with $k = \lfloor a / 2 \rfloor$, the machine follows the map $T$:
+Starting from $C(8, 1)$ (reached after 127 steps from the blank tape), with $k = \lfloor a / 2 \rfloor$, the machine follows the map $T$:
 
 $$
 T(C(a, c)) = \begin{cases}
@@ -789,7 +903,7 @@ T(P_1(a, c)) = \begin{cases}
 \end{cases}
 $$
 
-where $G(k, c)$ is defined recursively by:
+where $G(k, c)$ (`evalP2`) is defined recursively by:
 
 $$
 G(k, c) = \begin{cases}

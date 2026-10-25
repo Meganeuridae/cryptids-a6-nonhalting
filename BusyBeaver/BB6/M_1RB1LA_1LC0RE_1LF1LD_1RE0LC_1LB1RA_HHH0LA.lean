@@ -45,11 +45,34 @@ T(C_6(r, b, c + 2)) &= C_6(s \bmod 2, 3\lfloor s / 2 \rfloor + 9, c).
 $$
 
 Contracting the $\lfloor c / 2 \rfloor$-step Syracuse scan $(r, b) \mapsto (s \bmod 2,
-3\lfloor s / 2 \rfloor + 9)$ via `syracuseScan` and resolving the terminal $c \bmod 2 \in \{0, 1\}$
-step via `finishC3` / `finishC6` (including $C_3(1, 0, 1) \to C_3(0, 9, 3) \to C_3(1, 21, 1) \to
-C_6(1, 0, 13)$) restricts the dynamics to a single `ℕ` counter $c$ on the $b \in \{0, 12\}$
-Poincaré section (`HighLevelState`: `C3_0 r c`, `C3_12 c`, `C6_0 r c`, `C6_12 c`), starting from
-`highLevelStart = .C3_0 false 6`.
+3\lfloor s / 2 \rfloor + 9)$ via `syracuseScan` ($\Sigma(r, b, k)$) and resolving the terminal
+$c \bmod 2 \in \{0, 1\}$ step via `finishC3` ($F_3$) and `finishC6` ($F_6$) restricts the dynamics
+to a single `ℕ` counter $c$ on the $b \in \{0, 12\}$ Poincaré section (`HighLevelState`:
+`C3_0 r c`, `C3_12 c`, `C6_0 r c`, `C6_12 c`), starting from `highLevelStart = .C3_0 false 6`
+($C_3(0, 0, 6)$, reached after 322 raw TM steps from the blank tape):
+
+$$
+\begin{aligned}
+  F_3(r, b, 0) &= \begin{cases}
+    C_{3,0}(r, \lfloor b/2 \rfloor + 3) & \text{if } b \text{ is even}, \\
+    C_{3,12}(\lfloor b/2 \rfloor) & \text{if } b \text{ is odd and } r = 1, \\
+    \text{Halt} & \text{if } b \text{ is odd and } r = 0,
+  \end{cases} \\
+  F_3(r, b, 1) &= \begin{cases}
+    C_{6,0}(r, \lfloor b/2 \rfloor + 3) & \text{if } b \text{ is odd}, \\
+    \text{Halt} & \text{if } b \text{ is even and } r = 0, \\
+    C_{6,0}(1, 13) & \text{if } b = 0 \text{ and } r = 1, \\
+    C_{6,12}(\lfloor b/2 \rfloor - 1) & \text{if } b \ge 2 \text{ is even and } r = 1,
+  \end{cases} \\
+  F_6(r, b, 0) &= \begin{cases}
+    C_{3,0}(r, \lfloor b/2 \rfloor + 5) & \text{if } b \text{ is odd}, \\
+    C_{3,12}(\lfloor b/2 \rfloor + 1) & \text{if } b \text{ is even and } r = 1, \\
+    \text{Halt} & \text{if } b \text{ is even and } r = 0,
+  \end{cases} \\
+  F_6(r, b, 1) &= F_3\bigl(s_1 \bmod 2,\ 3\lfloor s_1/2 \rfloor + 9,\ 1\bigr),
+    \quad s = b + r,\ s_1 = 3\lfloor s/2 \rfloor + 6 + (s \bmod 2).
+\end{aligned}
+$$
 -/
 
 @[expose] public section

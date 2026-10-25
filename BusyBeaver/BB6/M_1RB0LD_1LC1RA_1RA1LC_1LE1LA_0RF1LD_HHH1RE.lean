@@ -16,7 +16,7 @@ public import BusyBeaver.Bridge
 acceleration in the common `BusyBeaver` format.
 
 We analyze canonical configurations in state `A` parametrized by `(a, g, h)`:
-`Config_gen a g h` with left tape `1^g (10)^a` and right tape `1^h` (head on the first symbol of
+`Config_gen a g h` with left tape `(01)^a 1^g` and right tape `1^h` (head on the first symbol of
 `1^h`).
 
 The closed pattern set `ps` partitions the canonical configurations into 5 families (`g ≥ 1`):
@@ -48,9 +48,9 @@ T(H(a, g)) = \begin{cases}
 $$
 
 where for $a_0 = a - 1 \ge 2$ and $j = \mathrm{find\_k}(a_0)$ (with $S(j) \le a_0 < S(j + 1)$),
-$(a', k') = (0, 1)$ when $a_0 = S(j)$ and $(a', k') = (S(j + 1) - 1 - a_0,\, a_0 + j + 2 - a')$
-otherwise, and the even-left-exponent drain $D(a, k, h)$ (`drainEven`) is defined recursively on
-$h$ by:
+$(a', k') = (2^{j+1}, 1)$ when $a_0 = S(j)$ and
+$(a', k') = (S(j + 1) - 1 - a_0,\, a_0 + j + 2 - a')$ otherwise, and the even-left-exponent drain
+$D(a, k, h)$ (`drainEven`) is defined recursively on $h$ by:
 
 $$
 D(a, k, h) = \begin{cases}

@@ -16,7 +16,7 @@ $$
 C(a, c) := 0^\infty \ 1^{a+2} \ \mathrm{E}{>} \ 110 \ 1^{2c+2} \ 0^\infty.
 $$
 
-Starting from $C(8, 1)$ (reached after 167 steps from the blank tape), with
+Starting from $C(8, 1)$ (reached after 127 steps from the blank tape), with
 $k = \lfloor a / 2 \rfloor$,
 the machine follows the map $T$:
 

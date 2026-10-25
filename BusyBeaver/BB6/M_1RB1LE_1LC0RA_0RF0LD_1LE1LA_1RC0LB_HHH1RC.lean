@@ -47,7 +47,8 @@ Start: A(2, 0), reached after 15 raw TM steps
 
 Writing $a = 2k + 2$ ($k \ge 0$), eliminating the auxiliary family $B(a, b, c)$ via `evalB`, and
 contracting the $a < b$ phases of both $A$ and $B$ via `drainA` yields a single-family, 2-counter
-map $T$ on $A(k, b) := A(2k + 2, b)$ starting at $A(0, 0)$:
+map $T$ on $A(k, b) := A(2k + 2, b) = 0^\infty \ \mathrm{C}{>} \ 0 \ (10)^{2k+2} \ 110 \ (10)^b \
+0^\infty$ starting at $A(0, 0)$:
 
 $$
 T(A(k, b)) = \begin{cases}

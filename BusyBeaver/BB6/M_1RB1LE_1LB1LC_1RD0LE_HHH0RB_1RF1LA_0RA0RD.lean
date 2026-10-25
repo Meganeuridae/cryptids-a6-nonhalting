@@ -66,9 +66,45 @@ T(E(a, b, c)) = \begin{cases}
 \end{cases}
 $$
 
-where $F_0(k, b, c)$, $F_1(k, b, c)$, and $F_{\ge 2}(d, k, b, c)$ (corresponding to
-$F(0, 2k, b, c)$, $F(1, 2k, b, c)$, and $F(d + 2, 2k, b, c)$) evaluate to $E(a', b', c')$ or
-$\text{Halt}$ with termination measure $5k + 3b + 4c$ on $F_{\ge 2}$.
+where $F_0(k, b, c)$, $F_1(k, b, c)$, and $F_{\ge 2}(d, k, b, c)$ (`evalF0`, `evalF1`, and
+`evalFGe2`, corresponding to $F(0, 2k, b, c)$, $F(1, 2k, b, c)$, and $F(d + 2, 2k, b, c)$, with
+termination measure $5k + 3b + 4c$ on $F_{\ge 2}$) are defined by:
+
+$$
+\begin{aligned}
+  F_0(k, b, c) &= \begin{cases}
+    E(1, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_1(0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_1(b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(c + 3, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(2, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(b + 2, c + 3, 0) & \text{if } k = 1, \\
+    F_1(k - 2, b + 3, c) & \text{if } k \ge 2,
+  \end{cases} \\
+  F_1(k, b, c) &= \begin{cases}
+    E(2, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_{\ge 2}(0, 0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_{\ge 2}(0, b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(c + 4, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(3, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(b + 4, c, 0) & \text{if } k = 1 \text{ and } b \text{ is odd}, \\
+    F_{\ge 2}(0, b/2, c + 3, 0) & \text{if } k = 1 \text{ and } b \text{ is even}, \\
+    F_{\ge 2}(0, k - 2, b + 3, c) & \text{if } k \ge 2,
+  \end{cases} \\
+  F_{\ge 2}(d, k, b, c) &= \begin{cases}
+    E(d + 3, 3, 0) & \text{if } k = 0,\ b = 0,\text{ and } c = 0, \\
+    F_{\ge 2}(d + 1, 0, c, 0) & \text{if } k = 0,\ b = 0,\text{ and } c \ge 1, \\
+    F_{\ge 2}(d + 1, b/2, c, 0) & \text{if } k = 0 \text{ and } b \ge 2 \text{ is even}, \\
+    \text{Halt} & \text{if } k = 0 \text{ and } b = 1, \\
+    E(d + c + 5, 3, 0) & \text{if } k = 0 \text{ and } b = 3, \\
+    E(d + 4, b - 4, c + 3) & \text{if } k = 0 \text{ and } b \ge 5 \text{ is odd}, \\
+    E(d + 1, b + 4, c) & \text{if } k = 1, \\
+    F_{\ge 2}(d + 1, k - 2, b + 3, c) & \text{if } k \ge 2.
+  \end{cases}
+\end{aligned}
+$$
 -/
 
 @[expose] public section

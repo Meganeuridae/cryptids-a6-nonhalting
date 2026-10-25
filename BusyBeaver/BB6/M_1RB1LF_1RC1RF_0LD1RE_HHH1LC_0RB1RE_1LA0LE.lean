@@ -82,11 +82,83 @@ Start: C(0, 3, 0, 0), reached after 33 raw TM steps
 ## High-Level Collatz-like Acceleration
 
 Along the trajectory from $C(0, 3, 0, 0)$, every canonical return configuration has either
-$c = d = 0$ or $d = 1$. Eliminating the transient families $W$, $M$, $S$, and $R$ (via `evalW`, the
-recursive loop `evalM` decreasing in $k$, `evalS`, and `evalR`) yields a high-level Collatz-like
-acceleration `highLevelNext` on the two canonical families
+$c = d = 0$ or $d = 1$. Eliminating the transient families $W$, $M$, $S$, and $R$ (via `evalCPos`,
+`evalW`, the recursive loop `evalM` decreasing in $k$, `evalS`, and `evalR`) yields a high-level
+Collatz-like acceleration `highLevelNext` on the two canonical families
 $$C_0(a, b) := C(a, b, 0, 0), \qquad C_1(a, b, c) := C(a, b, c, 1),$$
-starting from $C_0(0, 3)$.
+starting from $C_0(0, 3)$:
+
+$$
+\begin{aligned}
+  T(C_0(a, b)) &= \begin{cases}
+    C_+(2, 1, 0, 0) & \text{if } a = 0 \text{ and } b = 0, \\
+    \text{Halt} & \text{if } a = 0 \text{ and } b = 1, \\
+    C_+(2, b - 2, 0, 0) & \text{if } a = 0 \text{ and } b \ge 2, \\
+    C_+(a, b, 0, 0) & \text{if } a \ge 1,
+  \end{cases} \\
+  T(C_1(a, b, c)) &= \begin{cases}
+    \text{Halt} & \text{if } a = 0,\ b = 0,\text{ and } c = 0, \\
+    C_+(2, 1, c, 1) & \text{if } a = 0,\ b = 0,\text{ and } c \ge 1, \\
+    C_0(c + 2, 0) & \text{if } a = 0 \text{ and } b = 1, \\
+    C_+(2, b - 2, c, 1) & \text{if } a = 0 \text{ and } b \ge 2, \\
+    C_+(a, b, c, 1) & \text{if } a \ge 1,
+  \end{cases}
+\end{aligned}
+$$
+
+where for $d \in \{0, 1\}$ (with $c = 0$ whenever $d = 0$), the helpers $C_+$ (`evalCPos`), $W$
+(`evalW`), $M$ (`evalM`, recursive on $k$), $S$ (`evalS`), and $R$ (`evalR`) are defined by:
+
+$$
+\begin{aligned}
+  C_+(a, b, c, d) &= \begin{cases}
+    S(0, 2, 0, 0) & \text{if } b = 0,\ d = 1,\ c = 0,\text{ and } a = 1, \\
+    M(a - 2, 0, 0, 0, 0) & \text{if } b = 0,\ d = 1,\ c = 0,\text{ and } a \ge 2, \\
+    S(0, 1, c, d) & \text{if } b = 0,\ (d = 0 \text{ or } c \ge 1),\text{ and } a = 1, \\
+    W(a - 2, 2, c, d) & \text{if } b = 0,\ (d = 0 \text{ or } c \ge 1),\text{ and } a \ge 2, \\
+    S(0, b + 1, c, d) & \text{if } b \ge 1 \text{ and } a = 1, \\
+    M(a - 2, 0, b - 1, c, d) & \text{if } b \ge 1 \text{ and } a \ge 2,
+  \end{cases} \\
+  W(k, b, c, d) &= \begin{cases}
+    C_0(2, b) & \text{if } k = 0 \text{ and } d = 0, \\
+    C_1(2, b, c) & \text{if } k = 0 \text{ and } d = 1, \\
+    S(0, b + 3, c, d) & \text{if } k = 1, \\
+    M(k - 2, 0, b + 1, c, d) & \text{if } k \ge 2,
+  \end{cases} \\
+  M(k, u, b, c, d) &= \begin{cases}
+    S(u + 2, b, c, d) & \text{if } k = 0, \\
+    C_1(0, 0, u + 5) & \text{if } k = 1,\ b = 0,\text{ and } d = 0, \\
+    C_1(0, 3, u + 5) & \text{if } k = 2,\ b = 0,\text{ and } d = 0, \\
+    C_1(0, 4, u + 5) & \text{if } k = 3,\ b = 0,\text{ and } d = 0, \\
+    C_1(2, 2, u + 5) & \text{if } k = 4,\ b = 0,\text{ and } d = 0, \\
+    S(0, 5, u + 5, 1) & \text{if } k = 5,\ b = 0,\text{ and } d = 0, \\
+    M(k - 6, 0, 3, u + 5, 1) & \text{if } k \ge 6,\ b = 0,\text{ and } d = 0, \\
+    W(k - 1, 2(u + c) + 6, 0, 0) & \text{if } k \ge 1,\ b = 0,\text{ and } d = 1, \\
+    W(k - 1, 2u + 6, 0, 0) & \text{if } k \ge 1,\ b = 1,\text{ and } d = 0, \\
+    M(k - 1, u + 2, 0, 0, 0) & \text{if } k \ge 1,\ b = 1,\ d = 1,\text{ and } c = 0, \\
+    W(k - 1, 2u + 6, c, 1) & \text{if } k \ge 1,\ b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    M(k - 1, u + 2, b - 2, c, d) & \text{if } k \ge 1 \text{ and } b \ge 2,
+  \end{cases} \\
+  S(a, b, c, d) &= \begin{cases}
+    C_0(a + 2, 0) & \text{if } b = 0 \text{ and } d = 0, \\
+    C_0(0, 2(a + c) + 4) & \text{if } b = 0 \text{ and } d = 1, \\
+    C_0(0, 2a + 4) & \text{if } b = 1 \text{ and } d = 0, \\
+    R(a + 1, 0, 0, 0) & \text{if } b = 1,\ d = 1,\text{ and } c = 0, \\
+    C_1(0, 2a + 4, c) & \text{if } b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    R(a + 1, b - 2, c, d) & \text{if } b \ge 2,
+  \end{cases} \\
+  R(a, b, c, d) &= \begin{cases}
+    C_0(0, 2a + 7) & \text{if } b = 0 \text{ and } d = 0, \\
+    C_0(0, 2(a + c) + 5) & \text{if } b = 0 \text{ and } d = 1, \\
+    C_0(0, 2a + 5) & \text{if } b = 1 \text{ and } d = 0, \\
+    \text{Halt} & \text{if } (b = 1,\ d = 1,\ c = 0) \text{ or } (b = 2,\ d = 0), \\
+    C_1(0, 2a + 5, c) & \text{if } b = 1,\ d = 1,\text{ and } c \ge 1, \\
+    C_0(a + c + 3, 0) & \text{if } b = 2 \text{ and } d = 1, \\
+    C_0(a + 3, b - 3) & \text{if } b \ge 3 \text{ and } d = 0, \\
+    C_1(a + 3, b - 3, c) & \text{if } b \ge 3 \text{ and } d = 1.
+  \end{cases}
+\end{aligned}
+$$
 -/
 
 @[expose] public section
