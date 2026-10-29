@@ -25,4 +25,5 @@ MANIFEST
 
 # Lean / Lake build artifacts
 /.lake
+/.venv-a6/
 
