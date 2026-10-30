@@ -13,9 +13,10 @@ Accordingly, for these machines we look for and formalize **Collatz-like reducti
 
 The original reductions and formal Lean 4 proofs in this library were produced by the Gemini-based agentic discovery pipeline introduced in [*At the Limits of Computability: Steps Towards Autonomous AI Discovery on the Busy Beaver Frontier*](https://arxiv.org/abs/2610.22603) (Dos Santos, Veeriah, Havrilla, Bolt, Zuzic, Singh, and Zahavy, 2026). Starting from raw blank-tape execution traces of unresolved holdouts, the system integrates automated pattern recognition, symbolic conjecturing of recurrent tape configurations (`TapePatternSet` and `StackPatternSet`) and accelerated transition rules, informal mathematical reasoning, and formal theorem proving in Lean 4 to synthesize and verify closed-set invariants (`IsClosedPatternSet`, `IsClosedStackPatternSet`) and multi-step accelerations (`IsValidAcceleration`).
 
-The A6 nonhalting certificate was developed separately with GPT-6.1 assistance;
-its [proof guide](../artifacts/a6/README.md) records the execution bridge,
-generator, and verification procedure.
+The A6 nonhalting proof uses the reusable reflective RLE and affine-return engine in
+[`WordRLE.lean`](./WordRLE.lean), [`AffRLE.lean`](./AffRLE.lean), and
+[`ElabRLE.lean`](./ElabRLE.lean); its [proof guide](../artifacts/a6/README.md) records the
+reflective architecture and verification procedure.
 
 ## Behavioral Predicates ([`Defs.lean`](./Defs.lean))
 
@@ -38,9 +39,10 @@ All proofs in `BusyBeaver/` target machine-checked behavioral predicates over th
 
 [`BusyBeaver/Basic.lean`](./Basic.lean) provides clean-room multi-step and reachability lemmas (`multiStep`, `ReachesIn`, `ReachesStar`, `ReachesPlus` with `Trans` instances), closed-invariant non-halting theorems (`NeverHaltsFrom.of_reachesPlus_invariant`, `IsNotHalt.of_reachesPlus_invariant`), certified acceleration halting equivalence, higher-level Collatz composition, and pattern-set closure bridges (`IsValidAcceleration.isHalt_iff`, `IsValidAcceleration.collatzHalts_iff`, `IsValidAcceleration.of_step`, `IsValidAcceleration.of_collatz`, `IsValidAcceleration.isClosedPatternSet`, `IsValidAcceleration.isClosedStackPatternSet`), finite block repetition (`l ^ n`) and `ListBlank` identities, standard 6-state (`BusyBeaver.SixState.A..F`) and 3-state (`BusyBeaver.ThreeState.A..C`) labels, directed-head (`Cfg.headRight` / `Cfg.headLeft`) step transitions, scoped directed-head and reachability notations (`l {{q}}> r`, `l <{{q}} r`, `s <+ l`, `l +> s`, `c₁ [M]⊢⁺ c₂`, ...), and concrete execution/halting tactics (`bb_steps`, `bb_halt`).
 
-## Certificate Checker ([`Cert.lean`](./Cert.lean))
+## Certificate Checkers ([`Cert.lean`](./Cert.lean), [`WordRLE.lean`](./WordRLE.lean), [`AffRLE.lean`](./AffRLE.lean), [`ElabRLE.lean`](./ElabRLE.lean))
 
-[`BusyBeaver/Cert.lean`](./Cert.lean) provides a small verified certificate checker (symbolic configurations over block-repetition variables, validated rewrite rules, and a `Bool`-valued proof-script interpreter whose success is sound for `ReachesStar` / `ReachesPlus` and hub-pattern membership). It is used by the machines whose closure proofs are produced as certificates (e.g. `1RB1RF_1LC---_1LE1RD_1RA0RC_0LF0LA_0LD0RB` and `1RB---_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD`).
+- [`BusyBeaver/Cert.lean`](./Cert.lean) provides a small verified certificate checker (symbolic configurations over block-repetition variables, validated rewrite rules, and a `Bool`-valued proof-script interpreter whose success is sound for `ReachesStar` / `ReachesPlus` and hub-pattern membership). It is used by the machines whose closure proofs are produced as certificates (e.g. `1RB1RF_1LC---_1LE1RD_1RA0RC_0LF0LA_0LD0RB` and `1RB---_1RC1LE_0RD0RF_0RE0LA_1LF0LB_1LA1LD`).
+- [`BusyBeaver/WordRLE.lean`](./WordRLE.lean), [`BusyBeaver/AffRLE.lean`](./AffRLE.lean), and [`BusyBeaver/ElabRLE.lean`](./ElabRLE.lean) provide a machine-polymorphic **proof-by-reflection and elaboration-time certificate synthesis** framework directly over `BusyBeaver.Cfg Γ Λ` (`ListBlank` half-tapes): strict call-by-value `withNat` accumulators, binary `NatTrie` exit tables, concrete RLE replay (`EntryReaches`), affine-exponent symbolic RLE + countdown-cycle replay (`AffReplayReaches`, `verifyReturnCert_sound`), and pure-Lean elaboration-time certificate discovery (`discoverReturnCert`) and sliced `mkAuxTheorem` kernel drivers (`proveEntryPhase`, `proveCheckAll`, `proveAffReplay`).
 
 ## Machine Loader and Bridge ([`Bridge.lean`](./Bridge.lean))
 

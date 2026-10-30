@@ -118,9 +118,10 @@ For any requested finite time `t`, choose `k` with `S(k) >= t`. The prefix
 of a defined execution of length `S(k)` is a defined execution of length
 `t`. Therefore no finite time can be a halting time.
 
-This argument is formalized for arbitrary partial transition functions in
-[`ReturnLogic.lean`](../../BusyBeaver/BB6/A6/ReturnLogic.lean), then connected to the literal
-machine in [`ReturnBridge.lean`](../../BusyBeaver/BB6/A6/ReturnBridge.lean). In particular,
+This argument is formalized for arbitrary machines in
+`BusyBeaver.AffRLE.isNotHalt_of_family` ([`AffRLE.lean`](../../BusyBeaver/AffRLE.lean))
+using `IsNotHalt.of_reachesPlus_invariant`, and instantiated for `A6` in
+[`M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean`](../../BusyBeaver/BB6/M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean). In particular,
 nonhalting follows from positive, universally proved return paths; it does
 not require a finite simulation to continue indefinitely.
 
@@ -145,38 +146,28 @@ word; a local halt or a premature exit makes the claimed local run fail.
 The finite interpreter preserves the word length.
 
 Because no exterior cell is read before exit, the same finite run is valid
-inside any surrounding tape. The context lemma in
-[`Word.lean`](../../BusyBeaver/BB6/A6/Word.lean) proves this by induction on literal steps.
-The patch lemmas also account for the coordinates of the replaced word.
+inside any surrounding tape. The context lemma `runWordExit_sound` in
+[`WordRLE.lean`](../../BusyBeaver/WordRLE.lean) proves this by induction on literal steps,
+and `runCompositeExit_sound` lifts 2-bit base-word exits to arbitrary composite
+words.
 
 If the exit has the same state and orientation as the entry, the rule can
 be repeated over any number `r` of consecutive copies of `w`. Induction on
-`r` gives the repeated exit, with time `r` times the one-word time. These
-are the homogeneous sweeps in [`Sweeps.lean`](../../BusyBeaver/BB6/A6/Sweeps.lean).
+`r` gives the repeated exit, with time `r` times the one-word time
+(`sweepWord_sound` in [`WordRLE.lean`](../../BusyBeaver/WordRLE.lean)).
 
-The compressed tape is stored as two lists of word/count pairs, ordered
-nearest to the head first. Words within either list remain in physical
-left-to-right order. A boundary coordinate says where the two lists meet;
-the head is at the boundary for a right-facing configuration and one bit
-before it for a left-facing configuration. Empty exterior stacks denote
-infinite blank tape. Merging equal adjacent blocks or omitting exterior
-zero blocks leaves this denotation unchanged.
+The compressed tape is stored directly as two `ListBlank`-backed stacks of
+word/count pairs (`EntryCfg` for concrete runs and `AffCfg` for affine-exponent
+runs), ordered nearest to the head first. Empty exterior stacks denote the
+infinite blank half-tape `default : ListBlank (Fin 2)`. Merging equal adjacent
+blocks or omitting exterior zero blocks leaves this denotation unchanged
+(`evalSide_pushLit` in [`WordRLE.lean`](../../BusyBeaver/WordRLE.lean) and `pushAff_sound`
+in [`AffRLE.lean`](../../BusyBeaver/AffRLE.lean)).
 
-The central soundness theorem, proved in
-[`RLESound.lean`](../../BusyBeaver/BB6/A6/RLESound.lean), is
-
-```lean
-applyExit_sound
-    (valid : e.valid)
-    (applies : applyExit c e r = some d) :
-  Runs (r * e.steps) c.denote d.denote
-```
-
-The partial evaluator rejects mismatched words, states, or orientations and
-insufficient input counts. Multiple copies require an unchanged state and
-orientation. The proof covers both exit sides, implicit blank pairs, and
-the removal of exterior blank blocks. Thus a successful application supplies
-an exact statement about the original bit-level machine.
+The step-level soundness theorems (`EntryReaches.sound` in
+[`WordRLE.lean`](../../BusyBeaver/WordRLE.lean) and `stepAffOnce_sound` in
+[`AffRLE.lean`](../../BusyBeaver/AffRLE.lean)) establish exact `ReachesIn` derivations on
+`BusyBeaver.Cfg (Fin 2) (Fin 6)` directly.
 
 ## Transfer rules for reaching the family
 
@@ -231,47 +222,29 @@ additional destination copies.
 | D enters `Y` from the right, exits left in D with `X` | `b+2` | 2 |
 
 Here the sweeps cost `2(b+1)` and `2(b+2)` and the other rows cost 12.
-The output is the corresponding D frontier. The complete symbolic paths,
-including `b=0` and source-exhaustion cases, are proved in
-[`EntryTransfer.lean`](../../BusyBeaver/BB6/A6/EntryTransfer.lean) and lifted to literal
-execution in [`EntryPathSound.lean`](../../BusyBeaver/BB6/A6/EntryPathSound.lean).
-
-After `q` transfers, where `2q <= a`, the source count is `a-2q`, the
-destination count is `b+3q`, and the boundary has moved left by `4q` bits.
-The exact cost is
-
-$$\sum_{j=0}^{q-1}(4(b+3j)+18)=4qb+6q^2+12q.$$
-
-[`TransferBatch.lean`](../../BusyBeaver/BB6/A6/TransferBatch.lean) proves this formula and
-the complete output configuration by induction on `q`.
-[`TransferEval.lean`](../../BusyBeaver/BB6/A6/TransferEval.lean) validates a whole input
-frontier before applying the batch theorem.
+The output is the corresponding D frontier. Both single-step transfers and
+their `q`-fold quadratic batch iterations (`transferB_batch` and
+`transferD_batch`, costing `4qb + 6q^2 + 12q` steps) are proved directly over
+`ListBlank (Fin 2)` in [`Defs.lean`](../../BusyBeaver/BB6/A6/Defs.lean), where
+`stepEntry_sound` validates the full input frontier before applying each batch.
 
 ## The complete blank tape entry certificate
 
-The entry certificate starts with state A, boundary 1, left-facing
-orientation, and two empty stacks. Its denotation has head position 0 and
-the all-zero tape, as proved in
-[`EntryStart.lean`](../../BusyBeaver/BB6/A6/EntryStart.lean).
+The entry certificate starts with state A, left-facing orientation, and two
+empty stacks, whose `evalEntryCfg` denotation equals `init []` via
+`init_nil_eq_headLeft` ([`M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean`](../../BusyBeaver/BB6/M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean)).
 
-Each operation is either a checked finite word exit, a homogeneous sweep,
-or a checked B or D transfer batch. The replay interpreter in
-[`Replay.lean`](../../BusyBeaver/BB6/A6/Replay.lean) sums their exact times and composes their
-soundness proofs. Concrete equalities between successive compressed
-checkpoints are discharged by kernel computation.
+Each step of `stepEntry` executes either a 2-bit word exit, a homogeneous
+sweep, or a certified B or D transfer batch. Strict `withNat` evaluation in
+`WordRLE.runExact` sums exact step counts in binary without WHNF thunk
+accumulation, and `ElabRLE.proveEntryPhase` slices the 166,491 compressed
+steps across six milestone modules ([`Entry0.lean`](../../BusyBeaver/BB6/A6/Entry0.lean)
+through [`Entry5.lean`](../../BusyBeaver/BB6/A6/Entry5.lean)):
+`init [] → C(0) → C(3) → C(5) → C(6) → C(7) → C(8)`.
 
-There are 166,491 compressed operations up to `C(8)`, including 145 transfer
-batches: 97 B batches and 48 D batches. They are checked in 1,666 bounded
-replay chunks, grouped into 34 source modules. The intermediate checkpoint
-at `C(0)` occurs after 65 transfer batches; another 80 occur before `C(8)`.
-
-The resulting closed statements in
-[`EntryGenerated/All.lean`](../../BusyBeaver/BB6/A6/EntryGenerated/All.lean) give the exact
-times `T0` and `T8` above. The identity in
-[`EntryIdentity.lean`](../../BusyBeaver/BB6/A6/EntryIdentity.lean) connects the final concrete
-checkpoint to the symbolic family representation of `C(8)`. It compares
-finite prefixes and suffixes around the `X^N` block using word-power laws;
-it does not expand that block into a billion tape cells.
+Combining `entry_phase0` through `entry_phase5` in `entry_to_c8` yields the
+exact time `T8` above, and `entryMilestone_eight_eq` connects `C(8)` to the
+symbolic family start `familyCfg 0` without expanding `X^N`.
 
 ## The universal return certificate
 
@@ -308,16 +281,16 @@ $$S(k,0)\xrightarrow{\;K(k)d\;}S(k,K(k)).$$
 Consequently these cycle jumps are justified for all parameter values,
 including the boundary `k=0`. They are not extrapolations from examples.
 
-All 9,911 operations are composed in 100 source chunks. Arithmetic
-simplification gives their total cost as
+All 9,911 operations (compressed into a 202-leaf `BTree AffOp` synthesized at
+elaboration time in [`Cert.lean`](../../BusyBeaver/BB6/A6/Cert.lean)) are replayed in the
+kernel in [`ReturnReplay.lean`](../../BusyBeaver/BB6/A6/ReturnReplay.lean), while all 462
+composite exits are checked in [`ReturnExits.lean`](../../BusyBeaver/BB6/A6/ReturnExits.lean).
+Symbolic affine evaluation gives their total cost as
 
 ```text
 119808*k + 304037417082
   = 304036458618 + 119808*(k+8).
 ```
-
-The complete symbolic execution is
-[`ReturnGenerated/Return.lean`](../../BusyBeaver/BB6/A6/ReturnGenerated/Return.lean).
 
 ## Why the endpoint is exactly the next family member
 
@@ -337,8 +310,7 @@ $$a(ba)^r b=(ab)^{r+1}.$$
 
 This follows by induction on `r`: the zero case is `ab=ab`, and the
 successor case appends one more `ba` before the final `b` and regroups
-concatenation. The identity is proved in
-[`ReturnWords.lean`](../../BusyBeaver/BB6/A6/ReturnWords.lean).
+concatenation (`WordRLE.lpow_rot` in [`WordRLE.lean`](../../BusyBeaver/WordRLE.lean)).
 
 The computed region around the `P` copies is
 
@@ -359,15 +331,12 @@ because `2+(n-2)+1=n+1` and `13+19+(N-32)=N`. The remaining fixed part of
 E (D E)^n D = (E D)^(n+1) = Q^(n+1).
 ```
 
-The suffix `W B>Y^6` is unchanged, and the head coordinate has increased by
-522, exactly `h(n+1)-h(n)`. The full state and tape equality is
-[`ReturnIdentity.return_identity`](../../BusyBeaver/BB6/A6/ReturnIdentity.lean). Combining
-it with the checked execution proves the return claim for every `n >= 8`.
-
-The entry claim and the infinite-return argument now prove the theorem.
-The final closed result is
-[`BusyBeaver.BB6.A6.blank_nonhalting`](../../BusyBeaver/BB6/A6/Main.lean). The same module proves explicitly
-that no finitely reachable configuration is in state F scanning 1.
+The suffix `W B>Y^6` is unchanged. The full state and tape equality is
+`a6_final_eq_next` in
+[`M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean`](../../BusyBeaver/BB6/M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean).
+Combining it with `verifyReturnCert_sound` proves `family_step` for every
+`n >= 8`, and `isNotHalt_of_family` closes
+[`BusyBeaver.M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.is_not_halt`](../../BusyBeaver/BB6/M_1RB0LF_1RC0RA_1LD0RB_0LE0LC_0LA0LC_0LBHHH.lean).
 
 ## Scope of the result
 
